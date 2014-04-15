@@ -1,4 +1,4 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
@@ -8,7 +8,7 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
-SET search_path = reporting, pg_catalog;
+SET search_path = report_test, pg_catalog;
 
 SET default_tablespace = '';
 
