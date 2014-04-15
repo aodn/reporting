@@ -1,8 +1,10 @@
 
 -- Remember that we can look up stuff, in the old report_db  
 
--- to insert this scripts objects
--- psql -h dbprod.emii.org.au -U jfca -d harvest -f 2-nsp_views.sql
+-- to generate the views in the schema
+-- psql -h dbprod.emii.org.au -U jfca -d harvest -f reporting_views.sql
+
+
 
 -- to see the objects
 -- psql -h dbprod.emii.org.au -U jfca -d harvest -c 'select * from admin.objects3'
