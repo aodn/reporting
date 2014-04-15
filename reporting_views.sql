@@ -1,4 +1,4 @@
-
+﻿
 -- Remember that we can look up stuff, in the old report_db  
 
 -- to generate the views in the schema
@@ -20,15 +20,15 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-SET search_path = reporting, pg_catalog;
+SET search_path = report_test, pg_catalog;
 
 
--- drop all current views
-select admin.exec( 'drop view if exists '||schema||'.'||name||' cascade' ) 
-	from admin.objects3 
-	where kind = 'v' 
-	and schema = 'reporting'
-;
+-- -- drop all current views
+-- select admin.exec( 'drop view if exists '||schema||'.'||name||' cascade' ) 
+-- 	from admin.objects3 
+-- 	where kind = 'v' 
+-- 	and schema = 'reporting'
+-- ;
 
 -- has data
 -- :'<,'>s/aatams_sattag\./legacy_aatams_sattag./g
@@ -103,7 +103,7 @@ grant all on table anfog_data_summary_view to public;
 -- pg_restore -x -O -n anmn -t acoustic_deployments  acoustic_data_viewer.dump    > acoustic_deployments.sql
 
 CREATE VIEW anmn_acoustics_all_deployments_view AS
-    SELECT COALESCE((((("substring"((acoustic_deployments.deployment_name)::text, '\D+'::text) || ' - Lat/Lon:'::text) || round((anmn_acoustics.lat)::numeric, 1)) || '/'::text) || round((anmn_acoustics.lon)::numeric, 1))) AS site_name, "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text) AS deployment_year, acoustic_deployments.logger_id, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 6))) AS good_data, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 22))) AS good_22, bool_or((acoustic_deployments.is_primary AND (acoustic_deployments.data_path IS NOT NULL))) AS on_viewer, round(avg((acoustic_deployments.receiver_depth)::numeric), 1) AS depth, min(date(acoustic_deployments.time_deployment_start)) AS start_date, max(date(acoustic_deployments.time_deployment_end)) AS end_date, (max(date(acoustic_deployments.time_deployment_end)) - min(date(acoustic_deployments.time_deployment_start))) AS coverage_duration, CASE WHEN (((((((((acoustic_deployments.logger_id IS NULL) OR (avg(date_part('year'::text, acoustic_deployments.time_deployment_end)) IS NULL)) OR bool_or((acoustic_deployments.frequency IS NULL))) OR bool_or((acoustic_deployments.set_success IS NULL))) OR (avg(acoustic_deployments.lat) IS NULL)) OR (avg(acoustic_deployments.lon) IS NULL)) OR (avg(acoustic_deployments.receiver_depth) IS NULL)) OR bool_or((acoustic_deployments.system_gain_file IS NULL))) OR bool_or((acoustic_deployments.hydrophone_sensitivity IS NULL))) THEN 'Missing information from PAO sub-facility'::text ELSE NULL::text END AS missing_info FROM (reporting.acoustic_deployments LEFT JOIN legacy_anmn.anmn_acoustics ON (((acoustic_deployments.site_code)::text = "substring"((anmn_acoustics.code)::text, 1, 5)))) GROUP BY acoustic_deployments.deployment_name, anmn_acoustics.lat, anmn_acoustics.lon, acoustic_deployments.logger_id ORDER BY COALESCE((((("substring"((acoustic_deployments.deployment_name)::text, '\D+'::text) || ' - Lat/Lon:'::text) || round((anmn_acoustics.lat)::numeric, 1)) || '/'::text) || round((anmn_acoustics.lon)::numeric, 1))), "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text), acoustic_deployments.logger_id;
+    SELECT COALESCE(acoustic_deployments.deployment_name|| ' - Lat/Lon:'|| round(anmn_acoustics.lat::numeric, 1) || '/' || round(anmn_acoustics.lon::numeric, 1)) AS site_name, "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text) AS deployment_year, acoustic_deployments.logger_id, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 6))) AS good_data, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 22))) AS good_22, bool_or((acoustic_deployments.is_primary AND (acoustic_deployments.data_path IS NOT NULL))) AS on_viewer, round(avg((acoustic_deployments.receiver_depth)::numeric), 1) AS depth, min(date(acoustic_deployments.time_deployment_start)) AS start_date, max(date(acoustic_deployments.time_deployment_end)) AS end_date, (max(date(acoustic_deployments.time_deployment_end)) - min(date(acoustic_deployments.time_deployment_start))) AS coverage_duration, CASE WHEN (((((((((acoustic_deployments.logger_id IS NULL) OR (avg(date_part('year'::text, acoustic_deployments.time_deployment_end)) IS NULL)) OR bool_or((acoustic_deployments.frequency IS NULL))) OR bool_or((acoustic_deployments.set_success IS NULL))) OR (avg(acoustic_deployments.lat) IS NULL)) OR (avg(acoustic_deployments.lon) IS NULL)) OR (avg(acoustic_deployments.receiver_depth) IS NULL)) OR bool_or((acoustic_deployments.system_gain_file IS NULL))) OR bool_or((acoustic_deployments.hydrophone_sensitivity IS NULL))) THEN 'Missing information from PAO sub-facility'::text ELSE NULL::text END AS missing_info FROM (reporting.acoustic_deployments LEFT JOIN legacy_anmn.anmn_acoustics ON (((acoustic_deployments.site_code)::text = "substring"((anmn_acoustics.code)::text, 1, 5)))) GROUP BY acoustic_deployments.deployment_name, anmn_acoustics.lat, anmn_acoustics.lon, acoustic_deployments.logger_id ORDER BY COALESCE((((("substring"((acoustic_deployments.deployment_name)::text, '\D+'::text) || ' - Lat/Lon:'::text) || round((anmn_acoustics.lat)::numeric, 1)) || '/'::text) || round((anmn_acoustics.lon)::numeric, 1))), "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text), acoustic_deployments.logger_id;
 
 grant all on table anmn_acoustics_all_deployments_view to public;
 
