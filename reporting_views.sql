@@ -20,7 +20,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-SET search_path = report_test, pg_catalog;
+SET search_path = reporting, pg_catalog;
 
 
 -- -- drop all current views
@@ -639,6 +639,8 @@ NULL AS lon_range,
 COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
 FROM anmn_nrs_realtime_data_summary_view,interm_table2
 ORDER BY facility,subfacility,type;
+
+grant all on table totals_view to public;
 
 -- GRANT SELECT, REFERENCES ON TABLE  totals TO gisread;
 -- GRANT ALL ON TABLE  totals TO gisadmin;
