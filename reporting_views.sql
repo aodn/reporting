@@ -20,7 +20,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-SET search_path = reporting, pg_catalog;
+SET search_path = report_test, pg_catalog, public;
 
 
 -- -- drop all current views
@@ -30,24 +30,81 @@ SET search_path = reporting, pg_catalog;
 -- 	and schema = 'reporting'
 -- ;
 
+
+
+-------------------------------
+-- VIEWS FOR AATAMS_SATTAG_NRT; reporting views for AATAMS_SATTAG_DM do not exist yet
+-------------------------------
 -- has data
 -- :'<,'>s/aatams_sattag\./legacy_aatams_sattag./g
 -- :'<,'>s/aatams_sattag_mdb_workflow_manual/report.aatams_sattag_mdb_workflow_manual/g
+-------------------------------
 
-CREATE or replace VIEW aatams_sattag_all_deployments_view AS
-    SELECT COALESCE((((((((((ctd_device_mdb_workflow.sattag_program)::text || ' - '::text) || (ctd_device_mdb_workflow.common_name)::text) || ' - '::text) || (CASE WHEN ((ctd_device_mdb_workflow.sattag_program)::text = 'ct61'::text) THEN 'South Australia'::character varying ELSE ctd_device_mdb_workflow.release_site END)::text) || ' - '::text) || (ctd_device_mdb_workflow.pi)::text) || ' - '::text) || (ctd_device_mdb_workflow.tag_type)::text)) AS headers, ctd_device_mdb_workflow.sattag_program, ctd_device_mdb_workflow.pi AS principal_investigator, CASE WHEN (((ctd_device_mdb_workflow.sattag_program)::text = 'ct61'::text) OR ((ctd_device_mdb_workflow.release_site)::text = 'Australia'::text)) THEN 'South Australia'::character varying ELSE ctd_device_mdb_workflow.release_site END AS release_site, ctd_device_mdb_workflow.tag_type, ctd_device_mdb_workflow.common_name AS species_name, ctd_device_mdb_workflow.device_id AS tag_code, count(DISTINCT ctd_profile_mdb_workflow.pkid) AS nb_profiles, COALESCE(((round((min(ctd_profile_mdb_workflow.lat))::numeric, 1) || '/'::text) || round((max(ctd_profile_mdb_workflow.lat))::numeric, 1))) AS lat_range, COALESCE(((round((min(ctd_profile_mdb_workflow.lon))::numeric, 1) || '/'::text) || round((max(ctd_profile_mdb_workflow.lon))::numeric, 1))) AS lon_range, min(date(ctd_profile_mdb_workflow."timestamp")) AS coverage_start, max(date(ctd_profile_mdb_workflow."timestamp")) AS coverage_end, (date_part('days'::text, ((max(date(ctd_profile_mdb_workflow."timestamp")))::timestamp without time zone - (min(date(ctd_profile_mdb_workflow."timestamp")))::timestamp without time zone)))::integer AS coverage_duration, (date_part('days'::text, (report.aatams_sattag_mdb_workflow_manual.data_on_staging - (min(date(ctd_profile_mdb_workflow."timestamp")))::timestamp without time zone)))::integer AS days_to_process_and_upload, (date_part('days'::text, (report.aatams_sattag_mdb_workflow_manual.data_on_portal - report.aatams_sattag_mdb_workflow_manual.data_on_staging)))::integer AS days_to_make_public, CASE WHEN ((((((((((ctd_device_mdb_workflow.sattag_program IS NULL) OR (ctd_device_mdb_workflow.common_name IS NULL)) OR (ctd_device_mdb_workflow.release_site IS NULL)) OR (ctd_device_mdb_workflow.pi IS NULL)) OR (ctd_device_mdb_workflow.tag_type IS NULL)) OR (ctd_device_mdb_workflow.device_id IS NULL)) OR (ctd_device_mdb_workflow.metadata IS NULL)) OR (avg(ctd_profile_mdb_workflow.lat) IS NULL)) OR (avg(ctd_profile_mdb_workflow.lon) IS NULL)) OR (avg(date_part('year'::text, ctd_profile_mdb_workflow."timestamp")) IS NULL)) THEN 'Missing information from AATAMS sub-facility'::text WHEN (((avg(date_part('year'::text, report.aatams_sattag_mdb_workflow_manual.data_on_staging)) IS NULL) OR (avg(date_part('year'::text, report.aatams_sattag_mdb_workflow_manual.data_on_opendap)) IS NULL)) OR (avg(date_part('year'::text, report.aatams_sattag_mdb_workflow_manual.data_on_portal)) IS NULL)) THEN 'Missing information from eMII facility'::text ELSE NULL::text END AS missing_info, round((min(ctd_profile_mdb_workflow.lat))::numeric, 1) AS min_lat, round((max(ctd_profile_mdb_workflow.lat))::numeric, 1) AS max_lat, round((min(ctd_profile_mdb_workflow.lon))::numeric, 1) AS min_lon, round((max(ctd_profile_mdb_workflow.lon))::numeric, 1) AS max_lon FROM ((legacy_aatams_sattag.ctd_device_mdb_workflow LEFT JOIN legacy_aatams_sattag.ctd_profile_mdb_workflow ON (((ctd_device_mdb_workflow.device_id)::text = "substring"((ctd_profile_mdb_workflow.filename)::text, '(?:[^/]*/)([^/]+)'::text)))) LEFT JOIN report.aatams_sattag_mdb_workflow_manual ON ((ctd_device_mdb_workflow.device_id = (report.aatams_sattag_mdb_workflow_manual.device_id)::bpchar))) GROUP BY ctd_device_mdb_workflow.sattag_program, ctd_device_mdb_workflow.device_id, ctd_device_mdb_workflow.tag_type, ctd_device_mdb_workflow.pi, ctd_device_mdb_workflow.common_name, ctd_device_mdb_workflow.release_site, ctd_device_mdb_workflow.metadata, report.aatams_sattag_mdb_workflow_manual.data_on_staging, report.aatams_sattag_mdb_workflow_manual.data_on_portal ORDER BY COALESCE((((((((((ctd_device_mdb_workflow.sattag_program)::text || ' - '::text) || (ctd_device_mdb_workflow.common_name)::text) || ' - '::text) || (CASE WHEN ((ctd_device_mdb_workflow.sattag_program)::text = 'ct61'::text) THEN 'South Australia'::character varying ELSE ctd_device_mdb_workflow.release_site END)::text) || ' - '::text) || (ctd_device_mdb_workflow.pi)::text) || ' - '::text) || (ctd_device_mdb_workflow.tag_type)::text)), ctd_device_mdb_workflow.device_id;
+ CREATE or replace VIEW aatams_sattag_all_deployments_view AS
+    SELECT 
+    COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
+    m.sattag_program, 
+    m.pi AS principal_investigator, 
+    m.state_country AS release_site, 
+    m.tag_type, 
+    m.common_name AS species_name, 
+    m.device_id AS tag_code, 
+    COUNT(map.profile_id) AS nb_profiles,
+    COALESCE(round(min(st_y(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_y(st_centroid(map.geom)))::numeric, 1)) AS lat_range, 
+    COALESCE(round(min(st_x(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_x(st_centroid(map.geom)))::numeric, 1)) AS lon_range,
+    min(map."timestamp") AS coverage_start, 
+    max(map."timestamp") AS coverage_end,
+    date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
+    CASE WHEN m.sattag_program IS NULL OR 
+    m.common_name IS NULL OR 
+    m.release_site IS NULL OR 
+    m.pi IS NULL OR 
+    m.tag_type IS NULL OR 
+    m.device_id IS NULL OR 
+    avg(m.release_lat) IS NULL OR 
+    avg(m.release_lon) IS NULL OR 
+    avg(date_part('year', map."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
+    round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
+    round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
+    round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
+    round(max(st_x(st_centroid(map.geom)))::numeric, 1) AS max_lon 
+    FROM aatams_sattag_nrt.aatams_sattag_nrt_metadata m
+    LEFT JOIN aatams_sattag_nrt.aatams_sattag_nrt_profile_map map ON m.device_id = map.device_id 
+     WHERE m.device_wmo_ref != ''
+     GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
+     ORDER BY headers, m.device_id;
 
 grant all on table aatams_sattag_all_deployments_view to public;
 
+CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
+WITH table_a AS (
+    SELECT v.sattag_program, v.species_name,
+    sum(v.nb_profiles) AS total_nb_profiles
+    FROM aatams_sattag_all_deployments_view v
+    GROUP BY v.sattag_program,v.species_name)
+    SELECT 
+    COALESCE(v.species_name || ' - ' || v.tag_type) AS species_name_tag_type, 
+    v.sattag_program, 
+    v.release_site, 
+    v.principal_investigator, 
+    count(DISTINCT v.tag_code) AS no_tags, 
+    total_nb_profiles, 
+    min(v.coverage_start) AS coverage_start, 
+    max(v.coverage_end) AS coverage_end, 
+    round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+    v.tag_type, 
+    v.species_name, 
+    min(v.min_lat) AS min_lat, 
+    max(v.max_lat) AS max_lat, 
+    min(v.min_lon) AS min_lon, 
+    max(v.max_lon) AS max_lon 
+    FROM aatams_sattag_all_deployments_view v
+    JOIN table_a ON v.sattag_program = table_a.sattag_program AND v.species_name = table_a.species_name
+    WHERE total_nb_profiles != 0
+    GROUP BY v.sattag_program, v.release_site, v.species_name, v.principal_investigator, v.tag_type, table_a.total_nb_profiles
+    ORDER BY v.species_name, v.tag_type, v.sattag_program;
 
--- has data
--- no changes
-CREATE or replace VIEW aatams_sattag_data_summary_view AS
-    SELECT COALESCE((((aatams_sattag_all_deployments_view.species_name)::text || ' - '::text) || (aatams_sattag_all_deployments_view.tag_type)::text)) AS species_name_tag_type, aatams_sattag_all_deployments_view.sattag_program, aatams_sattag_all_deployments_view.release_site, aatams_sattag_all_deployments_view.principal_investigator, count(DISTINCT aatams_sattag_all_deployments_view.tag_code) AS no_tags, sum(aatams_sattag_all_deployments_view.nb_profiles) AS total_nb_profiles, min(aatams_sattag_all_deployments_view.coverage_start) AS coverage_start, max(aatams_sattag_all_deployments_view.coverage_end) AS coverage_end, round(avg(aatams_sattag_all_deployments_view.coverage_duration), 1) AS mean_coverage_duration, round(avg(aatams_sattag_all_deployments_view.days_to_process_and_upload), 1) AS mean_time_to_process_and_upload, round(avg(aatams_sattag_all_deployments_view.days_to_make_public), 1) AS mean_time_to_make_public, aatams_sattag_all_deployments_view.tag_type, aatams_sattag_all_deployments_view.species_name, min(aatams_sattag_all_deployments_view.min_lat) AS min_lat, max(aatams_sattag_all_deployments_view.max_lat) AS max_lat, min(aatams_sattag_all_deployments_view.min_lon) AS min_lon, max(aatams_sattag_all_deployments_view.max_lon) AS max_lon FROM aatams_sattag_all_deployments_view GROUP BY aatams_sattag_all_deployments_view.sattag_program, aatams_sattag_all_deployments_view.release_site, aatams_sattag_all_deployments_view.species_name, aatams_sattag_all_deployments_view.principal_investigator, aatams_sattag_all_deployments_view.tag_type ORDER BY aatams_sattag_all_deployments_view.species_name, aatams_sattag_all_deployments_view.tag_type, aatams_sattag_all_deployments_view.sattag_program;
-
-
-
-grant all on table aatams_sattag_data_summary_view to public;
+    grant all on table aatams_sattag_data_summary_view to public;
 
 -- has data
 -- :'<,'>s/abos\./dw_abos./g
