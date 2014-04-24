@@ -989,33 +989,94 @@ grant all on table soop_data_summary_view to public;
 
 
 
--- has data
--- srs_altimetry ->  legacy_srs_altimetry
--- report.srs_altimetry_manual O
--- report.srs_bio_optical_db_manual
--- report.srs_gridded_products_manual
--- srs_oc_soop_rad -> dw_srs.srs_oc_soop_rad 
-
-
+-------------------------------
+-- VIEW FOR SOOP; Now using what's in the srs_altimetry, srs_oc_bodbaw, and srs_oc_soop_rad schema so don't need the dw_srs and srs schema anymore. Also don't need report.srs_altimetry_manual & report.srs_bio_optical_db_manual tables
+------------------------------- 
+-- CHANGES TO SRS reports:
+-- DELETED depth, days_to_process_and_upload, days_to_make_public, data_on_staging, data_on_opendap, data_on_portal ==> no more missing info report. Change how new deployments report are produced.
+-- Sensor name in report to change to Sensor/Vessel name
+-- SRS SST still using report.srs_gridded_products_manual as this data collection uses ncwms.
+--
 CREATE or replace VIEW srs_all_deployments_view AS
-    ((SELECT 'SRS - Altimetry'::text AS subfacility, CASE WHEN ((data.site_code)::text = 'SRSSTO'::text) THEN 'Storm Bay'::text WHEN ((data.site_code)::text = 'SRSBAS'::text) THEN 'Bass Strait'::text ELSE NULL::text END AS parameter_site, COALESCE((((data.site_code)::text || '-'::text) || "substring"((data.filename)::text, '([^_]+)-'::text))) AS deployment_code, data.sensor_name, round((data.sensor_depth)::numeric, 1) AS depth, date(data.time_coverage_start) AS start_date, date(data.time_coverage_end) AS end_date, (date_part('days'::text, (data.time_coverage_end - data.time_coverage_start)))::numeric AS coverage_duration, (date_part('days'::text, ((srs_altimetry_manual.data_on_staging)::timestamp with time zone - data.time_coverage_end)))::numeric AS days_to_process_and_upload, ((srs_altimetry_manual.data_on_portal - srs_altimetry_manual.data_on_staging))::numeric AS days_to_make_public, srs_altimetry_manual.data_on_staging AS date_on_staging, srs_altimetry_manual.data_on_opendap AS date_on_opendap, srs_altimetry_manual.data_on_portal AS date_on_portal, CASE WHEN (data.metadata_uuid IS NULL) THEN 'No metadata'::text ELSE NULL::text END AS missing_info, round((data.lat)::numeric, 1) AS lat, round((data.lon)::numeric, 1) AS lon FROM (legacy_srs_altimetry.data LEFT JOIN report.srs_altimetry_manual ON ((srs_altimetry_manual.pkid = data.pkid))) 
+  SELECT 'SRS - Altimetry' AS subfacility, 
+    m.site_name AS parameter_site, 
+    COALESCE(d.site_code || '-' || "substring"((d.instrument), '([^_]+)-')) AS deployment_code, 
+    m.instrument AS sensor_name,
+    date(m.time_start) AS start_date, 
+    date(m.time_end) AS end_date, 
+    (date_part('days', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+    round((ST_Y(m.geom))::numeric, 1) AS lat, 
+    round((ST_X(m.geom))::numeric, 1) AS lon 
+  FROM srs_altimetry.srs_altimetry_timeseries_map m 
+  LEFT JOIN srs_altimetry.deployments d ON d.file_id = m.file_id
 
-UNION ALL SELECT 'SRS - BioOptical database'::text AS subfacility, srs_bio_optical_db_manual.data_type AS parameter_site, srs_bio_optical_db_manual.cruise_id AS deployment_code, NULL::character varying AS sensor_name, NULL::numeric AS depth, srs_bio_optical_db_manual.deployment_start AS start_date, srs_bio_optical_db_manual.deployment_end AS end_date, ((srs_bio_optical_db_manual.deployment_end - srs_bio_optical_db_manual.deployment_start))::numeric AS coverage_duration, ((srs_bio_optical_db_manual.data_on_staging - srs_bio_optical_db_manual.deployment_end))::numeric AS days_to_process_and_upload, ((srs_bio_optical_db_manual.data_on_portal - srs_bio_optical_db_manual.data_on_staging))::numeric AS days_to_make_public, srs_bio_optical_db_manual.data_on_staging AS date_on_staging, srs_bio_optical_db_manual.data_on_opendap AS date_on_opendap, srs_bio_optical_db_manual.data_on_portal AS date_on_portal, CASE WHEN (srs_bio_optical_db_manual.mest_creation IS NULL) THEN 'No metadata'::text WHEN (((srs_bio_optical_db_manual.data_on_staging - srs_bio_optical_db_manual.deployment_end))::numeric IS NULL) THEN 'Missing dates'::text ELSE NULL::text END AS missing_info, NULL::numeric AS lat, NULL::numeric AS lon FROM report.srs_bio_optical_db_manual) 
+UNION ALL 
 
-UNION ALL SELECT 'SRS - Gridded Products'::text AS subfacility, CASE WHEN ((srs_gridded_products_manual.product_name)::text = 'MODIS Aqua OC3 Chlorophyll-a'::text) THEN 'Chlorophyll-a'::text WHEN ((srs_gridded_products_manual.product_name)::text = 'SST L3C'::text) THEN 'SST'::text WHEN ((srs_gridded_products_manual.product_name)::text = 'SST L3P - 14 days mosaic'::text) THEN 'SST'::text ELSE NULL::text END AS parameter_site, CASE WHEN ((srs_gridded_products_manual.product_name)::text = 'MODIS Aqua OC3 Chlorophyll-a'::text) THEN 'MODIS Aqua OC3'::text WHEN ((srs_gridded_products_manual.product_name)::text = 'SST L3C'::text) THEN 'L3C'::text WHEN ((srs_gridded_products_manual.product_name)::text = 'SST L3P - 14 days mosaic'::text) THEN 'L3P - 14 days mosaic'::text ELSE NULL::text END AS deployment_code, NULL::character varying AS sensor_name, NULL::numeric AS depth, srs_gridded_products_manual.deployment_start AS start_date, srs_gridded_products_manual.deployment_end AS end_date, ((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, ((srs_gridded_products_manual.data_on_staging - srs_gridded_products_manual.deployment_end))::numeric AS days_to_process_and_upload, ((srs_gridded_products_manual.data_on_portal - srs_gridded_products_manual.data_on_staging))::numeric AS days_to_make_public, srs_gridded_products_manual.data_on_staging AS date_on_staging, srs_gridded_products_manual.data_on_opendap AS date_on_opendap, srs_gridded_products_manual.data_on_portal AS date_on_portal, CASE WHEN (srs_gridded_products_manual.mest_creation IS NULL) THEN 'No metadata'::text ELSE NULL::text END AS missing_info, NULL::numeric AS lat, NULL::numeric AS lon FROM report.srs_gridded_products_manual) 
+  SELECT 'SRS - BioOptical database' AS subfacility, 
+    m.data_type AS parameter_site, 
+    m.cruise_id AS deployment_code, 
+    m.vessel_name AS sensor_name, 
+    m.time_start AS start_date, 
+    m.time_end AS end_date, 
+    (date_part('days', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+    round(ST_Y(ST_CENTROID(m.geom))::numeric, 1) AS lat, 
+    round(ST_X(ST_CENTROID(m.geom))::numeric, 1) AS lon 
+  FROM srs_oc_bodbaw.srs_oc_bodbaw_trajectory_profile_map m 
 
-UNION ALL SELECT 'SRS - Ocean Colour'::text AS subfacility, srs_oc_soop_rad.vessel_name AS parameter_site, srs_oc_soop_rad.voyage_number AS deployment_code, NULL::character varying AS sensor_name, NULL::numeric AS depth, min(date(srs_oc_soop_rad.time_coverage_start)) AS start_date, max(date(srs_oc_soop_rad.time_coverage_end)) AS end_date, ((max(date(srs_oc_soop_rad.time_coverage_end)) - min(date(srs_oc_soop_rad.time_coverage_start))))::numeric AS coverage_duration, NULL::numeric AS days_to_process_and_upload, NULL::numeric AS days_to_make_public, NULL::date AS date_on_staging, NULL::date AS date_on_opendap, NULL::date AS date_on_portal, CASE WHEN (((max(date(srs_oc_soop_rad.time_coverage_end)) - min(date(srs_oc_soop_rad.time_coverage_start))))::numeric IS NULL) THEN 'Missing dates'::text ELSE NULL::text END AS missing_info, round((avg(srs_oc_soop_rad.geospatial_lat_min))::numeric, 1) AS lat, round((avg(srs_oc_soop_rad.geospatial_lon_min))::numeric, 1) AS lon FROM dw_srs.srs_oc_soop_rad GROUP BY srs_oc_soop_rad.vessel_name, srs_oc_soop_rad.voyage_number ORDER BY 1, 2, 3, 4, 6, 7;
+UNION ALL 
 
-;
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+    CASE WHEN ((srs_gridded_products_manual.product_name) = 'MODIS Aqua OC3 Chlorophyll-a') THEN 'Chlorophyll-a' 
+    WHEN ((srs_gridded_products_manual.product_name) = 'SST L3C') THEN 'SST' 
+    WHEN ((srs_gridded_products_manual.product_name) = 'SST L3P - 14 days mosaic') THEN 'SST' 
+    ELSE NULL END AS parameter_site, 
+    CASE WHEN ((srs_gridded_products_manual.product_name) = 'MODIS Aqua OC3 Chlorophyll-a') THEN 'MODIS Aqua OC3' 
+    WHEN ((srs_gridded_products_manual.product_name) = 'SST L3C') THEN 'L3C' 
+    WHEN ((srs_gridded_products_manual.product_name) = 'SST L3P - 14 days mosaic') THEN 'L3P - 14 days mosaic' 
+    ELSE NULL END AS deployment_code, 
+    NULL::character varying AS sensor_name, 
+    srs_gridded_products_manual.deployment_start AS start_date, 
+    srs_gridded_products_manual.deployment_end AS end_date, 
+    ((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, 
+    NULL::numeric AS lat, 
+    NULL::numeric AS lon 
+  FROM report.srs_gridded_products_manual 
+
+UNION ALL 
+
+  SELECT 'SRS - Ocean Colour' AS subfacility, 
+    m.vessel_name AS parameter_site, 
+    m.voyage_id AS deployment_code, 
+    NULL::character varying AS sensor_name, 
+    min(date(m.time_start)) AS start_date,
+    max(date(m.time_end)) AS end_date, 
+    ((max(date(m.time_end)) - min(date(m.time_start))))::numeric AS coverage_duration, 
+    round(AVG(ST_Y(ST_CENTROID(m.geom)))::numeric, 1) AS lat, 
+    round(AVG(ST_X(ST_CENTROID(m.geom)))::numeric, 1) AS lon 
+  FROM srs_oc_soop_rad.visualisation_wms m
+    GROUP BY parameter_site, voyage_id 
+    ORDER BY subfacility, parameter_site, deployment_code, sensor_name, start_date, end_date;
 
 grant all on table srs_all_deployments_view to public;
 
 
--- fails becaus of above error
--- no change
-
 CREATE or replace VIEW srs_data_summary_view AS
-    SELECT srs_all_deployments_view.subfacility, CASE WHEN (srs_all_deployments_view.parameter_site = 'absorption'::text) THEN 'Absorption'::text WHEN (srs_all_deployments_view.parameter_site = 'pigment'::text) THEN 'Pigment'::text ELSE srs_all_deployments_view.parameter_site END AS parameter_site, count(srs_all_deployments_view.deployment_code) AS no_deployments, count(DISTINCT srs_all_deployments_view.sensor_name) AS no_sensors, COALESCE(((min(srs_all_deployments_view.depth) || ' / '::text) || max(srs_all_deployments_view.depth))) AS depth_range, sum(CASE WHEN (srs_all_deployments_view.missing_info IS NULL) THEN 0 ELSE 1 END) AS no_missing_info, min(srs_all_deployments_view.start_date) AS earliest_date, max(srs_all_deployments_view.end_date) AS latest_date, round(avg(srs_all_deployments_view.coverage_duration), 1) AS mean_coverage_duration, round(avg(srs_all_deployments_view.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, round(avg(srs_all_deployments_view.days_to_make_public), 1) AS mean_days_to_make_public, min(srs_all_deployments_view.lon) AS min_lon, max(srs_all_deployments_view.lon) AS max_lon, min(srs_all_deployments_view.lat) AS min_lat, max(srs_all_deployments_view.lat) AS max_lat, min(srs_all_deployments_view.depth) AS min_depth, max(srs_all_deployments_view.depth) AS max_depth FROM srs_all_deployments_view GROUP BY srs_all_deployments_view.subfacility, srs_all_deployments_view.parameter_site ORDER BY srs_all_deployments_view.subfacility, CASE WHEN (srs_all_deployments_view.parameter_site = 'absorption'::text) THEN 'Absorption'::text WHEN (srs_all_deployments_view.parameter_site = 'pigment'::text) THEN 'Pigment'::text ELSE srs_all_deployments_view.parameter_site END;
+ SELECT v.subfacility, 
+    CASE WHEN (v.parameter_site = 'absorption') THEN 'Absorption' 
+        WHEN (v.parameter_site = 'pigment') THEN 'Pigment' 
+        ELSE v.parameter_site END AS parameter_site, 
+    count(v.deployment_code) AS no_deployments, 
+    count(DISTINCT v.sensor_name) AS no_sensors, 
+    min(v.start_date) AS earliest_date, 
+    max(v.end_date) AS latest_date, 
+    round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+    min(v.lon) AS min_lon, 
+    max(v.lon) AS max_lon, 
+    min(v.lat) AS min_lat, 
+    max(v.lat) AS max_lat
+  FROM srs_all_deployments_view v
+    GROUP BY subfacility, parameter_site 
+    ORDER BY subfacility, parameter_site;
 
 grant all on table srs_data_summary_view to public;
 
@@ -1260,7 +1321,7 @@ NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||CASE WHEN to_char(max(latest_date),'DD/MM/YYYY') IS NULL THEN 'NA' ELSE to_char(max(latest_date),'DD/MM/YYYY') END) AS temporal_range,
 NULL AS lat_range,
 NULL AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+NULL AS depth_range
 FROM srs_data_summary_view
 GROUP BY subfacility
 UNION ALL
@@ -1278,7 +1339,7 @@ NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 NULL AS lat_range,
 NULL AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+NULL AS depth_range
 FROM srs_data_summary_view
 -----------------------------------------------------------------------
 UNION ALL
