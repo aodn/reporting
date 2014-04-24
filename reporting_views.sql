@@ -575,22 +575,47 @@ CREATE or replace VIEW facility_summary_view AS
 grant all on table facility_summary_view to public;
 
 
--- has data
--- faimms -> legacy_faimms
--- faimms_manual -> report.faimms_manual
-
+-------------------------------
+-- VIEW FOR FAIMMS; Now using what's in the faimms schema so don't need the legacy_faimms schema anymore, nor the report.faimms_manual table.
+-------------------------------
+-- CHANGES TO FAIMMS reports:
+-- DELETED qaqc_data, days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 CREATE or replace VIEW faimms_all_deployments_view AS
-    SELECT DISTINCT s.site_code AS site_name, p.platform_code, COALESCE(((param.channelid || ' - '::text) || (param.parameter)::text)) AS sensor_code, (param.depth_sensor)::numeric AS sensor_depth, CASE WHEN (param.qaqc_boolean = 1) THEN true ELSE false END AS qaqc_data, CASE WHEN (date_part('day'::text, (param.time_coverage_end - param.time_coverage_start)) IS NULL) THEN 'Missing dates'::text WHEN (param.metadata_uuid IS NULL) THEN 'No metadata'::text ELSE NULL::text END AS missing_info, date(param.time_coverage_start) AS start_date, date(param.time_coverage_end) AS end_date, (date_part('day'::text, (param.time_coverage_end - param.time_coverage_start)))::numeric AS coverage_duration, (date_part('day'::text, (m.data_on_staging - m.deployment_start)))::numeric AS days_to_process_and_upload, (date_part('day'::text, (m.data_on_portal - m.data_on_staging)))::numeric AS days_to_make_public, param.sensor_name, param.parameter, param.channelid AS channel_id, param.no_qaqc_boolean AS no_qaqc_data, date(m.deployment_start) AS deployment_start, date(m.data_on_staging) AS date_on_staging, date(m.data_on_opendap) AS date_on_opendap, date(m.data_on_portal) AS date_on_portal, m.mest_creation, param.metadata_uuid AS channel_uuid FROM legacy_faimms.faimms_sites s, legacy_faimms.faimms_platforms p, legacy_faimms.faimms_parameters param, report.faimms_manual m WHERE ((((m.site_name)::text = (s.site_code)::text) AND (s.pkid = p.fk_faimms_sites)) AND (p.pkid = param.fk_faimms_platforms)) ORDER BY s.site_code, p.platform_code, COALESCE(((param.channelid || ' - '::text) || (param.parameter)::text));
-
+  SELECT DISTINCT m.platform_code AS site_name, 
+    m.site_code AS platform_code, 
+    COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
+    (m."DEPTH")::numeric AS sensor_depth, 
+    date(m.time_start) AS start_date, 
+    date(m.time_end) AS end_date, 
+    (date_part('day', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+    f.instrument AS sensor_name, 
+    m."VARNAME" AS parameter, 
+    m.channel_id AS channel_id,
+    round(ST_X(geom)::numeric, 1) AS lon,
+    round(ST_Y(geom)::numeric, 1) AS lat
+  FROM faimms.faimms_timeseries_map m
+  LEFT JOIN faimms.global_attributes_file f ON f.aims_channel_id = m.channel_id
+    ORDER BY site_name, platform_code, sensor_code;
 
 grant all on table faimms_all_deployments_view to public;
 
 
--- has data
--- no changes
-
 CREATE or replace VIEW faimms_data_summary_view AS
-    SELECT faimms_all_deployments_view.site_name, count(DISTINCT faimms_all_deployments_view.platform_code) AS no_platforms, count(DISTINCT faimms_all_deployments_view.sensor_code) AS no_sensors, count(DISTINCT faimms_all_deployments_view.parameter) AS no_parameters, sum(CASE WHEN (faimms_all_deployments_view.qaqc_data = true) THEN 1 ELSE 0 END) AS no_qc_data, COALESCE(((min(faimms_all_deployments_view.sensor_depth) || '-'::text) || max(faimms_all_deployments_view.sensor_depth))) AS depth_range, min(faimms_all_deployments_view.start_date) AS earliest_date, max(faimms_all_deployments_view.end_date) AS latest_date, round(avg(faimms_all_deployments_view.coverage_duration), 1) AS mean_coverage_duration, round(avg(faimms_all_deployments_view.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, round(avg(faimms_all_deployments_view.days_to_make_public), 1) AS mean_days_to_make_public, sum(CASE WHEN (faimms_all_deployments_view.missing_info IS NULL) THEN 0 ELSE 1 END) AS no_missing_info, min(faimms_all_deployments_view.sensor_depth) AS min_depth, max(faimms_all_deployments_view.sensor_depth) AS max_depth FROM faimms_all_deployments_view GROUP BY faimms_all_deployments_view.site_name ORDER BY faimms_all_deployments_view.site_name;
+  SELECT v.site_name, 
+    count(DISTINCT v.platform_code) AS no_platforms, 
+    count(DISTINCT v.sensor_code) AS no_sensors, 
+    count(DISTINCT v.parameter) AS no_parameters,
+    min(v.lon) AS lon, 
+    min(v.lat) AS lat, 
+    COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range,
+    min(v.start_date) AS earliest_date, 
+    max(v.end_date) AS latest_date, 
+    round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+    min(v.sensor_depth) AS min_depth, 
+    max(v.sensor_depth) AS max_depth
+  FROM faimms_all_deployments_view v
+    GROUP BY site_name 
+    ORDER BY site_name;
 
 grant all on table faimms_data_summary_view to public;
 
@@ -1261,15 +1286,15 @@ NULL AS subfacility,
 COUNT(*) AS no_projects,
 SUM(no_campaigns) AS no_platforms,
 SUM(no_sites) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(total_no_images) AS no_data,
-SUM(total_distance) AS no_data2,
+NULL AS no_deployments,
+NULL AS no_data,
+NULL AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
 COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+NULL AS depth_range
 FROM auv_data_summary_view
 -----------------------------------------------------------------------
 UNION ALL
@@ -1280,13 +1305,13 @@ COUNT(*) AS no_projects,
 SUM(no_platforms) AS no_platforms,
 SUM(no_sensors) AS no_instruments,
 ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
-SUM(no_qc_data) AS no_data,
+NULL AS no_data,
 NULL AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
+COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
+COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
 COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
 FROM faimms_data_summary_view,interm_table
 -----------------------------------------------------------------------
