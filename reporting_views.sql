@@ -226,22 +226,52 @@ CREATE or replace VIEW acorn_all_deployments_view AS
 
 grant all on table acorn_all_deployments_view to public;
 
-
--- has data
--- '<,'>s/anfog\./legacy_anfog./g
--- anfog_manual -> report.anfog_manual 
+-------------------------------
+-- VIEW FOR ANFOG; Now using the anfog_dm schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
+-------------------------------
+-- CHANGES TO ANFOG reports:
+-- DELETED days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 
 CREATE or replace VIEW anfog_all_deployments_view AS
-    SELECT anfog_glider.glider_type, anfog_glider.platform, anfog_manual.deployment_id, anfog_manual.deployment_start AS start_date, date(anfog_glider.time_end) AS end_date, round((anfog_glider.min_lat)::numeric, 1) AS min_lat, CASE WHEN (anfog_glider.max_lat = (99999.0)::double precision) THEN round((anfog_glider.min_lat)::numeric, 1) ELSE round((anfog_glider.max_lat)::numeric, 1) END AS max_lat, round((anfog_glider.min_lon)::numeric, 1) AS min_lon, CASE WHEN (anfog_glider.max_lon = (99999.0)::double precision) THEN round((anfog_glider.min_lon)::numeric, 1) ELSE round((anfog_glider.max_lon)::numeric, 1) END AS max_lon, COALESCE(((round((anfog_glider.min_lat)::numeric, 1) || '/'::text) || round((anfog_glider.max_lat)::numeric, 1))) AS lat_range, COALESCE(((round((anfog_glider.min_lon)::numeric, 1) || '/'::text) || round((anfog_glider.max_lon)::numeric, 1))) AS lon_range, (anfog_glider.max_depth)::integer AS max_depth, CASE WHEN (anfog_glider.uuid IS NULL) THEN 'No'::text ELSE 'Yes'::text END AS metadata, CASE WHEN (anfog_manual.data_on_opendap IS NULL) THEN 'No'::text ELSE 'Yes'::text END AS qc_data, anfog_manual.data_on_staging, anfog_manual.data_on_opendap, anfog_manual.data_on_portal, (date_part('day'::text, (anfog_glider.time_end - (anfog_manual.deployment_start)::timestamp without time zone)))::integer AS coverage_duration, (date_part('day'::text, ((anfog_manual.data_on_staging)::timestamp without time zone - anfog_glider.time_end)))::integer AS days_to_process_and_upload, (anfog_manual.data_on_portal - anfog_manual.data_on_staging) AS days_to_make_public FROM (legacy_anfog.anfog_glider RIGHT JOIN report.anfog_manual ON (((anfog_manual.deployment_id)::text = (anfog_glider.deployment_name)::text))) ORDER BY anfog_glider.glider_type, anfog_glider.platform, anfog_glider.deployment_name;
+  SELECT m.platform_type AS glider_type, 
+     m.platform_code AS platform, 
+     m.deployment_name AS deployment_id, 
+     date(m.time_coverage_start) AS start_date, 
+     date(m.time_coverage_end) AS end_date,
+     round((ST_YMIN(geom))::numeric, 1) AS min_lat,
+     round((ST_YMAX(geom))::numeric, 1) AS max_lat,
+     round((ST_XMIN(geom))::numeric, 1) AS min_lon,
+     round((ST_XMAX(geom))::numeric, 1) AS max_lon,
+    COALESCE(round((ST_YMIN(geom))::numeric, 1) || '/' || round((ST_YMAX(geom))::numeric, 1)) AS lat_range,
+    COALESCE(round((ST_XMIN(geom))::numeric, 1) || '/' || round((ST_XMAX(geom))::numeric, 1)) AS lon_range,
+    round(d.geospatial_vertical_max::numeric, 1) AS max_depth, 
+    date(m.time_coverage_end) - date(m.time_coverage_start) AS coverage_duration 
+  FROM anfog_dm.anfog_dm_trajectory_map m
+  RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
+    GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
+    ORDER BY glider_type, platform, deployment_name;
 
 grant all on table anfog_all_deployments_view to public;
 
-
--- has data
--- no changes
-
 CREATE or replace VIEW anfog_data_summary_view AS
-    SELECT CASE WHEN (anfog_all_deployments_view.glider_type IS NULL) THEN 'Unknown'::character varying ELSE anfog_all_deployments_view.glider_type END AS glider_type, count(DISTINCT anfog_all_deployments_view.platform) AS no_platforms, count(DISTINCT anfog_all_deployments_view.deployment_id) AS no_deployments, min(anfog_all_deployments_view.start_date) AS earliest_date, max(anfog_all_deployments_view.end_date) AS latest_date, COALESCE(((min(anfog_all_deployments_view.min_lat) || '/'::text) || max(anfog_all_deployments_view.max_lat))) AS lat_range, COALESCE(((min(anfog_all_deployments_view.min_lon) || '/'::text) || max(anfog_all_deployments_view.max_lon))) AS lon_range, COALESCE(((min(anfog_all_deployments_view.max_depth) || '/'::text) || max(anfog_all_deployments_view.max_depth))) AS max_depth_range, round(avg(anfog_all_deployments_view.coverage_duration), 1) AS mean_coverage_duration, round(avg(anfog_all_deployments_view.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, round(avg(anfog_all_deployments_view.days_to_make_public), 1) AS mean_days_to_make_public, min(anfog_all_deployments_view.min_lat) AS min_lat, max(anfog_all_deployments_view.max_lat) AS max_lat, min(anfog_all_deployments_view.min_lon) AS min_lon, max(anfog_all_deployments_view.max_lon) AS max_lon, min(anfog_all_deployments_view.max_depth) AS min_depth, max(anfog_all_deployments_view.max_depth) AS max_depth FROM anfog_all_deployments_view GROUP BY anfog_all_deployments_view.glider_type ORDER BY CASE WHEN (anfog_all_deployments_view.glider_type IS NULL) THEN 'Unknown'::character varying ELSE anfog_all_deployments_view.glider_type END;
+  SELECT v.glider_type AS glider_type, 
+    count(DISTINCT v.platform) AS no_platforms, 
+    count(DISTINCT v.deployment_id) AS no_deployments, 
+    min(v.start_date) AS earliest_date, 
+    max(v.end_date) AS latest_date, 
+    COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
+    COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
+    COALESCE(min(v.max_depth) || '/' || max(v.max_depth)) AS max_depth_range, 
+    round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+    min(v.min_lat) AS min_lat, 
+    max(v.max_lat) AS max_lat, 
+    min(v.min_lon) AS min_lon, 
+    max(v.max_lon) AS max_lon, 
+    min(v.max_depth) AS min_depth, 
+    max(v.max_depth) AS max_depth 
+  FROM anfog_all_deployments_view v
+    GROUP BY glider_type 
+    ORDER BY glider_type;
 
 grant all on table anfog_data_summary_view to public;
 
