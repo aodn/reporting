@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public,soop;
+﻿SET search_path = report_test, pg_catalog, public, soop;
 
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
