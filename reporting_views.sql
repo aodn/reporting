@@ -435,66 +435,42 @@ grant all on table anmn_data_summary_view to public;
 
 
 -------------------------------
--- VIEW FOR ANMN NRS real-time; Still using the legacy_anmn schema. Need to have a chat to Marty to see how we could incorporate the info in the anmn_vw view in the anmn_realtime schema.
+-- VIEW FOR ANMN NRS real-time; Only using the anmn_realtime schema. Can get rid of legacy_anmn schema and report.nrs_aims_manual
 -------------------------------
--- has data
--- anmn -> legacy_anmn 
--- Needs to be added as a manual table,
-
--- had to explicitly copy the table nrs_aims_manual. This table is not referenced anywhere  
--- in the inventory application.
+-- Got rid of parameters, channel_id, missing_info, days_to_process_and_upload, days_to_make_public, lat, lon, date_on_staging, etc., mest_creation, no_qaqc_boolean, metadata_uuid ==> no more missing info report. Change how new deployments report are produced.
 
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
-SELECT 
- COALESCE(nrs_platforms.platform_code || ' - Lat / Lon: ' || round(nrs_platforms.lat::numeric, 1) || ' / ' || round(nrs_platforms.lon::numeric, 1)) AS site_name, 
- nrs_parameters.parameter, 
- nrs_parameters.channelid AS channel_id, 
- round(nrs_parameters.depth_sensor::numeric, 1) AS sensor_depth, 
- CASE WHEN nrs_parameters.qaqc_boolean = 1 THEN true 
-    ELSE false END AS qaqc_data, 
- CASE WHEN date_part('day', (nrs_parameters.time_coverage_end - nrs_parameters.time_coverage_start)) IS NULL THEN 'Missing dates' 
-    WHEN nrs_parameters.metadata_uuid IS NULL THEN 'No metadata' 
-    ELSE NULL END AS missing_info, 
- date(nrs_parameters.time_coverage_start) AS start_date, 
- date(nrs_parameters.time_coverage_end) AS end_date, 
- (date_part('day', (nrs_parameters.time_coverage_end - nrs_parameters.time_coverage_start)))::numeric AS coverage_duration, 
- (date_part('day', (nrs_aims_manual.data_on_staging - nrs_parameters.time_coverage_start)))::numeric AS days_to_process_and_upload, 
- (date_part('day', (nrs_aims_manual.data_on_portal - nrs_aims_manual.data_on_staging)))::numeric AS days_to_make_public, 
- nrs_platforms.platform_code, 
- round(nrs_platforms.lat::numeric, 1) AS lat, 
- round(nrs_platforms.lon::numeric, 1) AS lon, 
- date(nrs_aims_manual.data_on_staging) AS date_on_staging, 
- date(nrs_aims_manual.data_on_opendap) AS date_on_opendap, 
- date(nrs_aims_manual.data_on_portal) AS date_on_portal, 
- nrs_aims_manual.mest_creation, 
- nrs_parameters.no_qaqc_boolean AS no_qaqc_data, 
- nrs_parameters.metadata_uuid AS channel_uuid 
- FROM legacy_anmn.nrs_parameters 
- LEFT JOIN legacy_anmn.nrs_platforms ON nrs_platforms.pkid = nrs_parameters.fk_nrs_platforms 
- LEFT JOIN report.nrs_aims_manual ON nrs_aims_manual.platform_name = nrs_platforms.platform_code
- ORDER BY site_name, parameter, channel_id;
+  SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
+          WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
+          WHEN site_code = 'NRSDAR' THEN 'Darwin'
+          WHEN site_code = 'NRSNSI' THEN 'North Stradbroke Island' END as site_name,
+     CASE WHEN substring(file_version,'[0-9]+') = '1' THEN true
+          ELSE false END AS qaqc_data,
+     time_coverage_start AS start_date,
+     time_coverage_end AS end_date,
+     (date_part('day', (time_coverage_end - time_coverage_start)))::numeric AS coverage_duration,
+     CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
+     CASE WHEN source = instrument THEN source
+          ELSE COALESCE(source || '-' || instrument) END AS channel_id,
+     CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
+          ELSE instrument_nominal_depth::numeric END AS sensor_depth
+  FROM anmn_vw
+     ORDER BY site_name, start_date;
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
 
-
 CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
- SELECT 
- v.platform_code AS site_name, 
- count(DISTINCT v.channel_id) AS no_sensors, 
- count(DISTINCT v.parameter) AS no_parameters, 
- sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
- COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
- min(v.start_date) AS earliest_date, 
- max(v.end_date) AS latest_date, 
- round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
- round(avg(v.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
- round(avg(v.days_to_make_public), 1) AS mean_days_to_make_public, 
- sum(CASE WHEN v.missing_info IS NULL THEN 0 ELSE 1 END) AS no_missing_info, 
- min(v.sensor_depth) AS min_depth, 
- max(v.sensor_depth) AS max_depth 
- FROM anmn_nrs_realtime_all_deployments_view v
- GROUP BY v.platform_code 
- ORDER BY platform_code;
+  SELECT v.site_name AS site_name,
+    sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
+    COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
+    min(v.start_date) AS earliest_date, 
+    max(v.end_date) AS latest_date, 
+    round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+    min(v.sensor_depth) AS min_depth, 
+    max(v.sensor_depth) AS max_depth 
+  FROM anmn_nrs_realtime_all_deployments_view v
+    GROUP BY v.site_name 
+    ORDER BY site_name;
 
 grant all on table anmn_nrs_realtime_data_summary_view to public;
 
@@ -1180,10 +1156,7 @@ grant all on table srs_data_summary_view to public;
 CREATE or replace view totals_view AS
  WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
-  FROM faimms_all_deployments_view),
-   interm_table2 AS (
-  SELECT COUNT(DISTINCT(parameter)) AS no_parameters
-  FROM anmn_nrs_realtime_all_deployments_view)
+  FROM faimms_all_deployments_view)
 SELECT 'AATAMS' AS facility,
 'Biologging' AS subfacility,
 tag_type AS type,
@@ -1492,8 +1465,8 @@ SELECT 'ANMN' AS facility,
 'TOTAL' AS type,
 COUNT(*) AS no_projects,
 NULL AS no_platforms,
-SUM(no_sensors) AS no_instruments,
-ROUND(AVG(interm_table2.no_parameters),0) AS no_deployments,
+NULL AS no_instruments,
+NULL AS no_deployments,
 SUM(no_qc_data) AS no_data,
 NULL AS no_data2,
 NULL::bigint AS no_data3,
@@ -1502,7 +1475,7 @@ COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_dat
 NULL AS lat_range,
 NULL AS lon_range,
 COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_nrs_realtime_data_summary_view,interm_table2
+FROM anmn_nrs_realtime_data_summary_view
 ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
