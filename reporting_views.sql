@@ -31,6 +31,34 @@ SET search_path = report_test, pg_catalog, public, soop;
 -- ;
 
 -------------------------------
+-- VIEWS FOR AATAMS_ACOUSTIC; reporting views for AATAMS_SATTAG_DM do not exist yet; Can delete the aatams_sattag manual tables in the report schema.
+-------------------------------
+CREATE OR REPLACE VIEW aatams_acoustictag_all_deployments_view AS
+    SELECT *
+    FROM dw_aatams_acoustic.aatams_acoustictag_all_deployments_view;
+
+CREATE OR REPLACE VIEW aatams_acoustictag_data_summary_project_view AS
+    SELECT *
+    FROM dw_aatams_acoustic.aatams_acoustictag_data_summary_project_view;
+
+CREATE OR REPLACE VIEW aatams_acoustictag_data_summary_species_view AS
+    SELECT *
+    FROM dw_aatams_acoustic.aatams_acoustictag_data_summary_species_view;
+
+CREATE OR REPLACE VIEW aatams_acoustictag_totals_project_view AS
+    SELECT *
+    FROM dw_aatams_acoustic.aatams_acoustictag_totals_project_view;
+
+CREATE OR REPLACE VIEW aatams_acoustictag_totals_species_view AS
+    SELECT *
+    FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view;
+
+grant all on table aatams_acoustictag_all_deployments_view to public;
+grant all on table aatams_acoustictag_data_summary_project_view to public;
+grant all on table aatams_acoustictag_data_summary_species_view to public;
+grant all on table aatams_acoustictag_totals_project_view to public;
+grant all on table aatams_acoustictag_totals_species_view to public;
+-------------------------------
 -- VIEWS FOR AATAMS_SATTAG_NRT; reporting views for AATAMS_SATTAG_DM do not exist yet; Can delete the aatams_sattag manual tables in the report schema.
 -------------------------------
 -- has data
