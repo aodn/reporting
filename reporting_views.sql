@@ -20,7 +20,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-SET search_path = report_test, pg_catalog, public;
+SET search_path = report_test, pg_catalog, public, soop;
 
 
 -- -- drop all current views
@@ -29,8 +29,6 @@ SET search_path = report_test, pg_catalog, public;
 -- 	where kind = 'v' 
 -- 	and schema = 'reporting'
 -- ;
-
-
 
 -------------------------------
 -- VIEWS FOR AATAMS_SATTAG_NRT; reporting views for AATAMS_SATTAG_DM do not exist yet; Can delete the aatams_sattag manual tables in the report schema.
@@ -1165,26 +1163,9 @@ grant all on table srs_data_summary_view to public;
 
 
 
--- has data
--- totals table appears to be completely manually created
--- it must be dealt with.
-
--- CREATE or replace VIEW totals_view AS
---   SELECT totals.facility, totals.subfacility, totals.type, totals.no_projects, totals.no_platforms, totals.no_instruments, totals.no_deployments, totals.no_data, totals.no_data2, totals.no_data3, totals.no_data4, totals.temporal_range, totals.lat_range, totals.lon_range, totals.depth_range FROM report.totals;
-
--- grant all on table totals_view to public;
-
-
-
-------
-
--- NOTICE:  geometry_gist_joinsel called with incorrect join type
--- ERROR:  relation "global_attribute" does not exist
--- LINE 2:       from global_attribute a
-                   
-
-
---CREATE TABLE totals AS
+-------------------------------
+-- TOTALS VIEW
+------------------------------- 
 CREATE or replace view totals_view AS
  WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
@@ -1511,17 +1492,3 @@ FROM anmn_nrs_realtime_data_summary_view
 ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
-
--- GRANT SELECT, REFERENCES ON TABLE  totals TO gisread;
--- GRANT ALL ON TABLE  totals TO gisadmin;
---
------- Create totals_view
--- CREATE OR REPLACE VIEW totals_view AS
--- SELECT * FROM totals;
--- GRANT SELECT, REFERENCES ON TABLE  totals_view TO gisread;
--- GRANT ALL ON TABLE  totals_view TO gisadmin;
---
--- SELECT * FROM  totals_view;
-
-
-
