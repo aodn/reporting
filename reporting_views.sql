@@ -275,23 +275,55 @@ CREATE or replace VIEW anfog_data_summary_view AS
 
 grant all on table anfog_data_summary_view to public;
 
--- has data
--- definitive is the acoustic_deployments table from acoustic_data_viewer
--- there's a join with legacy_anmn
 
--- backed up the acoustic_data_viewer application then 
--- pg_restore -x -O -n anmn -t acoustic_deployments  acoustic_data_viewer.dump    > acoustic_deployments.sql
+-------------------------------
+-- VIEW FOR ANMN Acoustics; Using the report.acoustic_deployments table only.
+-------------------------------
+-- NO CHANGES
 
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
-    SELECT COALESCE(acoustic_deployments.deployment_name|| ' - Lat/Lon:'|| round(anmn_acoustics.lat::numeric, 1) || '/' || round(anmn_acoustics.lon::numeric, 1)) AS site_name, "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text) AS deployment_year, acoustic_deployments.logger_id, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 6))) AS good_data, bool_or((((acoustic_deployments.set_success)::text !~~* '%fail%'::text) AND (acoustic_deployments.frequency = 22))) AS good_22, bool_or((acoustic_deployments.is_primary AND (acoustic_deployments.data_path IS NOT NULL))) AS on_viewer, round(avg((acoustic_deployments.receiver_depth)::numeric), 1) AS depth, min(date(acoustic_deployments.time_deployment_start)) AS start_date, max(date(acoustic_deployments.time_deployment_end)) AS end_date, (max(date(acoustic_deployments.time_deployment_end)) - min(date(acoustic_deployments.time_deployment_start))) AS coverage_duration, CASE WHEN (((((((((acoustic_deployments.logger_id IS NULL) OR (avg(date_part('year'::text, acoustic_deployments.time_deployment_end)) IS NULL)) OR bool_or((acoustic_deployments.frequency IS NULL))) OR bool_or((acoustic_deployments.set_success IS NULL))) OR (avg(acoustic_deployments.lat) IS NULL)) OR (avg(acoustic_deployments.lon) IS NULL)) OR (avg(acoustic_deployments.receiver_depth) IS NULL)) OR bool_or((acoustic_deployments.system_gain_file IS NULL))) OR bool_or((acoustic_deployments.hydrophone_sensitivity IS NULL))) THEN 'Missing information from PAO sub-facility'::text ELSE NULL::text END AS missing_info FROM (reporting.acoustic_deployments LEFT JOIN legacy_anmn.anmn_acoustics ON (((acoustic_deployments.site_code)::text = "substring"((anmn_acoustics.code)::text, 1, 5)))) GROUP BY acoustic_deployments.deployment_name, anmn_acoustics.lat, anmn_acoustics.lon, acoustic_deployments.logger_id ORDER BY COALESCE((((("substring"((acoustic_deployments.deployment_name)::text, '\D+'::text) || ' - Lat/Lon:'::text) || round((anmn_acoustics.lat)::numeric, 1)) || '/'::text) || round((anmn_acoustics.lon)::numeric, 1))), "substring"((acoustic_deployments.deployment_name)::text, '2[-0-9]+'::text), acoustic_deployments.logger_id;
+  SELECT COALESCE(m.deployment_name|| ' - Lat/Lon:'|| round(m.lat::numeric, 1) || '/' || round(m.lon::numeric, 1)) AS site_name, 
+    "substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
+    m.logger_id, 
+    bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 6))) AS good_data, 
+    bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 22))) AS good_22, 
+    bool_or((m.is_primary AND (m.data_path IS NOT NULL))) AS on_viewer, 
+    round(avg((m.receiver_depth)::numeric), 1) AS depth, 
+    min(date(m.time_deployment_start)) AS start_date, 
+    max(date(m.time_deployment_end)) AS end_date, 
+    (max(date(m.time_deployment_end)) - min(date(m.time_deployment_start))) AS coverage_duration, 
+    CASE WHEN m.logger_id IS NULL OR 
+        avg(date_part('year', m.time_deployment_end)) IS NULL OR 
+        bool_or(m.frequency IS NULL) OR 
+        bool_or(m.set_success IS NULL) OR 
+        avg(m.lat) IS NULL OR 
+        avg(m.lon) IS NULL OR 
+        avg(m.receiver_depth) IS NULL OR 
+        bool_or(m.system_gain_file IS NULL) OR 
+        bool_or(m.hydrophone_sensitivity IS NULL) THEN 'Missing information from PAO sub-facility' 
+        ELSE NULL END AS missing_info 
+  FROM reporting.acoustic_deployments m
+    GROUP BY m.deployment_name, m.lat, m.lon, m.logger_id 
+    ORDER BY site_name, deployment_year, m.logger_id;
 
 grant all on table anmn_acoustics_all_deployments_view to public;
 
 
--- refers to the above,
-
 CREATE or replace VIEW anmn_acoustics_data_summary_view AS
- SELECT anmn_acoustics_all_deployments_view.site_name, anmn_acoustics_all_deployments_view.deployment_year, count(*) AS no_loggers, sum((anmn_acoustics_all_deployments_view.good_data)::integer) AS no_good_data, sum((anmn_acoustics_all_deployments_view.on_viewer)::integer) AS no_sets_on_viewer, sum((anmn_acoustics_all_deployments_view.good_22)::integer) AS no_good_22, min(anmn_acoustics_all_deployments_view.start_date) AS earliest_date, max(anmn_acoustics_all_deployments_view.end_date) AS latest_date, (max(anmn_acoustics_all_deployments_view.end_date) - min(anmn_acoustics_all_deployments_view.start_date)) AS coverage_duration, sum(CASE WHEN ("substring"(anmn_acoustics_all_deployments_view.missing_info, 'PAO'::text) IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_pao_subfacility, sum(CASE WHEN ("substring"(anmn_acoustics_all_deployments_view.missing_info, 'eMII'::text) IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_emii FROM anmn_acoustics_all_deployments_view GROUP BY anmn_acoustics_all_deployments_view.site_name, anmn_acoustics_all_deployments_view.deployment_year ORDER BY anmn_acoustics_all_deployments_view.site_name, anmn_acoustics_all_deployments_view.deployment_year;
+  SELECT v.site_name, 
+    v.deployment_year, 
+    count(*) AS no_loggers, 
+    sum((v.good_data)::integer) AS no_good_data, 
+    sum((v.on_viewer)::integer) AS no_sets_on_viewer, 
+    sum((v.good_22)::integer) AS no_good_22, 
+    min(v.start_date) AS earliest_date, 
+    max(v.end_date) AS latest_date, 
+    (max(v.end_date) - min(v.start_date)) AS coverage_duration, 
+    sum(CASE WHEN ("substring"(v.missing_info, 'PAO') IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_pao_subfacility, 
+    sum(CASE WHEN ("substring"(v.missing_info, 'eMII') IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_emii 
+  FROM anmn_acoustics_all_deployments_view v
+    GROUP BY v.site_name, v.deployment_year 
+    ORDER BY site_name, deployment_year;
 
 grant all on table anmn_acoustics_data_summary_view to public;
 
