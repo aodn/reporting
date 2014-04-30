@@ -56,42 +56,48 @@ UNION ALL
 -------------------------------
 UNION ALL
 
-SELECT 'ABOS' AS facility,
-'ASFS & SOTS' AS subfacility,
-file_type AS type,
-NULL AS no_projects,
-COUNT(DISTINCT(platform_code)) AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv1) AS no_data,
-SUM(no_fv2) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-NULL AS depth_range
-FROM abos_asfssots_data_summary_view
-GROUP BY file_type
+  SELECT 'ABOS' AS facility,
+	sub_facility AS subfacility,
+	file_type AS type,
+	NULL AS no_projects,
+	COUNT(DISTINCT(platform_code)) AS no_platforms,
+	COUNT(DISTINCT(data_category)) AS no_instruments,
+	SUM(no_deployments) AS no_deployments,
+	SUM(no_fv1) AS no_data,
+	SUM(no_fv2) AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+	NULL AS lat_range,
+	NULL AS lon_range,
+	NULL AS depth_range
+  FROM abos_data_summary_view
+	GROUP BY sub_facility, file_type
+
 UNION ALL
-SELECT 'ABOS' AS facility,
-'ASFS & SOTS' AS subfacility,
-'TOTAL' AS type,
-NULL::BIGINT AS no_projects,
-COUNT(DISTINCT(platform_code)) AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv1) AS no_data,
-SUM(no_fv2) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-NULL AS depth_range
-FROM abos_asfssots_data_summary_view
------------------------------------------------------------------------
+
+  SELECT 'ABOS' AS facility,
+	NULL AS subfacility,
+	'TOTAL' AS type,
+	NULL::BIGINT AS no_projects,
+	COUNT(DISTINCT(platform_code)) AS no_platforms,
+	COUNT(DISTINCT(data_category)) AS no_instruments,
+	SUM(no_deployments) AS no_deployments,
+	SUM(no_fv1) AS no_data,
+	SUM(no_fv2) AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+	NULL AS lat_range,
+	NULL AS lon_range,
+	NULL AS depth_range
+  FROM abos_data_summary_view
+
+-------------------------------
+-- ACORN
+-------------------------------
 UNION ALL
+
 SELECT 'ACORN' AS facility,
 NULL AS subfacility,
 'TOTAL' AS type,

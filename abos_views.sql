@@ -1,6 +1,6 @@
 ﻿SET search_path = report_test, pg_catalog, public, abos;
 
-CREATE or replace VIEW abos_asfssots_all_deployments_view AS
+CREATE or replace VIEW abos_all_deployments_view AS
     WITH table_a AS (
     SELECT 
     "substring"(url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility, 
@@ -48,10 +48,10 @@ FROM table_a a
 GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.author, a.principal_investigator, a.platform_code, a.sub_facility 
 ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
 
-grant all on table abos_asfssots_all_deployments_view to public;
+grant all on table abos_all_deployments_view to public;
 
 
-CREATE or replace VIEW abos_asfssots_data_summary_view AS
+CREATE or replace VIEW abos_data_summary_view AS
     SELECT 
     v.file_type, 
     v.headers, 
@@ -69,9 +69,9 @@ CREATE or replace VIEW abos_asfssots_data_summary_view AS
     round(avg(v.mean_days_to_make_public), 1) AS mean_days_to_make_public, 
     v.platform_code, 
     v.sub_facility 
-    FROM abos_asfssots_all_deployments_view v
+    FROM abos_all_deployments_view v
     WHERE v.headers IS NOT NULL 
     GROUP BY v.headers, v.data_category, v.data_type, v.file_type, v.platform_code, v.sub_facility 
     ORDER BY v.file_type, v.headers, v.data_type, v.data_category;
 
-grant all on table abos_asfssots_data_summary_view to public;
+grant all on table abos_data_summary_view to public;
