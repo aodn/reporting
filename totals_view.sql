@@ -1,45 +1,61 @@
 ﻿SET SEARCH_PATH = report_test, public, abos;
 
+
+-------------------------------
+-------------------------------
+-- TOTALS VIEW
+-------------------------------
+------------------------------- 
 CREATE or replace view totals_view AS
  WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
   FROM faimms_all_deployments_view)
-SELECT 'AATAMS' AS facility,
-'Biologging' AS subfacility,
-tag_type AS type,
-COUNT(DISTINCT(sattag_program)) AS no_projects,
-COUNT(DISTINCT(species_name)) AS no_platforms,
-NULL::bigint AS no_instruments,
-SUM(no_tags) AS no_deployments,
-SUM(total_nb_profiles) AS no_data,
-NULL::bigint AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-NULL AS depth_range
-FROM aatams_sattag_data_summary_view
-GROUP BY tag_type
+
+-------------------------------
+-- AATAMS - Biologging
+-------------------------------
+ SELECT 'AATAMS' AS facility,
+    'Biologging' AS subfacility,
+    data_type AS type,
+    COUNT(DISTINCT(sattag_program)) AS no_projects,
+    COUNT(DISTINCT(species_name)) AS no_platforms,
+    COUNT(DISTINCT(tag_type)) AS no_instruments,
+    SUM(no_tags) AS no_deployments,
+    SUM(total_nb_profiles) AS no_data,
+    SUM(total_nb_measurements) AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM aatams_sattag_data_summary_view
+    GROUP BY data_type
+    
 UNION ALL
-SELECT 'AATAMS' AS facility,
-'Biologging' AS subfacility,
-'TOTAL' AS type,
-COUNT(DISTINCT(sattag_program)) AS no_projects,
-COUNT(DISTINCT(species_name)) AS no_platforms,
-NULL::bigint AS no_instruments,
-SUM(no_tags) AS no_deployments,
-SUM(total_nb_profiles) AS no_data,
-NULL::bigint AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-NULL AS depth_range
-FROM aatams_sattag_data_summary_view
------------------------------------------------------------------------
+
+  SELECT 'AATAMS' AS facility,
+    'Biologging' AS subfacility,
+    'TOTAL' AS type,
+    COUNT(DISTINCT(sattag_program)) AS no_projects,
+    COUNT(DISTINCT(species_name)) AS no_platforms,
+    COUNT(DISTINCT(tag_type)) AS no_instruments,
+    COUNT(DISTINCT(tag_code)) AS no_deployments,
+    SUM(nb_profiles) AS no_data,
+    SUM(nb_measurements) AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM aatams_sattag_all_deployments_view
+
+-------------------------------
+-- ABOS
+-------------------------------
 UNION ALL
+
 SELECT 'ABOS' AS facility,
 'ASFS & SOTS' AS subfacility,
 file_type AS type,
