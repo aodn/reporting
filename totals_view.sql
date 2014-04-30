@@ -114,24 +114,46 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM acorn_all_deployments_view
------------------------------------------------------------------------
+-------------------------------
+-- ANFOG
+-------------------------------
 UNION ALL
-SELECT 'ANFOG' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-NULL::bigint AS no_projects,
-SUM(no_platforms) AS no_platforms,
-NULL::bigint AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anfog_data_summary_view
+  SELECT 'ANFOG' AS facility,
+    NULL AS subfacility,
+    data_type AS type,
+    NULL::bigint AS no_projects,
+    SUM(no_platforms) AS no_platforms,
+    NULL::bigint AS no_instruments,
+    SUM(no_deployments) AS no_deployments,
+    NULL AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anfog_data_summary_view
+    GROUP BY data_type
+
+UNION ALL
+
+  SELECT 'ANFOG' AS facility,
+    NULL AS subfacility,
+    'TOTAL' AS type,
+    NULL::bigint AS no_projects,
+    COUNT(DISTINCT(platform)) AS no_platforms,
+    NULL::bigint AS no_instruments,
+    COUNT(DISTINCT(deployment_id)) AS no_deployments,
+    NULL AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(max_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anfog_all_deployments_view
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'Argo' AS facility,

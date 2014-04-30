@@ -62,114 +62,112 @@ grant all on table aatams_acoustictag_totals_species_view to public;
 -------------------------------
 -- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the aatams_sattag manual tables in the report schema.
 -------------------------------
- CREATE or replace VIEW aatams_sattag_all_deployments_view AS
+CREATE or replace VIEW aatams_sattag_all_deployments_view AS
   SELECT 'Near real-time CTD data' AS data_type,
-    COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
-    m.sattag_program, 
-    m.pi AS principal_investigator, 
-    m.state_country AS release_site, 
-    m.tag_type, 
-    m.common_name AS species_name, 
-    m.device_id AS tag_code, 
-    COUNT(map.profile_id) AS nb_profiles,
-    SUM(map.nb_measurements) AS nb_measurements,
-    COALESCE(round(min(st_y(st_centroid(map.geom)))::numeric, 1) || '-' || round(max(st_y(st_centroid(map.geom)))::numeric, 1)) AS lat_range, 
-    COALESCE(round(min(st_x(st_centroid(map.geom)))::numeric, 1) || '-' || round(max(st_x(st_centroid(map.geom)))::numeric, 1)) AS lon_range,
-    COALESCE(min(map.min_pressure) || '-' || max(map.max_pressure)) AS depth_range,
-    min(map."timestamp") AS coverage_start, 
-    max(map."timestamp") AS coverage_end,
-    date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
-    CASE WHEN m.sattag_program IS NULL OR 
-    m.common_name IS NULL OR 
-    m.release_site IS NULL OR 
-    m.pi IS NULL OR 
-    m.tag_type IS NULL OR 
-    m.device_id IS NULL OR 
-    avg(m.release_lat) IS NULL OR 
-    avg(m.release_lon) IS NULL OR 
-    avg(date_part('year', map."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
-    round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
-    round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
-    round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
-    round(max(st_x(st_centroid(map.geom)))::numeric, 1) AS max_lon,
-    min(map.min_pressure) AS min_depth,
-    max(map.max_pressure) AS max_depth
+	COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
+	m.sattag_program, 
+	m.pi AS principal_investigator, 
+	m.state_country AS release_site, 
+	m.tag_type, 
+	m.common_name AS species_name, 
+	m.device_id AS tag_code, 
+	COUNT(map.profile_id) AS nb_profiles,
+	SUM(map.nb_measurements) AS nb_measurements,
+	COALESCE(round(min(st_y(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_y(st_centroid(map.geom)))::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(st_x(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_x(st_centroid(map.geom)))::numeric, 1)) AS lon_range,
+	COALESCE(min(map.min_pressure) || '-' || max(map.max_pressure)) AS depth_range,
+	min(map."timestamp") AS coverage_start, 
+	max(map."timestamp") AS coverage_end,
+	date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
+	CASE WHEN m.sattag_program IS NULL OR 
+	m.common_name IS NULL OR 
+	m.release_site IS NULL OR 
+	m.pi IS NULL OR 
+	m.tag_type IS NULL OR 
+	m.device_id IS NULL OR 
+	avg(m.release_lat) IS NULL OR 
+	avg(m.release_lon) IS NULL OR 
+	avg(date_part('year', map."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
+	round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
+	round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
+	round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
+	round(max(st_x(st_centroid(map.geom)))::numeric, 1) AS max_lon,
+	min(map.min_pressure) AS min_depth,
+	max(map.max_pressure) AS max_depth
   FROM aatams_sattag_nrt.aatams_sattag_nrt_metadata m
   LEFT JOIN aatams_sattag_nrt.aatams_sattag_nrt_profile_map map ON m.device_id = map.device_id
-    WHERE m.device_wmo_ref != ''
-    GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
-    HAVING COUNT(map.profile_id) != 0
+	WHERE m.device_wmo_ref != ''
+	GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
+	HAVING COUNT(map.profile_id) != 0
 
 UNION ALL
 
   SELECT 'Delayed mode CTD data' AS data_type,
-    COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
-    m.sattag_program, 
-    m.pi AS principal_investigator, 
-    m.state_country AS release_site, 
-    m.tag_type, 
-    m.common_name AS species_name, 
-    m.device_id AS tag_code, 
-    COUNT(dmap.profile_id) AS nb_profiles,
-    SUM(dmap.nb_measurements) AS nb_measurements,
-    COALESCE(round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) || '-' || round(max(st_y(st_centroid(dmap.geom)))::numeric, 1)) AS lat_range, 
-    COALESCE(round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) || '-' || round(max(st_x(st_centroid(dmap.geom)))::numeric, 1)) AS lon_range,
-    COALESCE(min(dmap.min_pressure) || '-' || max(dmap.max_pressure)) AS depth_range,
-    min(dmap."timestamp") AS coverage_start, 
-    max(dmap."timestamp") AS coverage_end,
-    date_part('days', max(dmap."timestamp") - min(dmap."timestamp"))::integer AS coverage_duration,
-    CASE WHEN m.sattag_program IS NULL OR 
-    m.common_name IS NULL OR 
-    m.release_site IS NULL OR 
-    m.pi IS NULL OR 
-    m.tag_type IS NULL OR 
-    m.device_id IS NULL OR 
-    avg(m.release_lat) IS NULL OR 
-    avg(m.release_lon) IS NULL OR 
-    avg(date_part('year', dmap."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
-    round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) AS min_lat, 
-    round(max(st_y(st_centroid(dmap.geom)))::numeric, 1) AS max_lat, 
-    round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) AS min_lon, 
-    round(max(st_x(st_centroid(dmap.geom)))::numeric, 1) AS max_lon,
-    min(dmap.min_pressure) AS min_depth,
-    max(dmap.max_pressure) AS max_depth
+	COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
+	m.sattag_program, 
+	m.pi AS principal_investigator, 
+	m.state_country AS release_site, 
+	m.tag_type, 
+	m.common_name AS species_name, 
+	m.device_id AS tag_code, 
+	COUNT(dmap.profile_id) AS nb_profiles,
+	SUM(dmap.nb_measurements) AS nb_measurements,
+	COALESCE(round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) || '/' || round(max(st_y(st_centroid(dmap.geom)))::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) || '/' || round(max(st_x(st_centroid(dmap.geom)))::numeric, 1)) AS lon_range,
+	COALESCE(min(dmap.min_pressure) || '-' || max(dmap.max_pressure)) AS depth_range,
+	min(dmap."timestamp") AS coverage_start, 
+	max(dmap."timestamp") AS coverage_end,
+	date_part('days', max(dmap."timestamp") - min(dmap."timestamp"))::integer AS coverage_duration,
+	CASE WHEN m.sattag_program IS NULL OR 
+	m.common_name IS NULL OR 
+	m.release_site IS NULL OR 
+	m.pi IS NULL OR 
+	m.tag_type IS NULL OR 
+	m.device_id IS NULL OR 
+	avg(m.release_lat) IS NULL OR 
+	avg(m.release_lon) IS NULL OR 
+	avg(date_part('year', dmap."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
+	round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) AS min_lat, 
+	round(max(st_y(st_centroid(dmap.geom)))::numeric, 1) AS max_lat, 
+	round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) AS min_lon, 
+	round(max(st_x(st_centroid(dmap.geom)))::numeric, 1) AS max_lon,
+	min(dmap.min_pressure) AS min_depth,
+	max(dmap.max_pressure) AS max_depth
   FROM aatams_sattag_nrt.aatams_sattag_nrt_metadata m
   LEFT JOIN aatams_sattag_dm.aatams_sattag_dm_profile_map dmap ON m.device_id = dmap.device_id
-    GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
-    HAVING COUNT(dmap.profile_id) != 0
-    ORDER BY data_type, sattag_program, coverage_start;
+	GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
+	HAVING COUNT(dmap.profile_id) != 0
+	ORDER BY data_type, sattag_program, coverage_start;
 
 grant all on table aatams_sattag_all_deployments_view to public;
 
 CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
   SELECT v.data_type,
-    COALESCE(v.species_name || ' - ' || v.tag_type) AS species_name_tag_type, 
-    v.sattag_program, 
-    v.release_site, 
-    v.principal_investigator, 
-    count(DISTINCT v.tag_code) AS no_tags, 
-    sum(v.nb_profiles) AS total_nb_profiles,
-    sum(v.nb_measurements) AS total_nb_measurements,
-    min(v.coverage_start) AS coverage_start, 
-    max(v.coverage_end) AS coverage_end, 
-    round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
-    v.tag_type, 
-    v.species_name,
-    COALESCE(min(v.min_lat) || '-' || max(v.max_lat)) AS lat_range, 
-    COALESCE(min(v.min_lon) || '-' || max(v.max_lon)) AS lon_range,
-    COALESCE(min(v.min_depth) || '-' || max(v.max_depth)) AS depth_range, 
-    min(v.min_lat) AS min_lat, 
-    max(v.max_lat) AS max_lat, 
-    min(v.min_lon) AS min_lon, 
-    max(v.max_lon) AS max_lon,
-    min(v.min_depth) AS min_depth,
-    max(v.max_depth) AS max_depth
+	COALESCE(v.species_name || ' - ' || v.tag_type) AS species_name_tag_type, 
+	v.sattag_program, 
+	v.release_site, 
+	v.principal_investigator, 
+	count(DISTINCT v.tag_code) AS no_tags, 
+	sum(v.nb_profiles) AS total_nb_profiles,
+	sum(v.nb_measurements) AS total_nb_measurements,
+	min(v.coverage_start) AS coverage_start, 
+	max(v.coverage_end) AS coverage_end, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	v.tag_type, 
+	v.species_name,
+	COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
+	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range,
+	COALESCE(min(v.min_depth) || '/' || max(v.max_depth)) AS depth_range, 
+	min(v.min_lat) AS min_lat, 
+	max(v.max_lat) AS max_lat, 
+	min(v.min_lon) AS min_lon, 
+	max(v.max_lon) AS max_lon,
+	min(v.min_depth) AS min_depth,
+	max(v.max_depth) AS max_depth
   FROM aatams_sattag_all_deployments_view v
     GROUP BY v.data_type, v.sattag_program, v.release_site, v.species_name, v.principal_investigator, v.tag_type
     HAVING sum(v.nb_profiles) != 0
     ORDER BY v.data_type, v.species_name, v.tag_type, min(v.coverage_start);
-
-grant all on table aatams_sattag_data_summary_view to public;
 
 
 -------------------------------
@@ -294,8 +292,30 @@ grant all on table acorn_all_deployments_view to public;
 -- CHANGES TO ANFOG reports:
 -- DELETED days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 
+
 CREATE or replace VIEW anfog_all_deployments_view AS
-  SELECT m.platform_type AS glider_type, 
+  SELECT 'Near real-time data' AS data_type,
+     mrt.platform_type AS glider_type, 
+     mrt.platform_code AS platform, 
+     mrt.deployment_name AS deployment_id, 
+     min(date(mrt.time_coverage_start)) AS start_date, 
+     max(date(mrt.time_coverage_end)) AS end_date,
+     min(round((ST_YMIN(geom))::numeric, 1)) AS min_lat,
+     max(round((ST_YMAX(geom))::numeric, 1)) AS max_lat,
+     min(round((ST_XMIN(geom))::numeric, 1)) AS min_lon,
+     max(round((ST_XMAX(geom))::numeric, 1)) AS max_lon,
+    COALESCE(min(round((ST_YMIN(geom))::numeric, 1)) || '/' || max(round((ST_YMAX(geom))::numeric, 1))) AS lat_range,
+    COALESCE(min(round((ST_XMIN(geom))::numeric, 1)) || '/' || max(round((ST_XMAX(geom))::numeric, 1))) AS lon_range,
+    round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
+    max(date(mrt.time_coverage_end)) - min(date(mrt.time_coverage_start)) AS coverage_duration 
+  FROM anfog_rt.anfog_rt_trajectory_map mrt
+  RIGHT JOIN anfog_dm.deployments drt ON mrt.file_id = drt.file_id
+    GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
+
+UNION ALL
+
+  SELECT 'Delayed mode data' AS data_type,
+     m.platform_type AS glider_type, 
      m.platform_code AS platform, 
      m.deployment_name AS deployment_id, 
      date(m.time_coverage_start) AS start_date, 
@@ -311,12 +331,13 @@ CREATE or replace VIEW anfog_all_deployments_view AS
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
     GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
-    ORDER BY glider_type, platform, deployment_name;
+    ORDER BY data_type, glider_type, platform, deployment_id;
 
 grant all on table anfog_all_deployments_view to public;
 
 CREATE or replace VIEW anfog_data_summary_view AS
-  SELECT v.glider_type AS glider_type, 
+  SELECT v.data_type,
+    v.glider_type AS glider_type, 
     count(DISTINCT v.platform) AS no_platforms, 
     count(DISTINCT v.deployment_id) AS no_deployments, 
     min(v.start_date) AS earliest_date, 
@@ -332,8 +353,8 @@ CREATE or replace VIEW anfog_data_summary_view AS
     min(v.max_depth) AS min_depth, 
     max(v.max_depth) AS max_depth 
   FROM anfog_all_deployments_view v
-    GROUP BY glider_type 
-    ORDER BY glider_type;
+    GROUP BY data_type, glider_type 
+    ORDER BY data_type,glider_type;
 
 grant all on table anfog_data_summary_view to public;
 
@@ -388,8 +409,6 @@ CREATE or replace VIEW anmn_acoustics_data_summary_view AS
     ORDER BY site_name, deployment_year;
 
 grant all on table anmn_acoustics_data_summary_view to public;
-
-
 
 -------------------------------
 -- VIEW FOR ANMN; Still using the anmn_platforms_manual table from the report schema. Now using what's in the anmn schema so don't need the dw_anmn schema anymore.
@@ -1338,25 +1357,51 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM acorn_all_deployments_view
------------------------------------------------------------------------
+
+-------------------------------
+-- ANFOG
+-------------------------------
 UNION ALL
-SELECT 'ANFOG' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-NULL::bigint AS no_projects,
-SUM(no_platforms) AS no_platforms,
-NULL::bigint AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anfog_data_summary_view
------------------------------------------------------------------------
+  SELECT 'ANFOG' AS facility,
+    NULL AS subfacility,
+    data_type AS type,
+    NULL::bigint AS no_projects,
+    SUM(no_platforms) AS no_platforms,
+    NULL::bigint AS no_instruments,
+    SUM(no_deployments) AS no_deployments,
+    NULL AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anfog_data_summary_view
+    GROUP BY data_type
+
+UNION ALL
+
+  SELECT 'ANFOG' AS facility,
+    NULL AS subfacility,
+    'TOTAL' AS type,
+    NULL::bigint AS no_projects,
+    COUNT(DISTINCT(platform)) AS no_platforms,
+    NULL::bigint AS no_instruments,
+    COUNT(DISTINCT(deployment_id)) AS no_deployments,
+    NULL AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
+    COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+    COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+    COALESCE(min(max_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anfog_all_deployments_view;
+
+-------------------------------
+-- Argo
+-------------------------------
 UNION ALL
 SELECT 'Argo' AS facility,
 NULL AS subfacility,
