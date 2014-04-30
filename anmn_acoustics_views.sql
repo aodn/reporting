@@ -1,7 +1,7 @@
 ﻿SET search_path = report_test, public;
 
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
-  SELECT COALESCE(m.deployment_name|| ' - Lat/Lon:'|| round(m.lat::numeric, 1) || '/' || round(m.lon::numeric, 1)) AS site_name, 
+  SELECT substring(m.deployment_name, '[^0-9]+') AS site_name, 
 	"substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
 	m.logger_id, 
 	bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 6))) AS good_data, 
