@@ -473,55 +473,42 @@ grant all on table anmn_acoustics_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ANMN; Still using the anmn_platforms_manual table from the report schema. Now using what's in the anmn schema so don't need the dw_anmn schema anymore.
 -------------------------------
--- has data
--- anmn_platforms_manual --> report.anmn_platforms_manual 
--- there are three schemas with anmn_mv table (dw_anmn, dw_anmn_realtime, legacy_anmn )  
--- I don't know which one to use ...
--- use dw_anmn 
-
 CREATE or replace VIEW anmn_all_deployments_view AS
-    WITH site_view AS (
-    SELECT 
-    m.site_code, 
-    m.site_name, 
-    avg(m.lat) AS site_lat, 
-    avg(m.lon) AS site_lon, 
-    (avg(m.depth))::integer AS site_depth, 
-    min(m.first_deployed) AS site_first_deployed, 
-    max(m.discontinued) AS site_discontinued, 
-    bool_or(m.active) AS site_active 
-    FROM report.anmn_platforms_manual m
-    GROUP BY m.site_code, m.site_name 
-    ORDER BY m.site_code), 
+  WITH site_view AS (
+  SELECT m.site_code, 
+  m.site_name, 
+  avg(m.lat) AS site_lat, 
+  avg(m.lon) AS site_lon, 
+  (avg(m.depth))::integer AS site_depth, 
+  min(m.first_deployed) AS site_first_deployed, 
+  max(m.discontinued) AS site_discontinued, 
+  bool_or(m.active) AS site_active 
+  FROM report.anmn_platforms_manual m
+  GROUP BY m.site_code, m.site_name 
+  ORDER BY m.site_code), 
     file_view AS (
-    SELECT 
-    DISTINCT "substring"((v.url), 'IMOS/ANMN/([A-Z]+)/') AS subfacility, 
-    v.site_code, 
-    v.platform_code, 
-    v.deployment_code, 
-    "substring"((v.url), '([^_]+)_END') AS deployment_product, 
-    v.status, 
-    "substring"(v.file_version, 'Level ([012]+)') AS file_version, 
-    "substring"((v.url), '(Temperature|CTD_timeseries|CTD_profiles|Biogeochem_timeseries|Biogeochem_profiles|Velocity|Wave|CO2|Meteorology)') AS data_category, 
-    NULLIF(v.geospatial_vertical_min, '-Infinity')::double precision AS geospatial_vertical_min, 
-    NULLIF(v.geospatial_vertical_max, 'Infinity')::double precision AS geospatial_vertical_max, 
-    CASE WHEN timezone('UTC', v.time_deployment_start) IS NULL THEN v.time_coverage_start 
-        ELSE (timezone('UTC', v.time_deployment_start))::timestamp with time zone END AS time_deployment_start, 
-    CASE WHEN timezone('UTC', v.time_deployment_end) IS NULL THEN v.time_coverage_end 
-        ELSE (timezone('UTC', v.time_deployment_end))::timestamp with time zone END AS time_deployment_end, 
-    timezone('UTC', GREATEST(v.time_deployment_start, v.time_coverage_start)) AS good_data_start, 
-    timezone('UTC', LEAST(v.time_deployment_end, v.time_coverage_end)) AS good_data_end, 
-    (v.time_coverage_end - v.time_coverage_start) AS coverage_duration, 
-    (v.time_deployment_end - v.time_deployment_start) AS deployment_duration, 
-    GREATEST('00:00:00'::interval, (LEAST(v.time_deployment_end, v.time_coverage_end) - GREATEST(v.time_deployment_start, v.time_coverage_start))) AS good_data_duration, 
-    date(timezone('UTC', v.date_created)) AS date_processed, 
-    date(timezone('UTC', v.last_modified)) AS date_uploaded, 
-    date(timezone('UTC', v.first_indexed)) AS date_public, 
-    CASE WHEN date_part('day', (v.last_modified - v.time_deployment_end)) IS NULL THEN date_part('day', (v.last_modified - v.time_coverage_end)) 
-        ELSE date_part('day', (v.last_modified - v.time_deployment_end)) END AS processing_duration, 
-    date_part('day', (v.last_indexed - v.last_modified)) AS publication_duration 
-    FROM anmn.anmn_vw v 
-    ORDER BY subfacility, deployment_code, data_category)
+  SELECT 
+  DISTINCT "substring"((v.url), 'IMOS/ANMN/([A-Z]+)/') AS subfacility, 
+  v.site_code, 
+  v.platform_code, 
+  v.deployment_code, 
+  "substring"((v.url), '([^_]+)_END') AS deployment_product, 
+  v.status, 
+  "substring"(v.file_version, 'Level ([012]+)') AS file_version, 
+  "substring"((v.url), '(Temperature|CTD_timeseries|CTD_profiles|Biogeochem_timeseries|Biogeochem_profiles|Velocity|Wave|CO2|Meteorology)') AS data_category, 
+  NULLIF(v.geospatial_vertical_min, '-Infinity')::double precision AS geospatial_vertical_min, 
+  NULLIF(v.geospatial_vertical_max, 'Infinity')::double precision AS geospatial_vertical_max, 
+  CASE WHEN timezone('UTC', v.time_deployment_start) IS NULL THEN v.time_coverage_start 
+    ELSE (timezone('UTC', v.time_deployment_start))::timestamp with time zone END AS time_deployment_start, 
+  CASE WHEN timezone('UTC', v.time_deployment_end) IS NULL THEN v.time_coverage_end 
+    ELSE (timezone('UTC', v.time_deployment_end))::timestamp with time zone END AS time_deployment_end, 
+  timezone('UTC', GREATEST(v.time_deployment_start, v.time_coverage_start)) AS good_data_start, 
+  timezone('UTC', LEAST(v.time_deployment_end, v.time_coverage_end)) AS good_data_end, 
+  (v.time_coverage_end - v.time_coverage_start) AS coverage_duration, 
+  (v.time_deployment_end - v.time_deployment_start) AS deployment_duration, 
+  GREATEST('00:00:00'::interval, (LEAST(v.time_deployment_end, v.time_coverage_end) - GREATEST(v.time_deployment_start, v.time_coverage_start))) AS good_data_duration
+  FROM anmn.anmn_vw v 
+  ORDER BY subfacility, deployment_code, data_category)
   SELECT 
   f.subfacility, 
   COALESCE(s.site_name || ' (' || f.site_code || ')' || ' - Lat/Lon:' || round((min(s.site_lat))::numeric, 1) || '/' || round((min(s.site_lon))::numeric, 1)) AS site_name_code, 
@@ -533,17 +520,12 @@ CREATE or replace VIEW anmn_all_deployments_view AS
   date(max(f.time_deployment_end)) AS end_date, 
   (date_part('day', (max(f.time_deployment_end) - min(f.time_deployment_start))))::numeric AS coverage_duration, 
   (date_part('day', (max(f.good_data_end) - min(f.good_data_start))))::numeric AS data_coverage, 
-  round((avg(f.processing_duration))::numeric, 1) AS mean_days_to_process_and_upload, 
-  round((avg(f.publication_duration))::numeric, 1) AS mean_days_to_make_public, 
   CASE WHEN sum(CASE WHEN s.site_name IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
     sum(CASE WHEN f.time_deployment_start IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
     sum(CASE WHEN f.time_deployment_end IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
-    sum(CASE WHEN (f.date_processed IS NULL) THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
-    sum(CASE WHEN (f.date_uploaded IS NULL) THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
     sum(CASE WHEN (f.site_code IS NULL) THEN 0 ELSE 1 END) <> count(f.subfacility) THEN 
     COALESCE('Missing information from' || ' ' || f.subfacility || ' ' || 'sub-facility') 
-    WHEN sum(CASE WHEN f.date_public IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) 
-    THEN 'Missing information from eMII' ELSE NULL END AS missing_info, 
+    ELSE NULL END AS missing_info, 
   date(min(f.good_data_start)) AS good_data_start, 
   date(max(f.good_data_end)) AS good_data_end, 
   round((min(s.site_lat))::numeric, 1) AS min_lat, 
@@ -551,10 +533,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
   round((max(s.site_lat))::numeric, 1) AS max_lat, 
   round((max(s.site_lon))::numeric, 1) AS max_lon, 
   round((min(f.geospatial_vertical_min))::numeric, 1) AS min_depth, 
-  round((max(f.geospatial_vertical_max))::numeric, 1) AS max_depth, 
-  max(f.date_processed) AS date_processed, 
-  max(f.date_uploaded) AS data_on_staging, 
-  max(f.date_public) AS data_on_portal, 
+  round((max(f.geospatial_vertical_max))::numeric, 1) AS max_depth,
   f.site_code 
   FROM file_view f 
   NATURAL LEFT JOIN site_view s 
@@ -564,48 +543,38 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 
 grant all on table anmn_all_deployments_view to public;
 
-
-
 CREATE or replace VIEW anmn_data_summary_view AS
-    SELECT 
-    v.subfacility, 
-    v.site_name_code, 
-    v.data_category, 
-    count(*) AS no_deployments, 
-    sum(v.no_fv00) AS no_fv00, 
-    sum(v.no_fv01) AS no_fv01, 
-    CASE WHEN (CASE WHEN min(v.min_depth) < 0 THEN min(v.min_depth) * (-1) ELSE min(v.min_depth) END) > max(v.max_depth) 
+  SELECT v.subfacility, 
+  v.site_name_code, 
+  v.data_category, 
+  count(*) AS no_deployments, 
+  sum(v.no_fv00) AS no_fv00, 
+  sum(v.no_fv01) AS no_fv01, 
+  CASE WHEN (CASE WHEN min(v.min_depth) < 0 THEN min(v.min_depth) * (-1) ELSE min(v.min_depth) END) > max(v.max_depth) 
     THEN COALESCE(max(v.max_depth) || '/' || CASE WHEN min(v.min_depth) < 0 THEN min(v.min_depth) * (-1) ELSE min(v.min_depth) END)
     ELSE COALESCE(CASE WHEN min(v.min_depth) < 0 THEN min(v.min_depth) * (-1) ELSE min(v.min_depth) END || '/' || max(v.max_depth)) END AS depth_range, 
-    min(v.start_date) AS earliest_date, 
-    max(v.end_date) AS latest_date, 
-    (max(v.end_date) - min(v.start_date)) AS coverage_duration, 
-    sum(v.data_coverage) AS data_coverage, 
-    CASE WHEN round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) < 0 
+  min(v.start_date) AS earliest_date, 
+  max(v.end_date) AS latest_date, 
+  (max(v.end_date) - min(v.start_date)) AS coverage_duration, 
+  sum(v.data_coverage) AS data_coverage, 
+  CASE WHEN round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) < 0 
     THEN NULL::numeric 
     WHEN round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) > 100 
     THEN 100 
-    ELSE round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) END AS percent_coverage, 
-    round(avg(v.mean_days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
-    round(avg(v.mean_days_to_make_public), 1) AS mean_days_to_make_public, 
-    sum(CASE WHEN v.missing_info IS NULL THEN 0 
-         WHEN "substring"(v.missing_info, 'facility') IS NOT NULL THEN 1 
-         ELSE NULL::integer END) AS missing_info_facility, 
-    sum(CASE WHEN v.missing_info IS NULL THEN 0 
-         WHEN "substring"(v.missing_info, 'eMII') IS NOT NULL THEN 1 
-         ELSE NULL::integer END) AS missing_info_emii, 
-    min(v.min_lat) AS min_lat, 
-    min(v.min_lon) AS min_lon, 
-    min(v.min_depth) AS min_depth, 
-    max(v.max_depth) AS max_depth, 
-    v.site_code 
-    FROM anmn_all_deployments_view v
-    GROUP BY v.subfacility, v.site_name_code, v.data_category, v.site_code 
-    ORDER BY v.subfacility, v.site_code, v.data_category;
+    ELSE round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) END AS percent_coverage,
+  sum(CASE WHEN v.missing_info IS NULL THEN 0 
+    WHEN "substring"(v.missing_info, 'facility') IS NOT NULL THEN 1 
+    ELSE NULL::integer END) AS missing_info_facility,
+  min(v.min_lat) AS min_lat, 
+  min(v.min_lon) AS min_lon, 
+  min(v.min_depth) AS min_depth, 
+  max(v.max_depth) AS max_depth, 
+  v.site_code 
+  FROM anmn_all_deployments_view v
+  GROUP BY v.subfacility, v.site_name_code, v.data_category, v.site_code 
+  ORDER BY v.subfacility, v.site_code, v.data_category;
 
 grant all on table anmn_data_summary_view to public;
-
-
 
 -------------------------------
 -- VIEW FOR ANMN NRS real-time; Only using the anmn_realtime schema. Can get rid of legacy_anmn schema and report.nrs_aims_manual
@@ -1590,42 +1559,44 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM srs_data_summary_view
------------------------------------------------------------------------
+-------------------------------
+-- ANMN
+-------------------------------
 UNION ALL
-SELECT 'ANMN' AS facility,
-subfacility AS subfacility,
-NULL AS type,
-COUNT(DISTINCT(site_name_code)) AS no_projects,
-NULL AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv00) AS no_data,
-SUM(no_fv01) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_data_summary_view
-GROUP BY subfacility
+  SELECT 'ANMN' AS facility,
+  subfacility AS subfacility,
+  NULL AS type,
+  COUNT(DISTINCT(site_name_code)) AS no_projects,
+  NULL AS no_platforms,
+  COUNT(DISTINCT(data_category)) AS no_instruments,
+  SUM(no_deployments) AS no_deployments,
+  SUM(no_fv00) AS no_data,
+  SUM(no_fv01) AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
+  COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
+  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anmn_data_summary_view
+  GROUP BY subfacility
 UNION ALL
-SELECT 'ANMN' AS facility,
-'NRS, RMA, and AM' AS subfacility,
-'TOTAL' AS type,
-COUNT(DISTINCT(site_name_code)) AS no_projects,
-NULL AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv00) AS no_data,
-SUM(no_fv01) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_data_summary_view
+  SELECT 'ANMN' AS facility,
+  'NRS, RMA, and AM' AS subfacility,
+  'TOTAL' AS type,
+  COUNT(DISTINCT(site_name_code)) AS no_projects,
+  NULL AS no_platforms,
+  COUNT(DISTINCT(data_category)) AS no_instruments,
+  SUM(no_deployments) AS no_deployments,
+  SUM(no_fv00) AS no_data,
+  SUM(no_fv01) AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
+  COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
+  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anmn_data_summary_view
 -------------------------------
 -- ANMN - Passive Acoustic
 -------------------------------

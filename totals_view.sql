@@ -1,5 +1,4 @@
-﻿SET SEARCH_PATH = report_test, pg_catalog, public, anmn_realtime;
-
+﻿SET SEARCH_PATH = report_test, pg_catalog, public, anmn;
 
 -------------------------------
 -------------------------------
@@ -280,42 +279,44 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM srs_data_summary_view
------------------------------------------------------------------------
+-------------------------------
+-- ANMN
+-------------------------------
 UNION ALL
-SELECT 'ANMN' AS facility,
-subfacility AS subfacility,
-NULL AS type,
-COUNT(DISTINCT(site_name_code)) AS no_projects,
-NULL AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv00) AS no_data,
-SUM(no_fv01) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_data_summary_view
-GROUP BY subfacility
+  SELECT 'ANMN' AS facility,
+	subfacility AS subfacility,
+	NULL AS type,
+	COUNT(DISTINCT(site_name_code)) AS no_projects,
+	NULL AS no_platforms,
+	COUNT(DISTINCT(data_category)) AS no_instruments,
+	SUM(no_deployments) AS no_deployments,
+	SUM(no_fv00) AS no_data,
+	SUM(no_fv01) AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
+	COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
+	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anmn_data_summary_view
+	GROUP BY subfacility
 UNION ALL
-SELECT 'ANMN' AS facility,
-'NRS, RMA, and AM' AS subfacility,
-'TOTAL' AS type,
-COUNT(DISTINCT(site_name_code)) AS no_projects,
-NULL AS no_platforms,
-COUNT(DISTINCT(data_category)) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_fv00) AS no_data,
-SUM(no_fv01) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_data_summary_view
+  SELECT 'ANMN' AS facility,
+	'NRS, RMA, and AM' AS subfacility,
+	'TOTAL' AS type,
+	COUNT(DISTINCT(site_name_code)) AS no_projects,
+	NULL AS no_platforms,
+	COUNT(DISTINCT(data_category)) AS no_instruments,
+	SUM(no_deployments) AS no_deployments,
+	SUM(no_fv00) AS no_data,
+	SUM(no_fv01) AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
+	COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
+	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anmn_data_summary_view
 -------------------------------
 -- ANMN - Passive Acoustic
 -------------------------------
