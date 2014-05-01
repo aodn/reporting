@@ -612,38 +612,41 @@ grant all on table anmn_data_summary_view to public;
 -------------------------------
 -- Got rid of parameters, channel_id, missing_info, days_to_process_and_upload, days_to_make_public, lat, lon, date_on_staging, etc., mest_creation, no_qaqc_boolean, metadata_uuid ==> no more missing info report. Change how new deployments report are produced.
 
+
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
-          WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
-          WHEN site_code = 'NRSDAR' THEN 'Darwin'
-          WHEN site_code = 'NRSNSI' THEN 'North Stradbroke Island' END as site_name,
-     CASE WHEN substring(file_version,'[0-9]+') = '1' THEN true
-          ELSE false END AS qaqc_data,
-     time_coverage_start AS start_date,
-     time_coverage_end AS end_date,
-     (date_part('day', (time_coverage_end - time_coverage_start)))::numeric AS coverage_duration,
-     CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
-     CASE WHEN source = instrument THEN source
-          ELSE COALESCE(source || '-' || instrument) END AS channel_id,
-     CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
-          ELSE instrument_nominal_depth::numeric END AS sensor_depth
+        WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
+        WHEN site_code = 'NRSDAR' THEN 'Darwin'
+        WHEN site_code = 'NRSNSI' THEN 'North Stradbroke Island' END as site_name,
+   CASE WHEN source = instrument THEN source
+        ELSE COALESCE(source || '-' || instrument) END AS channel_id,
+   CASE WHEN substring(file_version,'[0-9]+') = '1' THEN true
+        ELSE false END AS qaqc_data,
+   time_coverage_start AS start_date,
+   time_coverage_end AS end_date,
+   (date_part('day', (time_coverage_end - time_coverage_start)))::numeric AS coverage_duration,
+   CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
+   CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
+        ELSE instrument_nominal_depth::numeric END AS sensor_depth
   FROM anmn_vw
-     ORDER BY site_name, start_date;
+   ORDER BY site_name, channel_id, start_date;
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
 
 CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
   SELECT v.site_name AS site_name,
-    sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
-    COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
-    min(v.start_date) AS earliest_date, 
-    max(v.end_date) AS latest_date, 
-    round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-    min(v.sensor_depth) AS min_depth, 
-    max(v.sensor_depth) AS max_depth 
+  COUNT(DISTINCT(channel_id)) AS nb_channels,
+  sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
+  COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
+  min(v.start_date) AS earliest_date, 
+  max(v.end_date) AS latest_date, 
+  round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+  min(v.sensor_depth) AS min_depth, 
+  max(v.sensor_depth) AS max_depth 
   FROM anmn_nrs_realtime_all_deployments_view v
-    GROUP BY v.site_name 
-    ORDER BY site_name;
+  WHERE channel_id != 'Not Specified Not Specified'
+  GROUP BY v.site_name  
+  ORDER BY site_name;
 
 grant all on table anmn_nrs_realtime_data_summary_view to public;
 
@@ -1623,23 +1626,29 @@ COALESCE(min(min_lat)||' - '||max(min_lat)) AS lat_range,
 COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
 COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
 FROM anmn_data_summary_view
+-------------------------------
+-- ANMN - Passive Acoustic
+-------------------------------
 UNION ALL
-SELECT 'ANMN' AS facility,
-'PA' AS subfacility,
-'TOTAL' AS type,
-COUNT(DISTINCT(site_name)) AS no_projects,
-NULL AS no_platforms,
-SUM(no_loggers) AS no_instruments,
-COUNT(*) AS no_deployments,
-SUM(no_good_data) AS no_data,
-SUM(no_sets_on_viewer) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-NULL AS depth_range
-FROM anmn_acoustics_data_summary_view
+  SELECT 'ANMN' AS facility,
+  'PA' AS subfacility,
+  'TOTAL' AS type,
+  COUNT(DISTINCT(site_name)) AS no_projects,
+  NULL AS no_platforms,
+  SUM(no_loggers) AS no_instruments,
+  COUNT(*) AS no_deployments,
+  SUM(no_good_data) AS no_data,
+  SUM(no_sets_on_viewer) AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  NULL AS lat_range,
+  NULL AS lon_range,
+  NULL AS depth_range
+  FROM anmn_acoustics_data_summary_view
+-------------------------------
+-- ANMN - BGC
+-------------------------------
 -- UNION ALL
 -- SELECT 'ANMN' AS facility,
 -- 'BGC' AS subfacility,
@@ -1657,23 +1666,26 @@ FROM anmn_acoustics_data_summary_view
 -- NULL AS lon_range,
 -- NULL AS depth_range
 -- FROM anmn_bgc_all_deployments_view
+-------------------------------
+-- ANMN - NRS Real-Time
+-------------------------------
 UNION ALL
-SELECT 'ANMN' AS facility,
-'NRS - Real-Time' AS subfacility,
-'TOTAL' AS type,
-COUNT(*) AS no_projects,
-NULL AS no_platforms,
-NULL AS no_instruments,
-NULL AS no_deployments,
-SUM(no_qc_data) AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM anmn_nrs_realtime_data_summary_view
-ORDER BY facility,subfacility,type;
+  SELECT 'ANMN' AS facility,
+  'NRS - Real-Time' AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  NULL AS no_platforms,
+  SUM(nb_channels) AS no_instruments,
+  NULL AS no_deployments,
+  SUM(no_qc_data) AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  NULL AS lat_range,
+  NULL AS lon_range,
+  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anmn_nrs_realtime_data_summary_view
+  ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
