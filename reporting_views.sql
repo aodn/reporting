@@ -62,8 +62,6 @@ grant all on table aatams_acoustictag_totals_species_view to public;
 -------------------------------
 -- VIEWS FOR AATAMS_BIOLOGGING AND SATELLITE TAGGING; Can delete the aatams_sattag manual tables in the report schema.
 -------------------------------
-SET search_path = report_test, pg_catalog, public;
-
 -- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM
  CREATE or replace VIEW aatams_sattag_all_deployments_view AS
   SELECT 'Near real-time CTD data' AS data_type,
@@ -313,9 +311,6 @@ grant all on table abos_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ACORN; Still using the acorn_manual table from the report schema: needs to be updated to use the two acorn schemas - acorn_hourly_avg_nonqc & acorn_hourly_avg_qc
 -------------------------------
--- has data
--- acorn_manual -> report.acorn_manual
-
 CREATE or replace VIEW acorn_all_deployments_view AS
     SELECT m.code_type, 
     CASE WHEN m.site_id = 1 THEN 'Capricorn Bunker Group' 
@@ -349,10 +344,6 @@ grant all on table acorn_all_deployments_view to public;
 -------------------------------
 -- VIEW FOR ANFOG; Now using the anfog_dm schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
 -------------------------------
--- CHANGES TO ANFOG reports:
--- DELETED days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
-
-
 CREATE or replace VIEW anfog_all_deployments_view AS
   SELECT 'Near real-time data' AS data_type,
      mrt.platform_type AS glider_type, 
@@ -422,8 +413,6 @@ grant all on table anfog_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ANMN Acoustics; Using the report.acoustic_deployments table only.
 -------------------------------
--- NO CHANGES
-
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
   SELECT substring(m.deployment_name, '[^0-9]+') AS site_name, 
   "substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
@@ -579,9 +568,6 @@ grant all on table anmn_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ANMN NRS real-time; Only using the anmn_realtime schema. Can get rid of legacy_anmn schema and report.nrs_aims_manual
 -------------------------------
--- Got rid of parameters, channel_id, missing_info, days_to_process_and_upload, days_to_make_public, lat, lon, date_on_staging, etc., mest_creation, no_qaqc_boolean, metadata_uuid ==> no more missing info report. Change how new deployments report are produced.
-
-
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
         WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
@@ -623,7 +609,6 @@ grant all on table anmn_nrs_realtime_data_summary_view to public;
 -------------------------------
 -- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
 -------------------------------
-
 CREATE or replace VIEW argo_all_deployments_view AS
     SELECT 
     m.data_centre AS organisation, 
@@ -676,8 +661,6 @@ grant all on table argo_data_summary_view to public;
 -------------------------------
 -- VIEW FOR AUV; Now using what's in the auv schema so don't need the legacy_auv schema anymore, nor the report.auv_manual table.
 -------------------------------
--- CHANGES TO AUV reports:
--- DELETED no_images, distance, depth_range, days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 CREATE or replace VIEW auv_all_deployments_view AS
   SELECT DISTINCT "substring"((d.campaign_name), '[^0-9]+') AS location, 
     d.campaign_name AS campaign, 
@@ -1447,24 +1430,26 @@ UNION ALL
   COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
   NULL AS depth_range
   FROM argo_data_summary_view
------------------------------------------------------------------------
+-------------------------------
+-- AUV
+-------------------------------
 UNION ALL
-SELECT 'AUV' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-COUNT(*) AS no_projects,
-SUM(no_campaigns) AS no_platforms,
-SUM(no_sites) AS no_instruments,
-NULL AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
-COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
-NULL AS depth_range
-FROM auv_data_summary_view
+  SELECT 'AUV' AS facility,
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  SUM(no_campaigns) AS no_platforms,
+  SUM(no_sites) AS no_instruments,
+  NULL AS no_deployments,
+  NULL AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
+  COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
+  NULL AS depth_range
+  FROM auv_data_summary_view
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'FAIMMS' AS facility,

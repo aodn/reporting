@@ -1,7 +1,5 @@
 ﻿SET search_path = report_test, pg_catalog, public;
 
--- CHANGES TO AUV reports:
--- DELETED no_images, distance, depth_range, days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 CREATE or replace VIEW auv_all_deployments_view AS
   SELECT DISTINCT "substring"((d.campaign_name), '[^0-9]+') AS location, 
 	d.campaign_name AS campaign, 
@@ -28,7 +26,8 @@ CREATE or replace VIEW auv_data_summary_view AS
 	round((sum((v.coverage_duration)::numeric) / 60), 1) AS data_duration, 
 	min(v.lat_min) AS lat_min, 
 	min(v.lon_min) AS lon_min, 
-	max(v.lat_min) AS lat_max, max(v.lon_min) AS lon_max
+	max(v.lat_min) AS lat_max, 
+	max(v.lon_min) AS lon_max
   FROM auv_all_deployments_view v
 	GROUP BY location
 	ORDER BY location;

@@ -173,24 +173,26 @@ UNION ALL
 	COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
 	NULL AS depth_range
   FROM argo_data_summary_view
------------------------------------------------------------------------
+-------------------------------
+-- AUV
+-------------------------------
 UNION ALL
-SELECT 'AUV' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-COUNT(*) AS no_projects,
-SUM(no_campaigns) AS no_platforms,
-SUM(no_sites) AS no_instruments,
-NULL AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
-COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
-NULL AS depth_range
-FROM auv_data_summary_view
+  SELECT 'AUV' AS facility,
+	NULL AS subfacility,
+	'TOTAL' AS type,
+	COUNT(*) AS no_projects,
+	SUM(no_campaigns) AS no_platforms,
+	SUM(no_sites) AS no_instruments,
+	NULL AS no_deployments,
+	NULL AS no_data,
+	NULL AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
+	COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
+	NULL AS depth_range
+  FROM auv_data_summary_view
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'FAIMMS' AS facility,
