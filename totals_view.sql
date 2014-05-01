@@ -153,24 +153,26 @@ UNION ALL
     COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
     COALESCE(min(max_depth)||' - '||max(max_depth)) AS depth_range
   FROM anfog_all_deployments_view
------------------------------------------------------------------------
+-------------------------------
+-- Argo
+-------------------------------
 UNION ALL
-SELECT 'Argo' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-COUNT(*) AS no_projects,
-SUM(no_platforms) AS no_platforms,
-SUM(no_oxygen_platforms) AS no_instruments,
-SUM(no_active_floats) AS no_deployments,
-SUM(no_active_oxygen_platforms)  AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-NULL AS depth_range
-FROM argo_data_summary_view
+  SELECT 'Argo' AS facility,
+	NULL AS subfacility,
+	'TOTAL' AS type,
+	COUNT(*) AS no_projects,
+	SUM(no_platforms) AS no_platforms,
+	SUM(no_oxygen_platforms) AS no_instruments,
+	SUM(no_active_floats) AS no_deployments,
+	SUM(no_active_oxygen_platforms)  AS no_data,
+	NULL AS no_data2,
+	NULL::bigint AS no_data3,
+	NULL::bigint AS no_data4,
+	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+	COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+	NULL AS depth_range
+  FROM argo_data_summary_view
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'AUV' AS facility,
