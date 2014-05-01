@@ -709,47 +709,43 @@ grant all on table facility_summary_view to public;
 -------------------------------
 -- VIEW FOR FAIMMS; Now using what's in the faimms schema so don't need the legacy_faimms schema anymore, nor the report.faimms_manual table.
 -------------------------------
--- CHANGES TO FAIMMS reports:
--- DELETED qaqc_data, days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 CREATE or replace VIEW faimms_all_deployments_view AS
   SELECT DISTINCT m.platform_code AS site_name, 
-    m.site_code AS platform_code, 
-    COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
-    (m."DEPTH")::numeric AS sensor_depth, 
-    date(m.time_start) AS start_date, 
-    date(m.time_end) AS end_date, 
-    (date_part('day', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
-    f.instrument AS sensor_name, 
-    m."VARNAME" AS parameter, 
-    m.channel_id AS channel_id,
-    round(ST_X(geom)::numeric, 1) AS lon,
-    round(ST_Y(geom)::numeric, 1) AS lat
+  m.site_code AS platform_code, 
+  COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
+  (m."DEPTH")::numeric AS sensor_depth, 
+  date(m.time_start) AS start_date, 
+  date(m.time_end) AS end_date, 
+  (date_part('day', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+  f.instrument AS sensor_name, 
+  m."VARNAME" AS parameter, 
+  m.channel_id AS channel_id,
+  round(ST_X(geom)::numeric, 1) AS lon,
+  round(ST_Y(geom)::numeric, 1) AS lat
   FROM faimms.faimms_timeseries_map m
   LEFT JOIN faimms.global_attributes_file f ON f.aims_channel_id = m.channel_id
-    ORDER BY site_name, platform_code, sensor_code;
+  ORDER BY site_name, platform_code, sensor_code;
 
 grant all on table faimms_all_deployments_view to public;
 
-
 CREATE or replace VIEW faimms_data_summary_view AS
   SELECT v.site_name, 
-    count(DISTINCT v.platform_code) AS no_platforms, 
-    count(DISTINCT v.sensor_code) AS no_sensors, 
-    count(DISTINCT v.parameter) AS no_parameters,
-    min(v.lon) AS lon, 
-    min(v.lat) AS lat, 
-    COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range,
-    min(v.start_date) AS earliest_date, 
-    max(v.end_date) AS latest_date, 
-    round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-    min(v.sensor_depth) AS min_depth, 
-    max(v.sensor_depth) AS max_depth
+  count(DISTINCT v.platform_code) AS no_platforms, 
+  count(DISTINCT v.sensor_code) AS no_sensors, 
+  count(DISTINCT v.parameter) AS no_parameters,
+  min(v.lon) AS lon, 
+  min(v.lat) AS lat, 
+  COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range,
+  min(v.start_date) AS earliest_date, 
+  max(v.end_date) AS latest_date, 
+  round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+  min(v.sensor_depth) AS min_depth, 
+  max(v.sensor_depth) AS max_depth
   FROM faimms_all_deployments_view v
-    GROUP BY site_name 
-    ORDER BY site_name;
+  GROUP BY site_name 
+  ORDER BY site_name;
 
 grant all on table faimms_data_summary_view to public;
-
 
 -------------------------------
 -- VIEW FOR SOOP-CPR; Still using what's in legacy_cpr and report.soop_cpr_manual.
@@ -1263,7 +1259,7 @@ grant all on table srs_data_summary_view to public;
 -------------------------------
 ------------------------------- 
 CREATE or replace view totals_view AS
- WITH interm_table AS (
+  WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
   FROM faimms_all_deployments_view)
 
@@ -1450,24 +1446,26 @@ UNION ALL
   COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
   NULL AS depth_range
   FROM auv_data_summary_view
------------------------------------------------------------------------
+-------------------------------
+-- FAIMMS
+-------------------------------
 UNION ALL
-SELECT 'FAIMMS' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-COUNT(*) AS no_projects,
-SUM(no_platforms) AS no_platforms,
-SUM(no_sensors) AS no_instruments,
-ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
-COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM faimms_data_summary_view,interm_table
+  SELECT 'FAIMMS' AS facility,
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  SUM(no_platforms) AS no_platforms,
+  SUM(no_sensors) AS no_instruments,
+  ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
+  NULL AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
+  COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
+  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM faimms_data_summary_view,interm_table
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'SOOP' AS facility,

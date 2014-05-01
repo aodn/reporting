@@ -1,7 +1,5 @@
 ﻿SET search_path = report_test, pg_catalog, public;
 
--- CHANGES TO FAIMMS reports:
--- DELETED qaqc_data, days_to_process_and_upload, days_to_make_public, missing_info ==> no more missing info report. Change how new deployments report are produced.
 CREATE or replace VIEW faimms_all_deployments_view AS
   SELECT DISTINCT m.platform_code AS site_name, 
 	m.site_code AS platform_code, 
@@ -20,7 +18,6 @@ CREATE or replace VIEW faimms_all_deployments_view AS
 	ORDER BY site_name, platform_code, sensor_code;
 
 grant all on table faimms_all_deployments_view to public;
-
 
 CREATE or replace VIEW faimms_data_summary_view AS
   SELECT v.site_name, 
