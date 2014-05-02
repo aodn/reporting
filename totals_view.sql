@@ -212,7 +212,9 @@ UNION ALL
 	COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
 	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM faimms_data_summary_view,interm_table
------------------------------------------------------------------------
+-------------------------------
+-- SOOP
+-------------------------------
 UNION ALL
 SELECT 'SOOP' AS facility,
 subfacility AS subfacility,
@@ -221,8 +223,8 @@ NULL AS no_projects,
 COUNT(DISTINCT(vessel_name)) AS no_platforms,
 NULL AS no_instruments,
 SUM(no_deployments) AS no_deployments,
-SUM(no_data_files) AS no_data,
-NULL AS no_data2,
+SUM(no_files_profiles) AS no_data,
+SUM(total_no_measurements) AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
@@ -239,8 +241,8 @@ NULL AS no_projects,
 COUNT(DISTINCT(vessel_name)) AS no_platforms,
 NULL AS no_instruments,
 SUM(no_deployments) AS no_deployments,
-SUM(no_data_files) AS no_data,
-NULL AS no_data2,
+SUM(no_files_profiles) AS no_data,
+SUM(total_no_measurements) AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
