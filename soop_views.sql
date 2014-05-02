@@ -79,55 +79,42 @@ grant all on table soop_cpr_all_deployments_view to public;
 
 
 CREATE or replace VIEW soop_all_deployments_view AS
-  WITH tmv_v AS (
-	SELECT 
-	v.time_coverage_start, 
-	CASE WHEN date(v.time_coverage_start) >= '2008-08-01'::date AND date(v.time_coverage_start) < '2009-01-15'::date THEN 'Aug08-Jan09' 
-	WHEN date(v.time_coverage_start) >= '2011-08-11'::date AND date(v.time_coverage_start) < '2011-12-19'::date THEN 'Aug11-Dec11' 
-	WHEN date(v.time_coverage_start) >= '2011-12-19'::date AND date(v.time_coverage_start) < '2012-02-01'::date THEN 'Dec11-Feb12' 
-	WHEN date(v.time_coverage_start) >= '2009-01-16'::date AND date(v.time_coverage_start) < '2009-07-31'::date THEN 'Jan09-Jul09' 
-	WHEN date(v.time_coverage_start) >= '2011-01-11'::date AND date(v.time_coverage_start) < '2011-07-11'::date THEN 'Jan11-Jun11' 
-	WHEN date(v.time_coverage_start) >= '2010-07-01'::date AND date(v.time_coverage_start) < '2011-01-11'::date THEN 'Jul10-Jan11' 
-	WHEN date(v.time_coverage_start) >= '2009-09-01'::date AND date(v.time_coverage_start) < '2010-06-30'::date THEN 'Sep09-Jun10' 
-	ELSE NULL END AS bundle_id 
-  FROM soop.soop_tmv_vw v),
-  
-  xbt_v AS (
-	SELECT 
-	r.line_name, 
-	r.year, 
-	r.bundle_id, 
-	sum(r.number_of_profile) AS no_profiles 
-  FROM report.soop_xbt r
-	GROUP BY r.line_name, r.bundle_id, r.year 
-	ORDER BY line_name, bundle_id) 
-
+WITH a AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mft.soop_asf_mft_trajectory_data GROUP BY file_id),
+b AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mt.soop_asf_mt_trajectory_data GROUP BY file_id),
+c AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_ba.measurements GROUP BY file_id),
+e AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_co2.soop_co2_trajectory_data GROUP BY file_id),
+f AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_sst.soop_sst_nrt_trajectory_data GROUP BY trajectory_id),
+g AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_sst.soop_sst_dm_trajectory_data GROUP BY trajectory_id),
+h AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_data GROUP BY trajectory_id),
+i AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_tmv.soop_tmv_trajectory_data GROUP BY file_id),
+j AS (SELECT trip_id, COUNT(measurement) AS nb_measurements FROM soop_trv.measurements_merged_data GROUP BY trip_id)
   SELECT 'ASF Flux product' AS subfacility,
-	vessel_name,
-	cruise_id AS deployment_id,
+	m.vessel_name,
+	m.cruise_id AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
-	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
-	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
+	COALESCE(round(min(ST_YMIN(m.geom))::numeric, 1) || '/' || round(max(ST_YMAX(m.geom))::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
 	date(max(time_end)) AS end_date,
 	date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
-	round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
-	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
-	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
-	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_asf_mft.soop_asf_mft_trajectory_map
-  	GROUP BY subfacility, vessel_name, cruise_id
-
+	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
+	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
+	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
+	round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
+  FROM soop_asf_mft.soop_asf_mft_trajectory_map m
+  JOIN a ON a.file_id = m.file_id
+  	GROUP BY subfacility, m.vessel_name, m.cruise_id
+  	
 UNION ALL
 
   SELECT 'ASF Meteorological SST observations' AS subfacility,
 	vessel_name,
 	cruise_id AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -137,7 +124,8 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_asf_mt.soop_asf_mt_trajectory_map
+  FROM soop_asf_mt.soop_asf_mt_trajectory_map m
+  JOIN b ON b.file_id = m.file_id
   	GROUP BY subfacility, vessel_name, cruise_id
 
 UNION ALL
@@ -146,8 +134,8 @@ UNION ALL
 	m.vessel_name,
 	d.voyage_id AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(m.file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -159,6 +147,7 @@ UNION ALL
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
   FROM soop_ba.soop_ba_trajectory_map m
   JOIN soop_ba.deployments d ON d.file_id = m.file_id
+  JOIN c ON c.file_id = m.file_id
   	GROUP BY subfacility, m.vessel_name, d.voyage_id
 
 UNION ALL
@@ -167,8 +156,8 @@ UNION ALL
 	vessel_name,
 	cruise_id AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -178,7 +167,8 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_co2.soop_co2_trajectory_map
+  FROM soop_co2.soop_co2_trajectory_map m
+  JOIN e ON e.file_id = m.file_id
   	GROUP BY subfacility, vessel_name, cruise_id
 
 UNION ALL 
@@ -187,8 +177,8 @@ UNION ALL
 	vessel_name,
 	voyage_number AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(trajectory_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.trajectory_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -198,7 +188,8 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_sst.soop_sst_nrt_trajectory_map
+  FROM soop_sst.soop_sst_nrt_trajectory_map m
+  JOIN f ON f.trajectory_id = m.trajectory_id
   	GROUP BY subfacility, vessel_name, voyage_number
 
 UNION ALL 
@@ -207,8 +198,8 @@ UNION ALL
 	vessel_name,
 	voyage_number AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(trajectory_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.trajectory_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -218,7 +209,8 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_sst.soop_sst_dm_trajectory_map
+  FROM soop_sst.soop_sst_dm_trajectory_map m
+  JOIN g ON g.trajectory_id = m.trajectory_id
   	GROUP BY subfacility, vessel_name, voyage_number
 
 UNION ALL 
@@ -227,8 +219,8 @@ UNION ALL
 	'Spirit of Tasmania 1' AS vessel_name,
 	NULL AS deployment_id,
 	date_part('year',time_start) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL AS no_profiles,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -238,7 +230,8 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_map
+  FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_map m
+  JOIN h ON h.trajectory_id = m.file_id
   	GROUP BY subfacility, vessel_name, year
 
 UNION ALL 
@@ -247,8 +240,8 @@ UNION ALL
 	vessel_name,
 	NULL AS deployment_id,
 	date_part('year',time_start) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(m.file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -258,17 +251,18 @@ UNION ALL
 	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_tmv.soop_tmv_trajectory_map
+  FROM soop_tmv.soop_tmv_trajectory_map m
+  JOIN i ON i.file_id = m.file_id
   	GROUP BY subfacility, vessel_name, year
 
 UNION ALL 
 
   SELECT 'TRV' AS subfacility,
 	m.vessel_name,
-	m.trip_id AS deployment_id,
+	m.trip_id::character varying AS deployment_id,
 	date_part('year',min(time_start)) AS year,
-	COUNT(file_id) AS no_data_files,
-	NULL::bigint AS no_profiles,
+	COUNT(file_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min(time_start)) AS start_date, 
@@ -280,6 +274,7 @@ UNION ALL
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
   FROM soop_trv.soop_trv_trajectory_map m
   LEFT JOIN soop_trv.deployments d ON m.trip_id = d.trip_id
+  JOIN j ON j.trip_id = m.trip_id
   	GROUP BY subfacility, m.vessel_name, m.trip_id
 
 UNION ALL 
@@ -288,8 +283,8 @@ UNION ALL
 	COALESCE("XBT_line" || ' | ' || vessel_name) AS vessel_name,
 	NULL AS deployment_id,
 	date_part('year',"TIME") AS year,
-	NULL AS no_data_files,
-	COUNT(profile_id) AS no_profiles,
+	COUNT(profile_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
 	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
 	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
 	date(min("TIME")) AS start_date, 
@@ -301,26 +296,26 @@ UNION ALL
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
   FROM soop_xbt_nrt.soop_xbt_nrt_profiles_map
   	GROUP BY subfacility, "XBT_line",vessel_name, year
-
-UNION ALL 
-
-  SELECT 'XBT - Delayed-mode' AS subfacility,
-	COALESCE(m."XBT_line" || ' | ' || "XBT_line_description") AS vessel_name,
-	COUNT(DISTINCT("XBT_cruise_ID")) AS deployment_id,
-	date_part('year',m."TIME") AS year,
-	NULL AS no_data_files,
-	COUNT(m.profile_id) AS no_profiles,
-	COALESCE(round(min(ST_YMIN(m.geom))::numeric, 1) || '/' || round(max(ST_YMAX(m.geom))::numeric, 1)) AS lat_range, 
-	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
-	date(min(m."TIME")) AS start_date, 
-	date(max(m."TIME")) AS end_date,
-	date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
-	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
-	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
-	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
-	round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
-  FROM soop_xbt_dm.soop_xbt_dm_profile_map m
-  	GROUP BY subfacility, "XBT_line", "XBT_line_description",year
+-- 
+-- UNION ALL 
+-- 
+--   SELECT 'XBT - Delayed-mode' AS subfacility,
+-- 	COALESCE(m."XBT_line" || ' | ' || "XBT_line_description") AS vessel_name,
+-- 	COUNT(DISTINCT("XBT_cruise_ID")) AS deployment_id,
+-- 	date_part('year',m."TIME") AS year,
+-- 	COUNT(m.profile_id) AS no_files_profiles,
+-- 	SUM(nb_measurements) AS no_measurements,
+-- 	COALESCE(round(min(ST_YMIN(m.geom))::numeric, 1) || '/' || round(max(ST_YMAX(m.geom))::numeric, 1)) AS lat_range, 
+-- 	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
+-- 	date(min(m."TIME")) AS start_date, 
+-- 	date(max(m."TIME")) AS end_date,
+-- 	date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
+-- 	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
+-- 	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
+-- 	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
+-- 	round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
+--   FROM soop_xbt_dm.soop_xbt_dm_profile_map m
+--   	GROUP BY subfacility, "XBT_line", "XBT_line_description",year
 	ORDER BY subfacility, vessel_name, deployment_id, year;
 
 grant all on table soop_all_deployments_view to public;
@@ -331,7 +326,7 @@ CREATE or replace VIEW soop_data_summary_view AS
 	vw.subfacility, 
 	vw.vessel_name, 
 	count(CASE WHEN vw.deployment_id IS NULL THEN '1'::character varying ELSE vw.deployment_id END) AS no_deployments, 
-	sum(CASE WHEN vw.no_data_files IS NULL THEN (1)::bigint ELSE vw.no_data_files END) AS no_data_files, 
+	sum(CASE WHEN vw.no_files_profiles IS NULL THEN (1)::bigint ELSE vw.no_files_profiles END) AS no_files_profiles, 
 	COALESCE(round(min(vw.min_lat), 1) || '/' || round(max(vw.max_lat), 1)) AS lat_range, 
 	COALESCE(round(min(vw.min_lon), 1) || '/' || round(max(vw.max_lon), 1)) AS lon_range,
 	min(vw.start_date) AS earliest_date, 
@@ -351,22 +346,16 @@ UNION ALL
 	cpr_vw.vessel_name, 
 	count(cpr_vw.vessel_name) AS no_deployments, 
 	CASE WHEN sum(CASE WHEN cpr_vw.no_phyto_samples IS NULL THEN 0 ELSE 1 END) <> count(cpr_vw.vessel_name) THEN sum(cpr_vw.no_pci_samples + cpr_vw.no_zoop_samples) 
-	ELSE sum((cpr_vw.no_pci_samples + cpr_vw.no_phyto_samples) + cpr_vw.no_zoop_samples) END AS no_data_files, 
+	ELSE sum((cpr_vw.no_pci_samples + cpr_vw.no_phyto_samples) + cpr_vw.no_zoop_samples) END AS no_files_profiles, 
 	COALESCE(round(min(cpr_vw.min_lat), 1) || '/' || round(max(cpr_vw.max_lat), 1)) AS lat_range, 
 	COALESCE(round(min(cpr_vw.min_lon), 1) || '/' || round(max(cpr_vw.max_lon), 1)) AS lon_range, 
-	COALESCE(round((min(cpr_vw.min_depth))::numeric, 1) || '/' || round((max(cpr_vw.max_depth))::numeric, 1)) AS depth_range, 
 	min(cpr_vw.start_date) AS earliest_date, 
 	max(cpr_vw.end_date) AS latest_date, 
 	sum(cpr_vw.coverage_duration) AS coverage_duration, 
-	round(avg(cpr_vw.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
-	round(avg(cpr_vw.days_to_make_public), 1) AS mean_days_to_make_public, 
-	sum(CASE WHEN cpr_vw.missing_info IS NULL THEN 1 ELSE 0 END) AS missing_info, 
 	round(min(cpr_vw.min_lat), 1) AS min_lat, 
 	round(max(cpr_vw.max_lat), 1) AS max_lat, 
 	round(min(cpr_vw.min_lon), 1) AS min_lon, 
-	round(max(cpr_vw.max_lon), 1) AS max_lon, 
-	round((min(cpr_vw.min_depth))::numeric, 1) AS min_depth, 
-	round((max(cpr_vw.max_depth))::numeric, 1) AS max_depth 
+	round(max(cpr_vw.max_lon), 1) AS max_lon
   FROM soop_cpr_all_deployments_view cpr_vw
 	GROUP BY subfacility, vessel_name 
 	ORDER BY subfacility, vessel_name;
