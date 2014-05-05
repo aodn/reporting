@@ -25,7 +25,8 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 	GROUP BY vessel_name, route, date_time_utc 
 	ORDER BY vessel_name, route , date_time_utc) 
 
-  SELECT 'CPR-AUS (delayed-mode)' AS subfacility, 
+  SELECT 'CPR-AUS (delayed-mode)' AS subfacility,
+	COALESCE(pci.vessel_name || ' | ' || pci.route) AS vessel_route,
 	pci.vessel_name, 
 	pci.route, 
 	cp.trip_code AS deployment_id, 
@@ -37,7 +38,6 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 	date(min(cp.date_time_utc)) AS start_date, 
 	date(max(cp.date_time_utc)) AS end_date, 
 	round(((date_part('day', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric + ((date_part('hours', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric / (24)::numeric)), 1) AS coverage_duration,
-	''::text AS principal_investigator, 
 	round(min(cp.latitude), 1) AS min_lat, 
 	round(max(cp.latitude), 1) AS max_lat, 
 	round(min(cp.longitude), 1) AS min_lon, 
@@ -52,25 +52,47 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 UNION ALL 
 
   SELECT 'CPR-SO (delayed-mode)' AS subfacility, 
-	so.ship_code AS vessel_name, 
+	COALESCE(CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
+	     WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
+	     WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
+	     WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
+	     WHEN so.ship_code = 'PS' THEN 'Polarstern'
+	     WHEN so.ship_code = 'SA' THEN 'San Aotea II'
+	     WHEN so.ship_code = 'SH' THEN 'Shirase'
+	     WHEN so.ship_code = 'SH2' THEN 'Shirase2'
+	     WHEN so.ship_code = 'TA' THEN 'Tangaroa'
+	     WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
+	     WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
+	END || ' | ' || 'Southern Ocean') AS vessel_route,
+	CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
+	     WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
+	     WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
+	     WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
+	     WHEN so.ship_code = 'PS' THEN 'Polarstern'
+	     WHEN so.ship_code = 'SA' THEN 'San Aotea II'
+	     WHEN so.ship_code = 'SH' THEN 'Shirase'
+	     WHEN so.ship_code = 'SH2' THEN 'Shirase2'
+	     WHEN so.ship_code = 'TA' THEN 'Tangaroa'
+	     WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
+	     WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
+	END AS vessel_name, 
 	NULL::text AS route, 
 	COALESCE(so.ship_code || '-' || so.tow_number) AS deployment_id, 
 	sum(CASE WHEN so.pci IS NULL THEN 0 ELSE 1 END) AS no_pci_samples, 
 	NULL::numeric AS no_phyto_samples, 
 	count(so.total_abundance) AS no_zoop_samples, 
-	NULL::text AS lat_range, 
-	NULL::text AS lon_range,
+	COALESCE(ROUND(min(ST_Y("position"))::numeric, 1) || '/' || ROUND(max(ST_Y("position"))::numeric, 1)) AS lat_range, 
+	COALESCE(ROUND(min(ST_X("position"))::numeric, 1) || '/' || ROUND(max(ST_X("position"))::numeric, 1)) AS lon_range,
 	date(min(so.date_time)) AS start_date, 
 	date(max(so.date_time)) AS end_date, 
-	round(((date_part('day', (max(so.date_time) - min(so.date_time))))::numeric + ((date_part('hours', (max(so.date_time) - min(so.date_time))))::numeric / (24)::numeric)), 1) AS coverage_duration, 
-	''::text AS principal_investigator, 
-	NULL::numeric AS min_lat, 
-	NULL::numeric AS max_lat, 
-	NULL::numeric AS min_lon, 
-	NULL::numeric AS max_lon
+	round(((date_part('day', (max(so.date_time) - min(so.date_time))))::numeric + ((date_part('hours', (max(so.date_time) - min(so.date_time))))::numeric / (24)::numeric)), 1) AS coverage_duration,
+	ROUND(min(ST_Y("position"))::numeric, 1) AS min_lat, 
+	ROUND(max(ST_Y("position"))::numeric, 1) AS max_lat, 
+	ROUND(min(ST_X("position"))::numeric, 1) AS min_lon, 
+	ROUND(max(ST_X("position"))::numeric, 1) AS max_lon 
   FROM legacy_cpr.so_segment so
 	GROUP BY subfacility, ship_code, tow_number 
-	ORDER BY subfacility, vessel_name, route, start_date;
+	ORDER BY subfacility, vessel_name, route, start_date, deployment_id;
 
 grant all on table soop_cpr_all_deployments_view to public;
 
