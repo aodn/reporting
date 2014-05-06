@@ -250,7 +250,9 @@ COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
 COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
 NULL AS depth_range
 FROM soop_all_deployments_view
------------------------------------------------------------------------
+-------------------------------
+-- SRS
+-------------------------------
 UNION ALL
 SELECT 'SRS' AS facility,
 subfacility AS subfacility,

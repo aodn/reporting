@@ -1,10 +1,5 @@
 ﻿SET search_path = report_test, pg_catalog, public, srs;
 
--- CHANGES TO SRS reports:
--- DELETED depth, days_to_process_and_upload, days_to_make_public, data_on_staging, data_on_opendap, data_on_portal ==> no more missing info report. Change how new deployments report are produced.
--- Sensor name in report to change to Sensor/Vessel name
--- SRS SST still using report.srs_gridded_products_manual as this data collection uses ncwms.
-
 CREATE or replace VIEW srs_all_deployments_view AS
   SELECT 'SRS - Altimetry' AS subfacility, 
 	m.site_name AS parameter_site, 
@@ -24,8 +19,8 @@ UNION ALL
 	m.data_type AS parameter_site, 
 	m.cruise_id AS deployment_code, 
 	m.vessel_name AS sensor_name, 
-	m.time_start AS start_date, 
-	m.time_end AS end_date, 
+	date(m.time_start) AS start_date, 
+	date(m.time_end) AS end_date, 
 	(date_part('days', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
 	round(ST_Y(ST_CENTROID(m.geom))::numeric, 1) AS lat, 
 	round(ST_X(ST_CENTROID(m.geom))::numeric, 1) AS lon 
@@ -43,8 +38,8 @@ UNION ALL
 	WHEN ((srs_gridded_products_manual.product_name) = 'SST L3P - 14 days mosaic') THEN 'L3P - 14 days mosaic' 
 	ELSE NULL END AS deployment_code, 
 	NULL::character varying AS sensor_name, 
-	srs_gridded_products_manual.deployment_start AS start_date, 
-	srs_gridded_products_manual.deployment_end AS end_date, 
+	date(srs_gridded_products_manual.deployment_start) AS start_date, 
+	date(srs_gridded_products_manual.deployment_end) AS end_date, 
 	((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, 
 	NULL::numeric AS lat, 
 	NULL::numeric AS lon 
@@ -66,7 +61,6 @@ UNION ALL
 	ORDER BY subfacility, parameter_site, deployment_code, sensor_name, start_date, end_date;
 
 grant all on table srs_all_deployments_view to public;
-
 
 CREATE or replace VIEW srs_data_summary_view AS
  SELECT v.subfacility, 
