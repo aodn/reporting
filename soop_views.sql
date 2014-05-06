@@ -25,9 +25,9 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 	GROUP BY vessel_name, route, date_time_utc 
 	ORDER BY vessel_name, route , date_time_utc) 
 
-  SELECT 'CPR-AUS (delayed-mode)' AS subfacility,
-	COALESCE(pci.vessel_name || ' | ' || pci.route) AS vessel_route,
-	pci.vessel_name, 
+  SELECT 'CPR AUS' AS subfacility,
+	COALESCE(CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END || ' | ' || pci.route) AS vessel_route,
+	CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END AS vessel_name, 
 	pci.route, 
 	cp.trip_code AS deployment_id, 
 	sum(pci.no_pci_samples) AS no_pci_samples, 
@@ -51,7 +51,7 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 
 UNION ALL 
 
-  SELECT 'CPR-SO (delayed-mode)' AS subfacility, 
+  SELECT 'CPR SO' AS subfacility, 
 	COALESCE(CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
 	     WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
 	     WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
@@ -195,7 +195,7 @@ UNION ALL
 
 UNION ALL 
 
-  SELECT 'SST - Near real-time' AS subfacility,
+  SELECT 'SST Near real-time' AS subfacility,
 	vessel_name,
 	voyage_number AS deployment_id,
 	date_part('year',min(time_start)) AS year,
@@ -216,7 +216,7 @@ UNION ALL
 
 UNION ALL 
 
-  SELECT 'SST - Delayed-mode' AS subfacility,
+  SELECT 'SST Delayed-mode' AS subfacility,
 	vessel_name,
 	voyage_number AS deployment_id,
 	date_part('year',min(time_start)) AS year,
@@ -237,7 +237,7 @@ UNION ALL
 
 UNION ALL 
 
-  SELECT 'TMV - Near real-time' AS subfacility,
+  SELECT 'TMV Near real-time' AS subfacility,
 	'Spirit of Tasmania 1' AS vessel_name,
 	NULL AS deployment_id,
 	date_part('year',time_start) AS year,
@@ -258,7 +258,7 @@ UNION ALL
 
 UNION ALL 
 
-  SELECT 'TMV - Delayed-mode' AS subfacility,
+  SELECT 'TMV Delayed-mode' AS subfacility,
 	vessel_name,
 	NULL AS deployment_id,
 	date_part('year',time_start) AS year,
@@ -301,7 +301,7 @@ UNION ALL
 
 UNION ALL 
 
-  SELECT 'XBT - Near real-time' AS subfacility,
+  SELECT 'XBT Near real-time' AS subfacility,
 	COALESCE("XBT_line" || ' | ' || vessel_name) AS vessel_name,
 	NULL AS deployment_id,
 	date_part('year',"TIME") AS year,
@@ -318,26 +318,26 @@ UNION ALL
 	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
   FROM soop_xbt_nrt.soop_xbt_nrt_profiles_map
   	GROUP BY subfacility, "XBT_line",vessel_name, year
--- 
--- UNION ALL 
--- 
---   SELECT 'XBT - Delayed-mode' AS subfacility,
--- 	COALESCE(m."XBT_line" || ' | ' || "XBT_line_description") AS vessel_name,
--- 	COUNT(DISTINCT("XBT_cruise_ID")) AS deployment_id,
--- 	date_part('year',m."TIME") AS year,
--- 	COUNT(m.profile_id) AS no_files_profiles,
--- 	SUM(nb_measurements) AS no_measurements,
--- 	COALESCE(round(min(ST_YMIN(m.geom))::numeric, 1) || '/' || round(max(ST_YMAX(m.geom))::numeric, 1)) AS lat_range, 
--- 	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
--- 	date(min(m."TIME")) AS start_date, 
--- 	date(max(m."TIME")) AS end_date,
--- 	date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
--- 	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
--- 	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
--- 	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
--- 	round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
---   FROM soop_xbt_dm.soop_xbt_dm_profile_map m
---   	GROUP BY subfacility, "XBT_line", "XBT_line_description",year
+
+UNION ALL 
+
+  SELECT 'XBT Delayed-mode' AS subfacility,
+	COALESCE(m."XBT_line" || ' | ' || "XBT_line_description") AS vessel_name,
+	COUNT(DISTINCT("XBT_cruise_ID")) AS deployment_id,
+	date_part('year',m."TIME") AS year,
+	COUNT(m.profile_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
+	COALESCE(round(min(ST_YMIN(m.geom))::numeric, 1) || '/' || round(max(ST_YMAX(m.geom))::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
+	date(min(m."TIME")) AS start_date, 
+	date(max(m."TIME")) AS end_date,
+	date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
+	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
+	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
+	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
+	round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
+  FROM soop_xbt_dm.soop_xbt_dm_profile_map m
+  	GROUP BY subfacility, "XBT_line", "XBT_line_description",year
 	ORDER BY subfacility, vessel_name, deployment_id, year;
 
 grant all on table soop_all_deployments_view to public;
@@ -345,7 +345,8 @@ grant all on table soop_all_deployments_view to public;
 
 CREATE or replace VIEW soop_data_summary_view AS
  SELECT 
-	vw.subfacility, 
+	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
+	substring(vw.subfacility, '[^ ]* (.*)') AS data_type,
 	vw.vessel_name, 
 	count(CASE WHEN vw.deployment_id IS NULL THEN '1'::character varying ELSE vw.deployment_id END) AS no_deployments, 
 	sum(CASE WHEN vw.no_files_profiles IS NULL THEN (1)::bigint ELSE vw.no_files_profiles END) AS no_files_profiles,
@@ -360,12 +361,13 @@ CREATE or replace VIEW soop_data_summary_view AS
 	round(min(vw.min_lon), 1) AS min_lon, 
 	round(max(vw.max_lon), 1) AS max_lon
   FROM soop_all_deployments_view vw 
-	GROUP BY subfacility, vessel_name 
+	GROUP BY subfacility, data_type, vessel_name 
 
 UNION ALL 
 
   SELECT 
-	cpr_vw.subfacility, 
+	substring(cpr_vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
+	substring(cpr_vw.subfacility, '[^ ]* (.*)') AS data_type,
 	cpr_vw.vessel_name, 
 	count(cpr_vw.vessel_name) AS no_deployments, 
 	CASE WHEN sum(CASE WHEN cpr_vw.no_phyto_samples IS NULL THEN 0 ELSE 1 END) <> count(cpr_vw.vessel_name) THEN sum(cpr_vw.no_pci_samples + cpr_vw.no_zoop_samples) 
@@ -381,7 +383,7 @@ UNION ALL
 	round(min(cpr_vw.min_lon), 1) AS min_lon, 
 	round(max(cpr_vw.max_lon), 1) AS max_lon
   FROM soop_cpr_all_deployments_view cpr_vw
-	GROUP BY subfacility, vessel_name 
-	ORDER BY subfacility, vessel_name;
+	GROUP BY subfacility, data_type, vessel_name 
+	ORDER BY subfacility, data_type, vessel_name;
 
 grant all on table soop_data_summary_view to public;

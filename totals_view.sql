@@ -218,7 +218,7 @@ UNION ALL
 UNION ALL
 SELECT 'SOOP' AS facility,
 subfacility AS subfacility,
-NULL AS type,
+data_type AS type,
 NULL AS no_projects,
 COUNT(DISTINCT(vessel_name)) AS no_platforms,
 NULL AS no_instruments,
@@ -230,9 +230,9 @@ NULL::bigint AS no_data4,
 COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
 COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+NULL AS depth_range
 FROM soop_data_summary_view
-GROUP BY subfacility
+GROUP BY subfacility, data_type
 UNION ALL
 SELECT 'SOOP' AS facility,
 NULL AS subfacility,
@@ -240,16 +240,16 @@ NULL AS subfacility,
 NULL AS no_projects,
 COUNT(DISTINCT(vessel_name)) AS no_platforms,
 NULL AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_files_profiles) AS no_data,
-SUM(total_no_measurements) AS no_data2,
+count(CASE WHEN deployment_id IS NULL THEN '1'::character varying ELSE deployment_id END) AS no_deployments,
+sum(CASE WHEN no_files_profiles IS NULL THEN (1)::bigint ELSE no_files_profiles END) AS no_data,
+SUM(no_measurements) AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
 COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-FROM soop_data_summary_view
+NULL AS depth_range
+FROM soop_all_deployments_view
 -----------------------------------------------------------------------
 UNION ALL
 SELECT 'SRS' AS facility,
