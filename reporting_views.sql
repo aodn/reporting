@@ -31,7 +31,7 @@ SET search_path = report_test, pg_catalog, public, soop;
 -- ;
 
 -------------------------------
--- VIEWS FOR AATAMS_ACOUSTIC; reporting views for AATAMS_SATTAG_DM do not exist yet; Can delete the aatams_sattag manual tables in the report schema.
+-- VIEWS FOR AATAMS_ACOUSTIC
 -------------------------------
 CREATE OR REPLACE VIEW aatams_acoustictag_all_deployments_view AS
     SELECT *
@@ -45,19 +45,9 @@ CREATE OR REPLACE VIEW aatams_acoustictag_data_summary_species_view AS
     SELECT *
     FROM dw_aatams_acoustic.aatams_acoustictag_data_summary_species_view;
 
-CREATE OR REPLACE VIEW aatams_acoustictag_totals_project_view AS
-    SELECT *
-    FROM dw_aatams_acoustic.aatams_acoustictag_totals_project_view;
-
-CREATE OR REPLACE VIEW aatams_acoustictag_totals_species_view AS
-    SELECT *
-    FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view;
-
 grant all on table aatams_acoustictag_all_deployments_view to public;
 grant all on table aatams_acoustictag_data_summary_project_view to public;
 grant all on table aatams_acoustictag_data_summary_species_view to public;
-grant all on table aatams_acoustictag_totals_project_view to public;
-grant all on table aatams_acoustictag_totals_species_view to public;
 
 -------------------------------
 -- VIEWS FOR AATAMS_BIOLOGGING AND SATELLITE TAGGING; Can delete the aatams_sattag manual tables in the report schema.
@@ -1232,12 +1222,61 @@ grant all on table srs_data_summary_view to public;
 CREATE or replace view totals_view AS
   WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
-  FROM faimms_all_deployments_view)
+  FROM faimms_all_deployments_view),
+  aatams_acoustic_table AS (
+  SELECT (SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_species') AS no_species,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_species_detected') AS no_species_detected,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_releases') AS no_releases,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_detections') AS no_detections,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_unique_tag_ids_detected') AS no_unique_tag_ids_detected,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'tag_aatams_knows_about') AS tag_aatams_knows_about,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_detected_tags_aatams_knows_about') AS no_detected_tags_aatams_knows_about,
+(SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'tags_detected_by_species') AS tags_detected_by_species)
+-------------------------------
+-- AATAMS - Acoustic
+-------------------------------
+  SELECT 'AATAMS' AS facility,
+    'Acoustic tagging' AS subfacility,
+    funding_type::text AS type,
+    no_projects::bigint AS no_projects,
+    no_installations::numeric AS no_platforms,
+    no_stations::numeric AS no_instruments,
+    no_deployments::numeric AS no_deployments,
+    no_detections::numeric AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    NULL AS temporal_range,
+    NULL AS lat_range,
+    NULL AS lon_range,
+    NULL AS depth_range
+  FROM dw_aatams_acoustic.aatams_acoustictag_totals_project_view
+    
+UNION ALL
+
+  SELECT 'AATAMS' AS facility,
+    'Acoustic tagging' AS subfacility,
+    'Species' AS type,
+    no_species::bigint AS no_projects,
+    no_species_detected::numeric AS no_platforms,
+    tags_detected_by_species::numeric AS no_instruments,
+    no_releases::numeric AS no_deployments,
+    no_detections::numeric AS no_data,
+    no_unique_tag_ids_detected::numeric AS no_data2,
+    tag_aatams_knows_about::bigint AS no_data3,
+    no_detected_tags_aatams_knows_about::bigint AS no_data4,
+    NULL AS temporal_range,
+    NULL AS lat_range,
+    NULL AS lon_range,
+    NULL AS depth_range
+  FROM aatams_acoustic_table
 
 -------------------------------
 -- AATAMS - Biologging
 -------------------------------
- SELECT 'AATAMS' AS facility,
+UNION ALL  
+
+  SELECT 'AATAMS' AS facility,
     'Biologging' AS subfacility,
     data_type AS type,
     COUNT(DISTINCT(sattag_program)) AS no_projects,
@@ -1280,46 +1319,47 @@ UNION ALL
 UNION ALL
 
   SELECT 'ABOS' AS facility,
-    sub_facility AS subfacility,
-    file_type AS type,
-    NULL AS no_projects,
-    COUNT(DISTINCT(platform_code)) AS no_platforms,
-    COUNT(DISTINCT(data_category)) AS no_instruments,
-    SUM(no_deployments) AS no_deployments,
-    SUM(no_fv1) AS no_data,
-    SUM(no_fv2) AS no_data2,
-    NULL::bigint AS no_data3,
-    NULL::bigint AS no_data4,
-    COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-    NULL AS lat_range,
-    NULL AS lon_range,
-    NULL AS depth_range
+  sub_facility AS subfacility,
+  file_type AS type,
+  NULL AS no_projects,
+  COUNT(DISTINCT(platform_code)) AS no_platforms,
+  COUNT(DISTINCT(data_category)) AS no_instruments,
+  SUM(no_deployments) AS no_deployments,
+  SUM(no_fv1) AS no_data,
+  SUM(no_fv2) AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+  NULL AS lat_range,
+  NULL AS lon_range,
+  NULL AS depth_range
   FROM abos_data_summary_view
-    GROUP BY sub_facility, file_type
+  GROUP BY sub_facility, file_type
 
 UNION ALL
 
   SELECT 'ABOS' AS facility,
-    NULL AS subfacility,
-    'TOTAL' AS type,
-    NULL::BIGINT AS no_projects,
-    COUNT(DISTINCT(platform_code)) AS no_platforms,
-    COUNT(DISTINCT(data_category)) AS no_instruments,
-    SUM(no_deployments) AS no_deployments,
-    SUM(no_fv1) AS no_data,
-    SUM(no_fv2) AS no_data2,
-    NULL::bigint AS no_data3,
-    NULL::bigint AS no_data4,
-    COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
-    NULL AS lat_range,
-    NULL AS lon_range,
-    NULL AS depth_range
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  NULL::BIGINT AS no_projects,
+  COUNT(DISTINCT(platform_code)) AS no_platforms,
+  COUNT(DISTINCT(data_category)) AS no_instruments,
+  SUM(no_deployments) AS no_deployments,
+  SUM(no_fv1) AS no_data,
+  SUM(no_fv2) AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(coverage_start),'DD/MM/YYYY')||' - '||to_char(max(coverage_end),'DD/MM/YYYY')) AS temporal_range,
+  NULL AS lat_range,
+  NULL AS lon_range,
+  NULL AS depth_range
   FROM abos_data_summary_view
 
 -------------------------------
 -- ACORN
 -------------------------------
 UNION ALL
+
 SELECT 'ACORN' AS facility,
 NULL AS subfacility,
 'TOTAL' AS type,
@@ -1336,7 +1376,6 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM acorn_all_deployments_view
-
 -------------------------------
 -- ANFOG
 -------------------------------
@@ -1376,7 +1415,7 @@ UNION ALL
     COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
     COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
     COALESCE(min(max_depth)||' - '||max(max_depth)) AS depth_range
-  FROM anfog_all_deployments_view;
+  FROM anfog_all_deployments_view
 -------------------------------
 -- Argo
 -------------------------------
@@ -1436,7 +1475,7 @@ UNION ALL
   COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
   COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
   COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM faimms_data_summary_view,interm_table
+  FROM faimms_data_summary_view, interm_table
 -------------------------------
 -- SOOP
 -------------------------------
