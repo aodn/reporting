@@ -1,7 +1,7 @@
-﻿
+﻿SET SEARCH_PATH = report_test, public, anmn;
+
 CREATE TABLE IF NOT EXISTS monthly_snapshot
-( year double precision,
-  month text,
+( timestamp timestamp without time zone,
   facility text,
   subfacility text,
   data_type text,
@@ -13,18 +13,20 @@ CREATE TABLE IF NOT EXISTS monthly_snapshot
   no_data2 numeric,
   no_data3 bigint,
   no_data4 bigint,
-  temporal_range text,
-  lat_range text,
-  lon_range text,
-  depth_range text
+  start_date date,
+  end_date date,
+  min_lat numeric,
+  max_lat numeric,
+  min_lon numeric,
+  max_lon numeric,
+  min_depth numeric,
+  max_depth numeric
 );
-
 grant all on table monthly_snapshot to public;
 
-
-INSERT INTO monthly_snapshot (year, month, facility, subfacility, data_type, no_projects, no_platforms, no_instruments, no_deployments, no_data, no_data2, no_data3, no_data4, temporal_range, lat_range, lon_range, depth_range)
-SELECT date_part('year',now()) AS year,
-	to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month') AS month,
+INSERT INTO monthly_snapshot (timestamp, facility, subfacility, data_type, no_projects, no_platforms, no_instruments, no_deployments, no_data, no_data2, no_data3, no_data4, 
+start_date,end_date,min_lat,max_lat,min_lon,max_lon,min_depth,max_depth)
+SELECT now()::timestamp without time zone,
 	facility,
 	subfacility,
 	type AS data_type,
@@ -36,11 +38,13 @@ SELECT date_part('year',now()) AS year,
 	no_data2,
 	no_data3,
 	no_data4,
-	temporal_range,
-	lat_range,
-	lon_range,
-	depth_range
+	to_date(substring(temporal_range,'[a-zA-Z0-9/]+'),'DD/MM/YYYY') AS start_date,
+	to_date(substring(temporal_range,'-(.*)'),'DD/MM/YYYY') AS end_date,
+	substring(lat_range,'(.*) - ')::numeric AS min_lat,
+	substring(lat_range,' - (.*)')::numeric AS max_lat,
+	substring(lon_range,'(.*) - ')::numeric AS min_lon,
+	substring(lon_range,' - (.*)')::numeric AS max_lon,
+	substring(depth_range,'(.*) - ')::numeric AS min_depth,
+	substring(depth_range,' - (.*)')::numeric AS max_depth
   FROM totals_view
 WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month'))
-
-SELECT * FROM monthly_snapshot_view;
