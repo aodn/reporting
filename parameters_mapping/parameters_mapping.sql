@@ -1,4 +1,4 @@
-﻿COPY parameters.parameters TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE cf_standard_name, cf_alias_name, long_name, imos_vocabulary_name ESCAPE AS ',';
+﻿-- COPY parameters.parameters TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE cf_standard_name, cf_alias_name, long_name, imos_vocabulary_name ESCAPE AS ',';
 
 SET SEARCH_PATH = parameters_mapping, public;
 CREATE TABLE parameters
@@ -11,7 +11,7 @@ CREATE TABLE parameters
   imos_vocabulary_id character varying(5),
   CONSTRAINT parameters_pkey2 PRIMARY KEY (unique_id)
 );
-INSERT INTO parameters.parameters (unique_id,
+INSERT INTO parameters (unique_id,
   cf_standard_name,
   cf_alias_name,
   long_name,
@@ -34,13 +34,31 @@ INSERT INTO parameters.parameters (unique_id,
 (15,'surface_downwelling_photosynthetic_radiative_flux_in_air','','','Downwelling vector irradiance as photons (PAR wavelengths) in the atmosphere',572),
 (16,'','','platform relative wind direction','Wind direction (relative to moving platform) in the atmosphere',582),
 (17,'','','platform relative wind speed','Wind speed (relative to moving platform) in the atmosphere',577),
-(18,'','','GPS receiver altitude','','')
+(18,'','','GPS receiver altitude','','');
 
 
+-- COPY qc.qc_scheme TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE qc_scheme_short_name, qc_scheme_definition ESCAPE AS ',';
+CREATE TABLE qc_scheme
+(
+  qc_scheme_id integer NOT NULL,
+  qc_scheme_short_name character varying(50),
+  qc_scheme_definition character varying(255),
+  CONSTRAINT qc_scheme_pkey PRIMARY KEY (qc_scheme_id)
+);
+
+INSERT INTO qc_scheme (qc_scheme_id,
+  qc_scheme_short_name,
+  qc_scheme_definition) 
+ VALUES (1,'IMOS IODE','IMOS standard set using the IODE flags'),
+(2,'Argo measurement flag scale','ARGO quality control procedure for measurements'),
+(3,'Argo profile quality flags','ARGO quality control procedure for profiles'),
+(4,'BOM','BOM (SST and Air-Sea flux) quality control procedure'),
+(5,'WOCE QC flags','WOCE quality control flags (Multidisciplinary Underway Network - CO2 measurements)'),
+(6,'WOCE QC subflags','WOCE QC subflags are used to provide more information if CO2 observations are flagged as questionable');
 
 
-COPY qc.qc_flags TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE flag_value, flag_meaning, flag_description ESCAPE AS ',';
-CREATE TABLE parameters.qc_flags
+-- COPY qc.qc_flags TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE flag_value, flag_meaning, flag_description ESCAPE AS ',';
+CREATE TABLE qc_flags
 (
   id integer NOT NULL,
   qc_scheme_id integer,
@@ -49,11 +67,11 @@ CREATE TABLE parameters.qc_flags
   flag_description character varying(500),
   CONSTRAINT qc_flags_pkey PRIMARY KEY (id),
   CONSTRAINT qc_flags_fkey FOREIGN KEY (qc_scheme_id)
-      REFERENCES qc.qc_scheme (qc_scheme_id) MATCH SIMPLE
+      REFERENCES qc_scheme (qc_scheme_id) MATCH SIMPLE
       ON UPDATE CASCADE ON DELETE CASCADE
-)
+);
 
-INSERT INTO parameters.qc_flags (id ,
+INSERT INTO qc_flags (id ,
   qc_scheme_id,
   flag_value,
   flag_meaning,
@@ -109,30 +127,10 @@ INSERT INTO parameters.qc_flags (id ,
 (49,6,'6','Questionable pressure',''),
 (50,6,'7','Low EQU gas flow',''),
 (51,6,'8','Questionable air value',''),
-(52,6,'10','Other, water flow','')
+(52,6,'10','Other, water flow','');
 
-COPY qc.qc_scheme TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE qc_scheme_short_name, qc_scheme_definition ESCAPE AS ',';
-CREATE TABLE parameters.qc_scheme
-(
-  qc_scheme_id integer NOT NULL,
-  qc_scheme_short_name character varying(50),
-  qc_scheme_definition character varying(255),
-  CONSTRAINT qc_scheme_pkey PRIMARY KEY (qc_scheme_id)
-);
-
-INSERT INTO parameters.qc_scheme (qc_scheme_id,
-  qc_scheme_short_name,
-  qc_scheme_definition) 
- VALUES (1,'IMOS IODE','IMOS standard set using the IODE flags'),
-(2,'Argo measurement flag scale','ARGO quality control procedure for measurements'),
-(3,'Argo profile quality flags','ARGO quality control procedure for profiles'),
-(4,'BOM','BOM (SST and Air-Sea flux) quality control procedure'),
-(5,'WOCE QC flags','WOCE quality control flags (Multidisciplinary Underway Network - CO2 measurements)'),
-(6,'WOCE QC subflags','WOCE QC subflags are used to provide more information if CO2 observations are flagged as questionable')
-
-
-COPY soop_sst.soop_sst_variables TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE variable_name, unit_info ESCAPE AS ',';
-CREATE TABLE parameters.parameters_mapping
+-- COPY soop_sst.soop_sst_variables TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE variable_name, unit_info ESCAPE AS ',';
+CREATE TABLE parameters_mapping
 ( facility character varying(10),
   subfacility character varying(50),
   product character varying(50),
@@ -142,7 +140,8 @@ CREATE TABLE parameters.parameters_mapping
   unit_info character varying(255),
   CONSTRAINT parameters_mapping_pkey PRIMARY KEY (facility, subfacility, product, variable_name)
 );
-INSERT INTO parameters.parameters_mapping
+
+INSERT INTO parameters_mapping
 VALUES ('SOOP','SST','','AIRT',1,429,''),
 ('SOOP','SST','','ATMP',10,511,''),
 ('SOOP','SST','','CNDC',2,483,''),
@@ -167,16 +166,16 @@ VALUES ('SOOP','SST','','AIRT',1,429,''),
 ('SOOP','SST','','TEMP_4',13,429,''),
 ('SOOP','SST','','WDIR',8,441,'Clockwise from True North'),
 ('SOOP','SST','','WETT',11,429,''),
-('SOOP','SST','','WSPD',9,433,'')
+('SOOP','SST','','WSPD',9,433,'');
 
-CREATE VIEW parameters.soop_sst_metadata_summary AS
+CREATE VIEW soop_sst_metadata_summary AS
 SELECT 'data_column_name' || ',' || 'cf_standard_name' || ',' || 'imos_vocabulary_name' || ',' || 'unit_name' || ',' || 'unit_short_name' || ',' || 'unit_info'
 UNION ALL
 
 SELECT variable_name || ',' || cf_standard_name || ',' || imos_vocabulary_name || ',' || vocabulary_term_name || ',' || vocabulary_term_short_name || ',' || unit_info
-FROM parameters.parameters_mapping
+FROM parameters_mapping
 LEFT JOIN contr_vocab_db.unit_view ON parameters_mapping.unit_id = unit_view.vocabulary_term_code
-LEFT JOIN parameters.parameters ON parameters.unique_id = parameters_mapping.parameter_id
+LEFT JOIN parameters ON parameters.unique_id = parameters_mapping.parameter_id
 WHERE facility = 'SOOP' AND subfacility = 'SST'
 UNION ALL
 
@@ -187,8 +186,6 @@ SELECT 'qc_scheme_short_name' || ',' || 'flag_value' || ',' || 'flag_meaning' ||
 UNION ALL
 
 SELECT qc_scheme_short_name || ',' || flag_value || ',' || flag_meaning || ',' || flag_description
-FROM parameters.qc_flags
-LEFT JOIN parameters.qc_scheme ON qc_scheme.qc_scheme_id = qc_flags.qc_scheme_id
+FROM qc_flags
+LEFT JOIN qc_scheme ON qc_scheme.qc_scheme_id = qc_flags.qc_scheme_id
 WHERE qc_flags.qc_scheme_id = 4;
-
-SELECT * FROM parameters.soop_sst_metadata_summary
