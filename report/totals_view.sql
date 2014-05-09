@@ -315,7 +315,7 @@ NULL AS no_data,
 NULL AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||CASE WHEN to_char(max(latest_date),'DD/MM/YYYY') IS NULL THEN 'NA' ELSE to_char(max(latest_date),'DD/MM/YYYY') END) AS temporal_range,
+COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range

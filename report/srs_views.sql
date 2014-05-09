@@ -39,7 +39,7 @@ UNION ALL
 	ELSE NULL END AS deployment_code, 
 	NULL::character varying AS sensor_name, 
 	date(srs_gridded_products_manual.deployment_start) AS start_date, 
-	date(srs_gridded_products_manual.deployment_end) AS end_date, 
+	CASE WHEN date(srs_gridded_products_manual.deployment_end) IS NULL THEN date( to_char(now(),'DD/MM/YYYY')) END AS end_date, 
 	((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, 
 	NULL::numeric AS lat, 
 	NULL::numeric AS lon 

@@ -47,4 +47,4 @@ SELECT now()::timestamp without time zone,
 	substring(depth_range,'(.*) - ')::numeric AS min_depth,
 	substring(depth_range,' - (.*)')::numeric AS max_depth
   FROM totals_view
-WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month'))
+-- WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month'))
