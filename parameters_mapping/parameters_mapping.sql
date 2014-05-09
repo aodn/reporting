@@ -1,6 +1,7 @@
 ﻿COPY parameters.parameters TO stdout WITH DELIMITER ',' CSV QUOTE AS '''' FORCE QUOTE cf_standard_name, cf_alias_name, long_name, imos_vocabulary_name ESCAPE AS ',';
 
-CREATE TABLE parameters.parameters
+SET SEARCH_PATH = parameters_mapping, public;
+CREATE TABLE parameters
 (
   unique_id integer NOT NULL,
   cf_standard_name character varying(255),
