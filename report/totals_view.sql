@@ -148,20 +148,41 @@ UNION ALL
 
 SELECT 'ACORN' AS facility,
 NULL AS subfacility,
-'TOTAL' AS type,
-SUM(CASE WHEN code_type = 'site' THEN 1 ELSE 0 END) AS no_projects,
-SUM(CASE WHEN code_type = 'station' THEN 1 ELSE 0 END) AS no_platforms,
+data_type AS type,
+COUNT(DISTINCT(site)) AS no_projects,
+NULL AS no_platforms,
 NULL::bigint AS no_instruments,
 NULL::bigint AS no_deployments,
-SUM(CASE WHEN qc_radial = 0 THEN 0 WHEN code_type = 'station' THEN 0 ELSE 1 END) AS no_data,
-SUM(CASE WHEN qc_grid = 0 OR qc_grid IS NULL THEN 0 ELSE 1 END) AS no_data2,
+SUM(total_no_files) AS no_data,
+round(((max(time_end)-min(time_start))/365.25)::numeric, 1) AS no_data2,
 NULL::bigint AS no_data3,
 NULL::bigint AS no_data4,
-COALESCE(to_char(min(start),'DD/MM/YYYY')||' - '||to_char(max(start),'DD/MM/YYYY')) AS temporal_range,
+COALESCE(to_char(min(time_start),'DD/MM/YYYY')||' - '||to_char(max(time_end),'DD/MM/YYYY')) AS temporal_range,
+NULL AS lat_range,
+NULL AS lon_range,
+NULL AS depth_range
+FROM acorn_data_summary_view
+GROUP BY data_type
+
+UNION ALL
+
+SELECT 'ACORN' AS facility,
+NULL AS subfacility,
+'TOTAL' AS type,
+COUNT(DISTINCT(site)) AS no_projects,
+NULL AS no_platforms,
+NULL::bigint AS no_instruments,
+NULL::bigint AS no_deployments,
+SUM(no_files) AS no_data,
+round(((max(time_end)-min(time_start))/365.25)::numeric, 1) AS no_data2,
+NULL::bigint AS no_data3,
+NULL::bigint AS no_data4,
+COALESCE(to_char(min(time_start),'DD/MM/YYYY')||' - '||to_char(max(time_end),'DD/MM/YYYY')) AS temporal_range,
 NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM acorn_all_deployments_view
+
 -------------------------------
 -- ANFOG
 -------------------------------

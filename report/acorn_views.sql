@@ -1,31 +1,59 @@
 ﻿SET search_path = report_test, pg_catalog, public;
 
-CREATE or replace VIEW acorn_all_deployments_view AS
-    SELECT m.code_type, 
-    CASE WHEN m.site_id = 1 THEN 'Capricorn Bunker Group' 
-	WHEN m.site_id = 2 THEN 'Rottnest Shelf' 
-	WHEN m.site_id = 3 THEN 'South Australia Gulf' 
-	WHEN m.site_id = 4 THEN 'Coffs Harbour' 
-	WHEN m.site_id = 5 THEN 'Turquoise Coast' 
-	ELSE 'Bonney Coast' END AS site,
-    m.code_full_name,
-    date(m.start_date_of_transmission) AS start, 
-    (m.non_qc_data_availability_percent)::numeric AS non_qc_radial, 
-    (m.non_qc_data_portal_percent)::numeric AS non_qc_grid, 
-    (m.qc_data_availability_percent)::numeric AS qc_radial, 
-    (m.qc_data_portal_percent)::numeric AS qc_grid, 
-    date(m.last_qc_data_received) AS last_qc_date, 
-    date(m.data_on_staging) AS data_on_staging, 
-    date(m.data_on_opendap) AS data_on_opendap, 
-    date(m.data_on_portal) AS data_on_portal, 
-    (date_part('day'::text, (m.last_qc_data_received - m.start_date_of_transmission)))::integer AS qc_coverage_duration, 
-    (date_part('day'::text, (m.data_on_opendap - m.start_date_of_transmission)))::integer AS days_to_process_and_upload, 
-    CASE WHEN m.data_on_portal IS NULL THEN (date_part('day', (m.data_on_opendap - m.start_date_of_transmission)))::integer 
-	ELSE (date_part('day'::text, (m.data_on_portal - m.data_on_opendap)))::integer END AS days_to_make_public, 
-    CASE WHEN m.mest_creation IS NULL THEN 'No' 
-	ELSE 'Yes' END AS metadata 
-    FROM report.acorn_manual m
-    GROUP BY m.code_type, m.site_id, m.code_full_name, m.start_date_of_transmission, m.non_qc_data_availability_percent, m.non_qc_data_portal_percent, m.qc_data_availability_percent, m.qc_data_portal_percent, m.last_qc_data_received, m.data_on_staging, m.data_on_opendap, m.data_on_portal, m.mest_creation 
-    ORDER BY site, m.code_type, m.code_full_name;
+CREATE OR REPLACE VIEW acorn_all_deployments_view AS
+WITH a AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_hourly_avg_qc.acorn_hourly_avg_qc_timeseries_url),
+     b AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url)
+  SELECT 'Gridded product - QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(a.month || ' ' || a.year) AS month_year,
+	a.month,
+	a.year
+  FROM acorn_hourly_avg_qc.acorn_hourly_avg_qc_timeseries_url u
+  JOIN a ON a.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+
+UNION ALL
+
+  SELECT 'Gridded product - non QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(b.month || ' ' || b.year) AS month_year,
+	b.month,
+	b.year
+  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url u
+  JOIN b ON b.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+	ORDER BY data_type, site, time_start;
 
 grant all on table acorn_all_deployments_view to public;
+
+CREATE OR REPLACE VIEW acorn_data_summary_view AS
+  SELECT data_type,
+	site,
+	SUM(no_files) AS total_no_files,
+	min(time_start) AS time_start,
+	max(time_end) AS time_end,
+	round((max(time_end)-min(time_start))::numeric, 0) AS coverage_duration,
+	round(SUM(no_files) / (round((max(time_end)-min(time_start))::numeric, 0) * 24) * 100, 1) AS percentage_coverage
+  FROM acorn_all_deployments_view
+	GROUP BY data_type, site
+	ORDER BY data_type, site;
