@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public, soop;
+﻿SET search_path = report_test, pg_catalog, public;
 
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
@@ -323,7 +323,7 @@ UNION ALL
 
   SELECT 'XBT Delayed-mode' AS subfacility,
 	COALESCE(m."XBT_line" || ' | ' || "XBT_line_description") AS vessel_name,
-	COUNT(DISTINCT("XBT_cruise_ID")) AS deployment_id,
+	NULL AS deployment_id,
 	date_part('year',m."TIME") AS year,
 	COUNT(m.profile_id) AS no_files_profiles,
 	SUM(nb_measurements) AS no_measurements,
