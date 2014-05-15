@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public, anmn;
+﻿SET search_path = report_test, pg_catalog, public;
 
 CREATE or replace VIEW anmn_all_deployments_view AS
   WITH site_view AS (
@@ -34,7 +34,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	(v.time_coverage_end - v.time_coverage_start) AS coverage_duration, 
 	(v.time_deployment_end - v.time_deployment_start) AS deployment_duration, 
 	GREATEST('00:00:00'::interval, (LEAST(v.time_deployment_end, v.time_coverage_end) - GREATEST(v.time_deployment_start, v.time_coverage_start))) AS good_data_duration
-  FROM anmn.anmn_vw v 
+  FROM dw_anmn.anmn_mv v 
 	ORDER BY subfacility, deployment_code, data_category)
   SELECT 
 	f.subfacility, 

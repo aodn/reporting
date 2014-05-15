@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public, abos;
+﻿SET search_path = report_test, pg_catalog, public;
 
 CREATE or replace VIEW abos_all_deployments_view AS
     WITH table_a AS (
@@ -20,7 +20,7 @@ CREATE or replace VIEW abos_all_deployments_view AS
     (date_part('day', (last_modified - date_created)))::integer AS days_to_process_and_upload, 
     (date_part('day', (last_indexed - last_modified)))::integer AS days_to_make_public, 
     deployment_number, author, principal_investigator 
-    FROM abos.abos_file_vw
+    FROM dw_abos.abos_file
     WHERE status IS DISTINCT FROM 'DELETED'
     ORDER BY sub_facility, platform_code, data_category)
 SELECT 
