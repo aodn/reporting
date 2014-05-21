@@ -1,4 +1,4 @@
-﻿SET search_path =report_test, public,anmn_realtime;
+﻿SET search_path =report_test, public;
 
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
@@ -15,7 +15,7 @@ CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
 	 CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
 	 CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
 	      ELSE instrument_nominal_depth::numeric END AS sensor_depth
-  FROM anmn_vw
+  FROM dw_anmn_realtime.anmn_mv
 	 ORDER BY site_name, channel_id, start_date;
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
