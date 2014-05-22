@@ -254,7 +254,7 @@ UNION ALL
 	SUM(no_campaigns) AS no_platforms,
 	SUM(no_sites) AS no_instruments,
 	NULL AS no_deployments,
-	NULL AS no_data,
+	SUM(total_no_images) AS no_data,
 	NULL AS no_data2,
 	NULL::bigint AS no_data3,
 	NULL::bigint AS no_data4,
