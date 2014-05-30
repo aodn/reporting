@@ -1,4 +1,4 @@
-﻿SET SEARCH_PATH = report_test, pg_catalog, public;
+﻿SET SEARCH_PATH = report_test, public;
 
 -------------------------------
 -------------------------------

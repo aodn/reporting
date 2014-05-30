@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public;
+﻿SET search_path = report_test, public;
 
 CREATE OR REPLACE VIEW acorn_all_deployments_view AS
 WITH a AS (
@@ -52,8 +52,10 @@ CREATE OR REPLACE VIEW acorn_data_summary_view AS
 	SUM(no_files) AS total_no_files,
 	min(time_start) AS time_start,
 	max(time_end) AS time_end,
-	round((max(time_end)-min(time_start))::numeric, 0) AS coverage_duration,
+	round(((max(time_end)-min(time_start))::numeric)/365.25, 1) AS coverage_duration,
 	round(SUM(no_files) / (round((max(time_end)-min(time_start))::numeric, 0) * 24) * 100, 1) AS percentage_coverage
   FROM acorn_all_deployments_view
 	GROUP BY data_type, site
 	ORDER BY data_type, site;
+
+grant all on table acorn_data_summary_view to public;
