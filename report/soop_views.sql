@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public;
+﻿SET search_path = report_test, public;
 
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
@@ -346,7 +346,7 @@ grant all on table soop_all_deployments_view to public;
 CREATE or replace VIEW soop_data_summary_view AS
  SELECT 
 	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
-	substring(vw.subfacility, '[^ ]* (.*)') AS data_type,
+	CASE WHEN substring(vw.subfacility, '[^ ]* (.*)') IS NULL THEN 'Delayed-mode' ELSE substring(vw.subfacility, '[^ ]* (.*)') END AS data_type,
 	vw.vessel_name, 
 	count(CASE WHEN vw.deployment_id IS NULL THEN '1'::character varying ELSE vw.deployment_id END) AS no_deployments, 
 	sum(CASE WHEN vw.no_files_profiles IS NULL THEN (1)::bigint ELSE vw.no_files_profiles END) AS no_files_profiles,
