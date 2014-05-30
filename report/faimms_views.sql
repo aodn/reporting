@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public;
+﻿SET search_path = report_test, public;
 
 CREATE or replace VIEW faimms_all_deployments_view AS
   SELECT DISTINCT m.platform_code AS site_name, 
@@ -7,7 +7,7 @@ CREATE or replace VIEW faimms_all_deployments_view AS
 	(m."DEPTH")::numeric AS sensor_depth, 
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
-	(date_part('day', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+	round((date_part('day', (m.time_end - m.time_start)))::numeric/365.25,1) AS coverage_duration, 
 	f.instrument AS sensor_name, 
 	m."VARNAME" AS parameter, 
 	m.channel_id AS channel_id,
