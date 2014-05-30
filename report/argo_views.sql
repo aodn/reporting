@@ -1,8 +1,8 @@
-﻿SET search_path = report_test, pg_catalog, public, argo;
+﻿SET search_path = report_test, pg_catalog, public;
 
 CREATE or replace VIEW argo_all_deployments_view AS
     SELECT 
-    m.data_centre AS organisation, 
+    CASE WHEN pi_name = 'Ji, Fengying' THEN 'csio' ELSE m.data_centre END AS organisation, 
     CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 	ELSE 'Oxygen sensor' END AS oxygen_sensor, 
     m.platform_number AS platform_code, 
