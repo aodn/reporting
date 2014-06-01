@@ -1,4 +1,4 @@
-﻿SET SEARCH_PATH = report_test, public, anmn;
+﻿SET SEARCH_PATH = report_test, public;
 
 CREATE TABLE IF NOT EXISTS monthly_snapshot
 ( timestamp timestamp without time zone,

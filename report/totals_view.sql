@@ -58,7 +58,7 @@ UNION ALL
   FROM aatams_acoustic_table
 
 -------------------------------
--- AATAMS - Biologging
+-- AATAMS - Satellite tagging
 -------------------------------
 UNION ALL  
 
@@ -99,6 +99,28 @@ UNION ALL
     COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM aatams_sattag_all_deployments_view
 
+-------------------------------
+-- AATAMS - Satellite tagging
+-------------------------------
+UNION ALL  
+
+  SELECT 'AATAMS' AS facility,
+    'Biologging' AS subfacility,
+    tagged_animals AS type,
+    NULL AS no_projects,
+    nb_animals AS no_platforms,
+    NULL AS no_instruments,
+    NULL AS no_deployments,
+    total_nb_measurements AS no_data,
+    NULL AS no_data2,
+    NULL::bigint AS no_data3,
+    NULL::bigint AS no_data4,
+    COALESCE(date(earliest_date)||' - '||date(latest_date)) AS temporal_range,
+    COALESCE(min_lat||' - '||max_lat) AS lat_range,
+    COALESCE(min_lon||' - '||max_lon) AS lon_range,
+    NULL AS depth_range
+  FROM aatams_biologging_data_summary_view
+    
 -------------------------------
 -- ABOS
 -------------------------------
