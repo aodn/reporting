@@ -20,7 +20,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-SET search_path = report_test, public;
+SET search_path = reporting, public;
 
 
 -- -- drop all current views
@@ -302,35 +302,65 @@ grant all on table abos_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ACORN; Still using the acorn_manual table from the report schema: needs to be updated to use the two acorn schemas - acorn_hourly_avg_nonqc & acorn_hourly_avg_qc
 -------------------------------
-CREATE or replace VIEW acorn_all_deployments_view AS
-    SELECT m.code_type, 
-    CASE WHEN m.site_id = 1 THEN 'Capricorn Bunker Group' 
-    WHEN m.site_id = 2 THEN 'Rottnest Shelf' 
-    WHEN m.site_id = 3 THEN 'South Australia Gulf' 
-    WHEN m.site_id = 4 THEN 'Coffs Harbour' 
-    WHEN m.site_id = 5 THEN 'Turquoise Coast' 
-    ELSE 'Bonney Coast' END AS site,
-    m.code_full_name,
-    date(m.start_date_of_transmission) AS start, 
-    (m.non_qc_data_availability_percent)::numeric AS non_qc_radial, 
-    (m.non_qc_data_portal_percent)::numeric AS non_qc_grid, 
-    (m.qc_data_availability_percent)::numeric AS qc_radial, 
-    (m.qc_data_portal_percent)::numeric AS qc_grid, 
-    date(m.last_qc_data_received) AS last_qc_date, 
-    date(m.data_on_staging) AS data_on_staging, 
-    date(m.data_on_opendap) AS data_on_opendap, 
-    date(m.data_on_portal) AS data_on_portal, 
-    (date_part('day'::text, (m.last_qc_data_received - m.start_date_of_transmission)))::integer AS qc_coverage_duration, 
-    (date_part('day'::text, (m.data_on_opendap - m.start_date_of_transmission)))::integer AS days_to_process_and_upload, 
-    CASE WHEN m.data_on_portal IS NULL THEN (date_part('day', (m.data_on_opendap - m.start_date_of_transmission)))::integer 
-    ELSE (date_part('day'::text, (m.data_on_portal - m.data_on_opendap)))::integer END AS days_to_make_public, 
-    CASE WHEN m.mest_creation IS NULL THEN 'No' 
-    ELSE 'Yes' END AS metadata 
-    FROM report.acorn_manual m
-    GROUP BY m.code_type, m.site_id, m.code_full_name, m.start_date_of_transmission, m.non_qc_data_availability_percent, m.non_qc_data_portal_percent, m.qc_data_availability_percent, m.qc_data_portal_percent, m.last_qc_data_received, m.data_on_staging, m.data_on_opendap, m.data_on_portal, m.mest_creation 
-    ORDER BY site, m.code_type, m.code_full_name;
+CREATE OR REPLACE VIEW acorn_all_deployments_view AS
+WITH a AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_hourly_avg_qc.acorn_hourly_avg_qc_timeseries_url),
+     b AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url)
+  SELECT 'Gridded product - QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(a.month || ' ' || a.year) AS month_year,
+	a.month,
+	a.year
+  FROM acorn_hourly_avg_qc.acorn_hourly_avg_qc_timeseries_url u
+  JOIN a ON a.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+
+UNION ALL
+
+  SELECT 'Gridded product - non QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(b.month || ' ' || b.year) AS month_year,
+	b.month,
+	b.year
+  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url u
+  JOIN b ON b.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+	ORDER BY data_type, site, time_start;
 
 grant all on table acorn_all_deployments_view to public;
+
+CREATE OR REPLACE VIEW acorn_data_summary_view AS
+  SELECT data_type,
+	site,
+	SUM(no_files) AS total_no_files,
+	min(time_start) AS time_start,
+	max(time_end) AS time_end,
+	round(((max(time_end)-min(time_start))::numeric)/365.25, 1) AS coverage_duration,
+	round(SUM(no_files) / (round((max(time_end)-min(time_start))::numeric, 0) * 24) * 100, 1) AS percentage_coverage
+  FROM acorn_all_deployments_view
+	GROUP BY data_type, site
+	ORDER BY data_type, site;
+
+grant all on table acorn_data_summary_view to public;
 
 -------------------------------
 -- VIEW FOR ANFOG; Now using the anfog_dm schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
@@ -855,8 +885,6 @@ UNION ALL
 
 grant all on table soop_cpr_all_deployments_view to public;
 
-
-
 -------------------------------
 -- VIEW FOR SOOP; Now using what's in the soop schema so don't need the dw_soop schema anymore, nor any report.manual tables.
 ------------------------------- 
@@ -1105,46 +1133,46 @@ grant all on table soop_all_deployments_view to public;
 
 CREATE or replace VIEW soop_data_summary_view AS
  SELECT 
-  substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
-  substring(vw.subfacility, '[^ ]* (.*)') AS data_type,
-  vw.vessel_name, 
-  count(CASE WHEN vw.deployment_id IS NULL THEN '1'::character varying ELSE vw.deployment_id END) AS no_deployments, 
-  sum(CASE WHEN vw.no_files_profiles IS NULL THEN (1)::bigint ELSE vw.no_files_profiles END) AS no_files_profiles,
-  SUM(no_measurements) AS total_no_measurements,
-  COALESCE(round(min(vw.min_lat), 1) || '/' || round(max(vw.max_lat), 1)) AS lat_range, 
-  COALESCE(round(min(vw.min_lon), 1) || '/' || round(max(vw.max_lon), 1)) AS lon_range,
-  min(vw.start_date) AS earliest_date, 
-  max(vw.end_date) AS latest_date, 
-  sum(vw.coverage_duration) AS coverage_duration,
-  round(min(vw.min_lat), 1) AS min_lat, 
-  round(max(vw.max_lat), 1) AS max_lat, 
-  round(min(vw.min_lon), 1) AS min_lon, 
-  round(max(vw.max_lon), 1) AS max_lon
+	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
+	CASE WHEN substring(vw.subfacility, '[^ ]* (.*)') IS NULL THEN 'Delayed-mode' ELSE substring(vw.subfacility, '[^ ]* (.*)') END AS data_type,
+	vw.vessel_name, 
+	count(CASE WHEN vw.deployment_id IS NULL THEN '1'::character varying ELSE vw.deployment_id END) AS no_deployments, 
+	sum(CASE WHEN vw.no_files_profiles IS NULL THEN (1)::bigint ELSE vw.no_files_profiles END) AS no_files_profiles,
+	SUM(no_measurements) AS total_no_measurements,
+	COALESCE(round(min(vw.min_lat), 1) || '/' || round(max(vw.max_lat), 1)) AS lat_range, 
+	COALESCE(round(min(vw.min_lon), 1) || '/' || round(max(vw.max_lon), 1)) AS lon_range,
+	min(vw.start_date) AS earliest_date, 
+	max(vw.end_date) AS latest_date, 
+	sum(vw.coverage_duration) AS coverage_duration,
+	round(min(vw.min_lat), 1) AS min_lat, 
+	round(max(vw.max_lat), 1) AS max_lat, 
+	round(min(vw.min_lon), 1) AS min_lon, 
+	round(max(vw.max_lon), 1) AS max_lon
   FROM soop_all_deployments_view vw 
-  GROUP BY subfacility, data_type, vessel_name 
+	GROUP BY subfacility, data_type, vessel_name 
 
 UNION ALL 
 
   SELECT 
-  substring(cpr_vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
-  substring(cpr_vw.subfacility, '[^ ]* (.*)') AS data_type,
-  cpr_vw.vessel_name, 
-  count(cpr_vw.vessel_name) AS no_deployments, 
-  CASE WHEN sum(CASE WHEN cpr_vw.no_phyto_samples IS NULL THEN 0 ELSE 1 END) <> count(cpr_vw.vessel_name) THEN sum(cpr_vw.no_pci_samples + cpr_vw.no_zoop_samples) 
-  ELSE sum((cpr_vw.no_pci_samples + cpr_vw.no_phyto_samples) + cpr_vw.no_zoop_samples) END AS no_files_profiles, 
-  NULL AS total_no_measurements,
-  COALESCE(round(min(cpr_vw.min_lat), 1) || '/' || round(max(cpr_vw.max_lat), 1)) AS lat_range, 
-  COALESCE(round(min(cpr_vw.min_lon), 1) || '/' || round(max(cpr_vw.max_lon), 1)) AS lon_range, 
-  min(cpr_vw.start_date) AS earliest_date, 
-  max(cpr_vw.end_date) AS latest_date, 
-  sum(cpr_vw.coverage_duration) AS coverage_duration, 
-  round(min(cpr_vw.min_lat), 1) AS min_lat, 
-  round(max(cpr_vw.max_lat), 1) AS max_lat, 
-  round(min(cpr_vw.min_lon), 1) AS min_lon, 
-  round(max(cpr_vw.max_lon), 1) AS max_lon
+	substring(cpr_vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
+	substring(cpr_vw.subfacility, '[^ ]* (.*)') AS data_type,
+	cpr_vw.vessel_name, 
+	count(cpr_vw.vessel_name) AS no_deployments, 
+	CASE WHEN sum(CASE WHEN cpr_vw.no_phyto_samples IS NULL THEN 0 ELSE 1 END) <> count(cpr_vw.vessel_name) THEN sum(cpr_vw.no_pci_samples + cpr_vw.no_zoop_samples) 
+	ELSE sum((cpr_vw.no_pci_samples + cpr_vw.no_phyto_samples) + cpr_vw.no_zoop_samples) END AS no_files_profiles, 
+	NULL AS total_no_measurements,
+	COALESCE(round(min(cpr_vw.min_lat), 1) || '/' || round(max(cpr_vw.max_lat), 1)) AS lat_range, 
+	COALESCE(round(min(cpr_vw.min_lon), 1) || '/' || round(max(cpr_vw.max_lon), 1)) AS lon_range, 
+	min(cpr_vw.start_date) AS earliest_date, 
+	max(cpr_vw.end_date) AS latest_date, 
+	sum(cpr_vw.coverage_duration) AS coverage_duration, 
+	round(min(cpr_vw.min_lat), 1) AS min_lat, 
+	round(max(cpr_vw.max_lat), 1) AS max_lat, 
+	round(min(cpr_vw.min_lon), 1) AS min_lon, 
+	round(max(cpr_vw.max_lon), 1) AS max_lon
   FROM soop_cpr_all_deployments_view cpr_vw
-  GROUP BY subfacility, data_type, vessel_name 
-  ORDER BY subfacility, data_type, vessel_name;
+	GROUP BY subfacility, data_type, vessel_name 
+	ORDER BY subfacility, data_type, vessel_name;
 
 grant all on table soop_data_summary_view to public;
 
@@ -1190,7 +1218,7 @@ UNION ALL
 	ELSE NULL END AS deployment_code, 
 	NULL::character varying AS sensor_name, 
 	date(srs_gridded_products_manual.deployment_start) AS start_date, 
-	date(srs_gridded_products_manual.deployment_end) AS end_date, 
+	CASE WHEN date(srs_gridded_products_manual.deployment_end) IS NULL THEN date(now()) END AS end_date, 
 	((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, 
 	NULL::numeric AS lat, 
 	NULL::numeric AS lon 
@@ -1334,7 +1362,7 @@ UNION ALL
   FROM aatams_sattag_all_deployments_view
 
 -------------------------------
--- AATAMS - Satellite tagging
+-- AATAMS - Biologging
 -------------------------------
 UNION ALL  
 
@@ -1349,7 +1377,7 @@ UNION ALL
     NULL AS no_data2,
     NULL::bigint AS no_data3,
     NULL::bigint AS no_data4,
-    COALESCE(date(earliest_date)||' - '||date(latest_date)) AS temporal_range,
+    COALESCE(to_char(date(earliest_date),'DD/MM/YYYY')||' - '||to_char(date(latest_date),'DD/MM/YYYY')) AS temporal_range,
     COALESCE(min_lat||' - '||max_lat) AS lat_range,
     COALESCE(min_lon||' - '||max_lon) AS lon_range,
     NULL AS depth_range
@@ -1716,3 +1744,59 @@ UNION ALL
   ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
+
+
+
+-------------------------------
+-------------------------------
+-- Monthly snapshot
+-------------------------------
+------------------------------- 
+CREATE TABLE IF NOT EXISTS monthly_snapshot
+( timestamp timestamp without time zone,
+  facility text,
+  subfacility text,
+  data_type text,
+  no_projects bigint,
+  no_platforms numeric,
+  no_instruments numeric,
+  no_deployments numeric,
+  no_data numeric,
+  no_data2 numeric,
+  no_data3 bigint,
+  no_data4 bigint,
+  start_date date,
+  end_date date,
+  min_lat numeric,
+  max_lat numeric,
+  min_lon numeric,
+  max_lon numeric,
+  min_depth numeric,
+  max_depth numeric
+);
+grant all on table monthly_snapshot to public;
+
+INSERT INTO monthly_snapshot (timestamp, facility, subfacility, data_type, no_projects, no_platforms, no_instruments, no_deployments, no_data, no_data2, no_data3, no_data4, 
+start_date,end_date,min_lat,max_lat,min_lon,max_lon,min_depth,max_depth)
+SELECT now()::timestamp without time zone,
+	facility,
+	subfacility,
+	type AS data_type,
+	no_projects,
+	no_platforms,
+	no_instruments,
+	no_deployments,
+	no_data,
+	no_data2,
+	no_data3,
+	no_data4,
+	to_date(substring(temporal_range,'[a-zA-Z0-9/]+'),'DD/MM/YYYY') AS start_date,
+	to_date(substring(temporal_range,'-(.*)'),'DD/MM/YYYY') AS end_date,
+	substring(lat_range,'(.*) - ')::numeric AS min_lat,
+	substring(lat_range,' - (.*)')::numeric AS max_lat,
+	substring(lon_range,'(.*) - ')::numeric AS min_lon,
+	substring(lon_range,' - (.*)')::numeric AS max_lon,
+	substring(depth_range,'(.*) - ')::numeric AS min_depth,
+	substring(depth_range,' - (.*)')::numeric AS max_depth
+  FROM totals_view
+-- WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month'))

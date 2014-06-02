@@ -100,7 +100,7 @@ UNION ALL
   FROM aatams_sattag_all_deployments_view
 
 -------------------------------
--- AATAMS - Satellite tagging
+-- AATAMS - Biologging
 -------------------------------
 UNION ALL  
 

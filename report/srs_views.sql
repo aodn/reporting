@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public, srs;
+﻿SET search_path = report_test, public, srs;
 
 CREATE or replace VIEW srs_all_deployments_view AS
   SELECT 'SRS - Altimetry' AS subfacility, 
