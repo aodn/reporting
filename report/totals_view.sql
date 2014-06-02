@@ -115,7 +115,7 @@ UNION ALL
     NULL AS no_data2,
     NULL::bigint AS no_data3,
     NULL::bigint AS no_data4,
-    COALESCE(date(earliest_date)||' - '||date(latest_date)) AS temporal_range,
+    COALESCE(to_char(date(earliest_date),'DD/MM/YYYY')||' - '||to_char(date(latest_date),'DD/MM/YYYY')) AS temporal_range,
     COALESCE(min_lat||' - '||max_lat) AS lat_range,
     COALESCE(min_lon||' - '||max_lon) AS lon_range,
     NULL AS depth_range
