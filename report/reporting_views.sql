@@ -1,34 +1,4 @@
-﻿
--- Remember that we can look up stuff, in the old report_db  
-
--- to generate the views in the schema
--- psql -h dbprod.emii.org.au -U jfca -d harvest -f reporting_views.sql
-
-
-
--- to see the objects
--- psql -h dbprod.emii.org.au -U jfca -d harvest -c 'select * from admin.objects3'
-
--- to test data
--- psql -h dbprod.emii.org.au -U jfca -d harvest -c 'select * from reporting.aatams_sattag_data_summary_view  limit 10 '
-
-
-SET statement_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-SET escape_string_warning = off;
-
-SET search_path = reporting, public;
-
-
--- -- drop all current views
--- select admin.exec( 'drop view if exists '||schema||'.'||name||' cascade' ) 
--- 	from admin.objects3 
--- 	where kind = 'v' 
--- 	and schema = 'reporting'
--- ;
+﻿SET search_path = reporting, public;
 
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
@@ -50,9 +20,9 @@ grant all on table aatams_acoustictag_data_summary_project_view to public;
 grant all on table aatams_acoustictag_data_summary_species_view to public;
 
 -------------------------------
--- VIEWS FOR AATAMS_BIOLOGGING AND SATELLITE TAGGING; Can delete the aatams_sattag manual tables in the report schema.
+-- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the aatams_sattag manual tables in the report schema.
 -------------------------------
--- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM
+-- All deployments view
  CREATE or replace VIEW aatams_sattag_all_deployments_view AS
   SELECT 'Near real-time CTD data' AS data_type,
   COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
@@ -132,6 +102,7 @@ UNION ALL
 
 grant all on table aatams_sattag_all_deployments_view to public;
 
+-- Data summary view
 CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
   SELECT v.data_type,
   COALESCE(v.species_name || ' - ' || v.tag_type) AS species_name_tag_type, 
@@ -162,7 +133,10 @@ CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
 
 grant all on table aatams_sattag_data_summary_view to public;
 
+-------------------------------
 -- VIEWS FOR AATAMS_BIOLOGGING_PENGUIN AND AATAMS_BIOLOGGING_SHEARWATERS
+-------------------------------
+-- All deployments view
 CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS 
   SELECT 'Emperor Penguin Fledglings' AS tagged_animals,
   pttid AS animal_id,
@@ -197,6 +171,7 @@ UNION ALL
 
 grant all on table aatams_biologging_all_deployments_view to public;
 
+-- Data summary view
 CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
   SELECT tagged_animals,
   COUNT(DISTINCT(animal_id)) AS nb_animals,
@@ -217,11 +192,10 @@ CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
 
 grant all on table aatams_biologging_data_summary_view to public;
 
-
 -------------------------------
--- VIEWS FOR ABOS; Now using what's in the abos schema so don't need the dw_abos schema anymore.
+-- VIEWS FOR ABOS; Uses what's in the dw_abos schema.
 -------------------------------
-
+-- All deployments view
 CREATE or replace VIEW abos_all_deployments_view AS
     WITH table_a AS (
     SELECT 
@@ -272,7 +246,7 @@ ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
 
 grant all on table abos_all_deployments_view to public;
 
-
+-- Data summary view
 CREATE or replace VIEW abos_data_summary_view AS
     SELECT 
     v.file_type, 
@@ -298,10 +272,10 @@ CREATE or replace VIEW abos_data_summary_view AS
 
 grant all on table abos_data_summary_view to public;
 
-
 -------------------------------
--- VIEW FOR ACORN; Still using the acorn_manual table from the report schema: needs to be updated to use the two acorn schemas - acorn_hourly_avg_nonqc & acorn_hourly_avg_qc
+-- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore. Still work needed to incorporate acorn_radials schemas.
 -------------------------------
+-- All deployments view
 CREATE OR REPLACE VIEW acorn_all_deployments_view AS
 WITH a AS (
   SELECT timeseries_id,
@@ -348,6 +322,7 @@ UNION ALL
 
 grant all on table acorn_all_deployments_view to public;
 
+-- Data summary view
 CREATE OR REPLACE VIEW acorn_data_summary_view AS
   SELECT data_type,
 	site,
@@ -363,9 +338,9 @@ CREATE OR REPLACE VIEW acorn_data_summary_view AS
 grant all on table acorn_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANFOG; Now using the anfog_dm schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
+-- VIEW FOR ANFOG; Now using the anfog_dm and anfog_rt schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
 -------------------------------
-
+-- All deployments view
 CREATE or replace VIEW anfog_all_deployments_view AS
   SELECT 'Near real-time data' AS data_type,
 	 mrt.platform_type AS glider_type, 
@@ -408,6 +383,7 @@ UNION ALL
 
 grant all on table anfog_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW anfog_data_summary_view AS
   SELECT v.data_type,
 	v.glider_type AS glider_type, 
@@ -431,10 +407,10 @@ CREATE or replace VIEW anfog_data_summary_view AS
 
 grant all on table anfog_data_summary_view to public;
 
-
 -------------------------------
 -- VIEW FOR ANMN Acoustics; Using the report.acoustic_deployments table only.
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
   SELECT substring(m.deployment_name, '[^0-9]+') AS site_name, 
   "substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
@@ -462,7 +438,7 @@ CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
 
 grant all on table anmn_acoustics_all_deployments_view to public;
 
-
+-- Data summary view
 CREATE or replace VIEW anmn_acoustics_data_summary_view AS
   SELECT v.site_name, 
   v.deployment_year, 
@@ -482,9 +458,9 @@ CREATE or replace VIEW anmn_acoustics_data_summary_view AS
 grant all on table anmn_acoustics_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANMN; Still using the anmn_platforms_manual table from the report schema. Now using what's in the anmn schema so don't need the dw_anmn schema anymore.
+-- VIEW FOR ANMN; Still using the anmn_platforms_manual table from the report schema. Uses the dw_anmn schema.
 -------------------------------
-
+-- All deployments view
 CREATE or replace VIEW anmn_all_deployments_view AS
   WITH site_view AS (
   SELECT m.site_code, 
@@ -555,6 +531,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 
 grant all on table anmn_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW anmn_data_summary_view AS
   SELECT v.subfacility, 
 	v.site_name_code, 
@@ -591,6 +568,7 @@ grant all on table anmn_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ANMN NRS real-time; Only using the anmn_realtime schema. Can get rid of legacy_anmn schema and report.nrs_aims_manual
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
         WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
@@ -611,6 +589,7 @@ CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
   SELECT v.site_name AS site_name,
   COUNT(DISTINCT(channel_id)) AS nb_channels,
@@ -628,10 +607,10 @@ CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
 
 grant all on table anmn_nrs_realtime_data_summary_view to public;
 
-
 -------------------------------
 -- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW argo_all_deployments_view AS
     SELECT 
     m.data_centre AS organisation, 
@@ -658,6 +637,7 @@ CREATE or replace VIEW argo_all_deployments_view AS
 
 grant all on table argo_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW argo_data_summary_view AS
     SELECT 
     v.organisation, 
@@ -684,6 +664,7 @@ grant all on table argo_data_summary_view to public;
 -------------------------------
 -- VIEW FOR AUV; Now using what's in the auv schema so don't need the legacy_auv schema anymore, nor the report.auv_manual table.
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW auv_all_deployments_view AS
 WITH a AS (
   SELECT fk_auv_tracks,
@@ -707,6 +688,7 @@ WITH a AS (
 
 grant all on table auv_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW auv_data_summary_view AS
   SELECT v.location, 
   count(DISTINCT CASE WHEN v.campaign IS NULL THEN '1' ELSE v.campaign END) AS no_campaigns, 
@@ -727,11 +709,10 @@ CREATE or replace VIEW auv_data_summary_view AS
 
 grant all on table auv_data_summary_view to public;
 
-
 -------------------------------
 -- VIEW FOR Facility summary;
 -------------------------------
-
+-- All deployments view
 CREATE OR REPLACE VIEW facility_summary_view AS 
   SELECT facility.acronym AS facility_acronym,
   COALESCE(to_char(to_timestamp (date_part('month',facility_summary.reporting_date)::text, 'MM') ,'TMMon')||' '||date_part('year',facility_summary.reporting_date)) AS reporting_month,
@@ -749,6 +730,7 @@ grant all on table facility_summary_view to public;
 -------------------------------
 -- VIEW FOR FAIMMS; Now using what's in the faimms schema so don't need the legacy_faimms schema anymore, nor the report.faimms_manual table.
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW faimms_all_deployments_view AS
   SELECT DISTINCT m.platform_code AS site_name, 
   m.site_code AS platform_code, 
@@ -768,6 +750,7 @@ CREATE or replace VIEW faimms_all_deployments_view AS
 
 grant all on table faimms_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW faimms_data_summary_view AS
   SELECT v.site_name, 
   count(DISTINCT v.platform_code) AS no_platforms, 
@@ -788,8 +771,9 @@ CREATE or replace VIEW faimms_data_summary_view AS
 grant all on table faimms_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR SOOP-CPR;
+-- VIEW FOR SOOP-CPR; Waiting for the new so_cpr harvester...
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
 	SELECT DISTINCT p."TIME", 
@@ -889,6 +873,7 @@ grant all on table soop_cpr_all_deployments_view to public;
 -------------------------------
 -- VIEW FOR SOOP; Now using what's in the soop schema so don't need the dw_soop schema anymore, nor any report.manual tables.
 ------------------------------- 
+-- All deployments view
 CREATE or replace VIEW soop_all_deployments_view AS
 WITH a AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mft.soop_asf_mft_trajectory_data GROUP BY file_id),
 b AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mt.soop_asf_mt_trajectory_data GROUP BY file_id),
@@ -1131,7 +1116,7 @@ UNION ALL
 
 grant all on table soop_all_deployments_view to public;
 
-
+-- Data summary view
 CREATE or replace VIEW soop_data_summary_view AS
  SELECT 
 	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
@@ -1180,6 +1165,7 @@ grant all on table soop_data_summary_view to public;
 -------------------------------
 -- VIEW FOR SRS; Now using what's in the srs_altimetry, srs_oc_bodbaw, and srs_oc_soop_rad schema so don't need the dw_srs and srs schema anymore. Also don't need report.srs_altimetry_manual & report.srs_bio_optical_db_manual tables
 -------------------------------
+-- All deployments view
 CREATE or replace VIEW srs_all_deployments_view AS
   SELECT 'SRS - Altimetry' AS subfacility, 
 	m.site_name AS parameter_site, 
@@ -1242,6 +1228,7 @@ UNION ALL
 
 grant all on table srs_all_deployments_view to public;
 
+-- Data summary view
 CREATE or replace VIEW srs_data_summary_view AS
  SELECT v.subfacility, 
 	CASE WHEN (v.parameter_site = 'absorption') THEN 'Absorption' 
@@ -1262,12 +1249,9 @@ CREATE or replace VIEW srs_data_summary_view AS
 
 grant all on table srs_data_summary_view to public;
 
-
--------------------------------
 -------------------------------
 -- TOTALS VIEW
 -------------------------------
-------------------------------- 
 CREATE or replace view totals_view AS
   WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
@@ -1281,9 +1265,7 @@ CREATE or replace view totals_view AS
 (SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'tag_aatams_knows_about') AS tag_aatams_knows_about,
 (SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'no_detected_tags_aatams_knows_about') AS no_detected_tags_aatams_knows_about,
 (SELECT statistics FROM dw_aatams_acoustic.aatams_acoustictag_totals_species_view WHERE statistics_type = 'tags_detected_by_species') AS tags_detected_by_species)
--------------------------------
 -- AATAMS - Acoustic
--------------------------------
   SELECT 'AATAMS' AS facility,
     'Acoustic tagging' AS subfacility,
     funding_type::text AS type,
@@ -1320,9 +1302,7 @@ UNION ALL
     NULL AS depth_range
   FROM aatams_acoustic_table
 
--------------------------------
 -- AATAMS - Satellite tagging
--------------------------------
 UNION ALL  
 
   SELECT 'AATAMS' AS facility,
@@ -1362,9 +1342,7 @@ UNION ALL
     COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM aatams_sattag_all_deployments_view
 
--------------------------------
 -- AATAMS - Biologging
--------------------------------
 UNION ALL  
 
   SELECT 'AATAMS' AS facility,
@@ -1384,9 +1362,7 @@ UNION ALL
     NULL AS depth_range
   FROM aatams_biologging_data_summary_view
     
--------------------------------
 -- ABOS
--------------------------------
 UNION ALL
 
   SELECT 'ABOS' AS facility,
@@ -1426,9 +1402,7 @@ UNION ALL
   NULL AS depth_range
   FROM abos_data_summary_view
 
--------------------------------
 -- ACORN
--------------------------------
 UNION ALL
 
 SELECT 'ACORN' AS facility,
@@ -1468,9 +1442,7 @@ NULL AS lon_range,
 NULL AS depth_range
 FROM acorn_all_deployments_view
 
--------------------------------
 -- ANFOG
--------------------------------
 UNION ALL
   SELECT 'ANFOG' AS facility,
     NULL AS subfacility,
@@ -1508,146 +1480,10 @@ UNION ALL
     COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
     COALESCE(min(max_depth)||' - '||max(max_depth)) AS depth_range
   FROM anfog_all_deployments_view
--------------------------------
--- Argo
--------------------------------
-UNION ALL
-  SELECT 'Argo' AS facility,
-  NULL AS subfacility,
-  'TOTAL' AS type,
-  COUNT(*) AS no_projects,
-  SUM(no_platforms) AS no_platforms,
-  SUM(no_oxygen_platforms) AS no_instruments,
-  SUM(no_active_floats) AS no_deployments,
-  SUM(no_active_oxygen_platforms)  AS no_data,
-  NULL AS no_data2,
-  NULL::bigint AS no_data3,
-  NULL::bigint AS no_data4,
-  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-  COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-  COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-  NULL AS depth_range
-  FROM argo_data_summary_view
--------------------------------
--- AUV
--------------------------------
-UNION ALL
-  SELECT 'AUV' AS facility,
-  NULL AS subfacility,
-  'TOTAL' AS type,
-  COUNT(*) AS no_projects,
-  SUM(no_campaigns) AS no_platforms,
-  SUM(no_sites) AS no_instruments,
-  NULL AS no_deployments,
-  SUM(total_no_images) AS no_data,
-  NULL AS no_data2,
-  NULL::bigint AS no_data3,
-  NULL::bigint AS no_data4,
-  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-  COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
-  COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
-  NULL AS depth_range
-  FROM auv_data_summary_view
--------------------------------
--- FAIMMS
--------------------------------
-UNION ALL
-  SELECT 'FAIMMS' AS facility,
-  NULL AS subfacility,
-  'TOTAL' AS type,
-  COUNT(*) AS no_projects,
-  SUM(no_platforms) AS no_platforms,
-  SUM(no_sensors) AS no_instruments,
-  ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
-  NULL AS no_data,
-  NULL AS no_data2,
-  NULL::bigint AS no_data3,
-  NULL::bigint AS no_data4,
-  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-  COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
-  COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
-  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM faimms_data_summary_view, interm_table
--------------------------------
--- SOOP
--------------------------------
-UNION ALL
-SELECT 'SOOP' AS facility,
-subfacility AS subfacility,
-data_type AS type,
-NULL AS no_projects,
-COUNT(DISTINCT(vessel_name)) AS no_platforms,
-NULL AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-SUM(no_files_profiles) AS no_data,
-SUM(total_no_measurements) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-NULL AS depth_range
-FROM soop_data_summary_view
-GROUP BY subfacility, data_type
-UNION ALL
-SELECT 'SOOP' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-NULL AS no_projects,
-COUNT(DISTINCT(vessel_name)) AS no_platforms,
-NULL AS no_instruments,
-count(CASE WHEN deployment_id IS NULL THEN '1'::character varying ELSE deployment_id END) AS no_deployments,
-sum(CASE WHEN no_files_profiles IS NULL THEN (1)::bigint ELSE no_files_profiles END) AS no_data,
-SUM(no_measurements) AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
-COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
-COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
-NULL AS depth_range
-FROM soop_all_deployments_view
--------------------------------
--- SRS
--------------------------------
-UNION ALL
-SELECT 'SRS' AS facility,
-subfacility AS subfacility,
-NULL AS type,
-NULL AS no_projects,
-COUNT(DISTINCT(parameter_site))  AS no_platforms,
-SUM(no_sensors) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-NULL AS depth_range
-FROM srs_data_summary_view
-GROUP BY subfacility
-UNION ALL
-SELECT 'SRS' AS facility,
-NULL AS subfacility,
-'TOTAL' AS type,
-NULL AS no_projects,
-COUNT(DISTINCT(parameter_site))  AS no_platforms,
-SUM(no_sensors) AS no_instruments,
-SUM(no_deployments) AS no_deployments,
-NULL AS no_data,
-NULL AS no_data2,
-NULL::bigint AS no_data3,
-NULL::bigint AS no_data4,
-COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-NULL AS lat_range,
-NULL AS lon_range,
-NULL AS depth_range
-FROM srs_data_summary_view
--------------------------------
+
 -- ANMN
--------------------------------
 UNION ALL
+
   SELECT 'ANMN' AS facility,
   subfacility AS subfacility,
   NULL AS type,
@@ -1665,7 +1501,9 @@ UNION ALL
   COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM anmn_data_summary_view
   GROUP BY subfacility
+  
 UNION ALL
+
   SELECT 'ANMN' AS facility,
   'NRS, RMA, and AM' AS subfacility,
   'TOTAL' AS type,
@@ -1682,10 +1520,10 @@ UNION ALL
   COALESCE(min(min_lon)||' - '||max(min_lon)) AS lon_range,
   COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM anmn_data_summary_view
--------------------------------
+
 -- ANMN - Passive Acoustic
--------------------------------
 UNION ALL
+
   SELECT 'ANMN' AS facility,
   'PA' AS subfacility,
   'TOTAL' AS type,
@@ -1702,30 +1540,10 @@ UNION ALL
   NULL AS lon_range,
   NULL AS depth_range
   FROM anmn_acoustics_data_summary_view
--------------------------------
--- ANMN - BGC
--------------------------------
--- UNION ALL
--- SELECT 'ANMN' AS facility,
--- 'BGC' AS subfacility,
--- 'TOTAL' AS type,
--- SUM(CASE WHEN n_logsht IS NULL THEN 0 ELSE 1 END) AS no_projects,
--- SUM(CASE WHEN ns_ctdpro IS NULL THEN 0 ELSE 1 END) AS no_platforms,
--- SUM(CASE WHEN ns_hydall IS NULL THEN 0 ELSE 1 END) AS no_instruments,
--- SUM(CASE WHEN ns_susmat IS NULL THEN 0 ELSE 1 END) AS no_deployments,
--- SUM(CASE WHEN ns_carbon IS NULL THEN 0 ELSE 1 END) AS no_data,
--- SUM(CASE WHEN ns_phypig IS NULL THEN 0 ELSE 1 END) AS no_data2,
--- SUM(CASE WHEN ns_zoo IS NULL THEN 0 ELSE 1 END) AS no_data3,
--- SUM(CASE WHEN ns_phyto IS NULL THEN 0 ELSE 1 END) AS no_data4,
--- COALESCE(to_char(min(sample_date),'DD/MM/YYYY')||' - '||to_char(max(sample_date),'DD/MM/YYYY')) AS temporal_range,
--- NULL AS lat_range,
--- NULL AS lon_range,
--- NULL AS depth_range
--- FROM anmn_bgc_all_deployments_view
--------------------------------
+  
 -- ANMN - NRS Real-Time
--------------------------------
 UNION ALL
+
   SELECT 'ANMN' AS facility,
   'NRS - Real-Time' AS subfacility,
   'TOTAL' AS type,
@@ -1743,15 +1561,151 @@ UNION ALL
   COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM anmn_nrs_realtime_data_summary_view
   ORDER BY facility,subfacility,type;
+  
+-- Argo
+UNION ALL
+
+  SELECT 'Argo' AS facility,
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  SUM(no_platforms) AS no_platforms,
+  SUM(no_oxygen_platforms) AS no_instruments,
+  SUM(no_active_floats) AS no_deployments,
+  SUM(no_active_oxygen_platforms)  AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+  COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+  NULL AS depth_range
+  FROM argo_data_summary_view
+
+-- AUV
+UNION ALL
+
+  SELECT 'AUV' AS facility,
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  SUM(no_campaigns) AS no_platforms,
+  SUM(no_sites) AS no_instruments,
+  NULL AS no_deployments,
+  SUM(total_no_images) AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(lat_min)||' - '||max(lat_max)) AS lat_range,
+  COALESCE(min(lon_min)||' - '||max(lon_max)) AS lon_range,
+  NULL AS depth_range
+  FROM auv_data_summary_view
+
+-- FAIMMS
+UNION ALL
+
+  SELECT 'FAIMMS' AS facility,
+  NULL AS subfacility,
+  'TOTAL' AS type,
+  COUNT(*) AS no_projects,
+  SUM(no_platforms) AS no_platforms,
+  SUM(no_sensors) AS no_instruments,
+  ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
+  NULL AS no_data,
+  NULL AS no_data2,
+  NULL::bigint AS no_data3,
+  NULL::bigint AS no_data4,
+  COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+  COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
+  COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
+  COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM faimms_data_summary_view, interm_table
+
+-- SOOP
+UNION ALL
+
+SELECT 'SOOP' AS facility,
+subfacility AS subfacility,
+data_type AS type,
+NULL AS no_projects,
+COUNT(DISTINCT(vessel_name)) AS no_platforms,
+NULL AS no_instruments,
+SUM(no_deployments) AS no_deployments,
+SUM(no_files_profiles) AS no_data,
+SUM(total_no_measurements) AS no_data2,
+NULL::bigint AS no_data3,
+NULL::bigint AS no_data4,
+COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+NULL AS depth_range
+FROM soop_data_summary_view
+GROUP BY subfacility, data_type
+
+UNION ALL
+
+SELECT 'SOOP' AS facility,
+NULL AS subfacility,
+'TOTAL' AS type,
+NULL AS no_projects,
+COUNT(DISTINCT(vessel_name)) AS no_platforms,
+NULL AS no_instruments,
+count(CASE WHEN deployment_id IS NULL THEN '1'::character varying ELSE deployment_id END) AS no_deployments,
+sum(CASE WHEN no_files_profiles IS NULL THEN (1)::bigint ELSE no_files_profiles END) AS no_data,
+SUM(no_measurements) AS no_data2,
+NULL::bigint AS no_data3,
+NULL::bigint AS no_data4,
+COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
+COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+NULL AS depth_range
+FROM soop_all_deployments_view
+
+-- SRS
+UNION ALL
+
+SELECT 'SRS' AS facility,
+subfacility AS subfacility,
+NULL AS type,
+NULL AS no_projects,
+COUNT(DISTINCT(parameter_site))  AS no_platforms,
+SUM(no_sensors) AS no_instruments,
+SUM(no_deployments) AS no_deployments,
+NULL AS no_data,
+NULL AS no_data2,
+NULL::bigint AS no_data3,
+NULL::bigint AS no_data4,
+COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+NULL AS lat_range,
+NULL AS lon_range,
+NULL AS depth_range
+FROM srs_data_summary_view
+GROUP BY subfacility
+
+UNION ALL
+
+SELECT 'SRS' AS facility,
+NULL AS subfacility,
+'TOTAL' AS type,
+NULL AS no_projects,
+COUNT(DISTINCT(parameter_site))  AS no_platforms,
+SUM(no_sensors) AS no_instruments,
+SUM(no_deployments) AS no_deployments,
+NULL AS no_data,
+NULL AS no_data2,
+NULL::bigint AS no_data3,
+NULL::bigint AS no_data4,
+COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+NULL AS lat_range,
+NULL AS lon_range,
+NULL AS depth_range
+FROM srs_data_summary_view
 
 grant all on table totals_view to public;
 
-
-
--------------------------------
 -------------------------------
 -- Monthly snapshot
--------------------------------
 ------------------------------- 
 CREATE TABLE IF NOT EXISTS monthly_snapshot
 ( timestamp timestamp without time zone,
@@ -1801,3 +1755,24 @@ SELECT now()::timestamp without time zone,
 	substring(depth_range,' - (.*)')::numeric AS max_depth
   FROM totals_view
 -- WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month'))
+
+
+-- ANMN - BGC ///// Totals view
+-- UNION ALL
+--
+-- SELECT 'ANMN' AS facility,
+-- 'BGC' AS subfacility,
+-- 'TOTAL' AS type,
+-- SUM(CASE WHEN n_logsht IS NULL THEN 0 ELSE 1 END) AS no_projects,
+-- SUM(CASE WHEN ns_ctdpro IS NULL THEN 0 ELSE 1 END) AS no_platforms,
+-- SUM(CASE WHEN ns_hydall IS NULL THEN 0 ELSE 1 END) AS no_instruments,
+-- SUM(CASE WHEN ns_susmat IS NULL THEN 0 ELSE 1 END) AS no_deployments,
+-- SUM(CASE WHEN ns_carbon IS NULL THEN 0 ELSE 1 END) AS no_data,
+-- SUM(CASE WHEN ns_phypig IS NULL THEN 0 ELSE 1 END) AS no_data2,
+-- SUM(CASE WHEN ns_zoo IS NULL THEN 0 ELSE 1 END) AS no_data3,
+-- SUM(CASE WHEN ns_phyto IS NULL THEN 0 ELSE 1 END) AS no_data4,
+-- COALESCE(to_char(min(sample_date),'DD/MM/YYYY')||' - '||to_char(max(sample_date),'DD/MM/YYYY')) AS temporal_range,
+-- NULL AS lat_range,
+-- NULL AS lon_range,
+-- NULL AS depth_range
+-- FROM anmn_bgc_all_deployments_view
