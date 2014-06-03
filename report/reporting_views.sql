@@ -365,68 +365,69 @@ grant all on table acorn_data_summary_view to public;
 -------------------------------
 -- VIEW FOR ANFOG; Now using the anfog_dm schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
 -------------------------------
+
 CREATE or replace VIEW anfog_all_deployments_view AS
   SELECT 'Near real-time data' AS data_type,
-     mrt.platform_type AS glider_type, 
-     mrt.platform_code AS platform, 
-     mrt.deployment_name AS deployment_id, 
-     min(date(mrt.time_coverage_start)) AS start_date, 
-     max(date(mrt.time_coverage_end)) AS end_date,
-     min(round((ST_YMIN(geom))::numeric, 1)) AS min_lat,
-     max(round((ST_YMAX(geom))::numeric, 1)) AS max_lat,
-     min(round((ST_XMIN(geom))::numeric, 1)) AS min_lon,
-     max(round((ST_XMAX(geom))::numeric, 1)) AS max_lon,
-    COALESCE(min(round((ST_YMIN(geom))::numeric, 1)) || '/' || max(round((ST_YMAX(geom))::numeric, 1))) AS lat_range,
-    COALESCE(min(round((ST_XMIN(geom))::numeric, 1)) || '/' || max(round((ST_XMAX(geom))::numeric, 1))) AS lon_range,
-    round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
-    max(date(mrt.time_coverage_end)) - min(date(mrt.time_coverage_start)) AS coverage_duration 
+	 mrt.platform_type AS glider_type, 
+	 mrt.platform_code AS platform, 
+	 mrt.deployment_name AS deployment_id, 
+	 min(date(mrt.time_coverage_start)) AS start_date, 
+	 max(date(mrt.time_coverage_end)) AS end_date,
+ 	 min(round((ST_YMIN(geom))::numeric, 1)) AS min_lat,
+ 	 max(round((ST_YMAX(geom))::numeric, 1)) AS max_lat,
+ 	 min(round((ST_XMIN(geom))::numeric, 1)) AS min_lon,
+ 	 max(round((ST_XMAX(geom))::numeric, 1)) AS max_lon,
+ 	COALESCE(min(round((ST_YMIN(geom))::numeric, 1)) || '/' || max(round((ST_YMAX(geom))::numeric, 1))) AS lat_range,
+ 	COALESCE(min(round((ST_XMIN(geom))::numeric, 1)) || '/' || max(round((ST_XMAX(geom))::numeric, 1))) AS lon_range,
+ 	round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
+	max(date(mrt.time_coverage_end)) - min(date(mrt.time_coverage_start)) AS coverage_duration 
   FROM anfog_rt.anfog_rt_trajectory_map mrt
   RIGHT JOIN anfog_dm.deployments drt ON mrt.file_id = drt.file_id
-    GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
+	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
 
 UNION ALL
 
   SELECT 'Delayed mode data' AS data_type,
-     m.platform_type AS glider_type, 
-     m.platform_code AS platform, 
-     m.deployment_name AS deployment_id, 
-     date(m.time_coverage_start) AS start_date, 
-     date(m.time_coverage_end) AS end_date,
-     round((ST_YMIN(geom))::numeric, 1) AS min_lat,
-     round((ST_YMAX(geom))::numeric, 1) AS max_lat,
-     round((ST_XMIN(geom))::numeric, 1) AS min_lon,
-     round((ST_XMAX(geom))::numeric, 1) AS max_lon,
-    COALESCE(round((ST_YMIN(geom))::numeric, 1) || '/' || round((ST_YMAX(geom))::numeric, 1)) AS lat_range,
-    COALESCE(round((ST_XMIN(geom))::numeric, 1) || '/' || round((ST_XMAX(geom))::numeric, 1)) AS lon_range,
-    round(d.geospatial_vertical_max::numeric, 1) AS max_depth, 
-    date(m.time_coverage_end) - date(m.time_coverage_start) AS coverage_duration 
+	 m.platform_type AS glider_type, 
+	 m.platform_code AS platform, 
+	 m.deployment_name AS deployment_id, 
+	 date(m.time_coverage_start) AS start_date, 
+	 date(m.time_coverage_end) AS end_date,
+ 	 round((ST_YMIN(geom))::numeric, 1) AS min_lat,
+ 	 round((ST_YMAX(geom))::numeric, 1) AS max_lat,
+ 	 round((ST_XMIN(geom))::numeric, 1) AS min_lon,
+ 	 round((ST_XMAX(geom))::numeric, 1) AS max_lon,
+ 	COALESCE(round((ST_YMIN(geom))::numeric, 1) || '/' || round((ST_YMAX(geom))::numeric, 1)) AS lat_range,
+ 	COALESCE(round((ST_XMIN(geom))::numeric, 1) || '/' || round((ST_XMAX(geom))::numeric, 1)) AS lon_range,
+ 	round(d.geospatial_vertical_max::numeric, 1) AS max_depth, 
+	date(m.time_coverage_end) - date(m.time_coverage_start) AS coverage_duration 
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
-    GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
-    ORDER BY data_type, glider_type, platform, deployment_id;
+	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
+	ORDER BY data_type, glider_type, platform, deployment_id;
 
 grant all on table anfog_all_deployments_view to public;
 
 CREATE or replace VIEW anfog_data_summary_view AS
   SELECT v.data_type,
-    v.glider_type AS glider_type, 
-    count(DISTINCT v.platform) AS no_platforms, 
-    count(DISTINCT v.deployment_id) AS no_deployments, 
-    min(v.start_date) AS earliest_date, 
-    max(v.end_date) AS latest_date, 
-    COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
-    COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
-    COALESCE(min(v.max_depth) || '/' || max(v.max_depth)) AS max_depth_range, 
-    round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
-    min(v.min_lat) AS min_lat, 
-    max(v.max_lat) AS max_lat, 
-    min(v.min_lon) AS min_lon, 
-    max(v.max_lon) AS max_lon, 
-    min(v.max_depth) AS min_depth, 
-    max(v.max_depth) AS max_depth 
+	v.glider_type AS glider_type, 
+	count(DISTINCT v.platform) AS no_platforms, 
+	count(DISTINCT v.deployment_id) AS no_deployments, 
+	min(v.start_date) AS earliest_date, 
+	max(v.end_date) AS latest_date, 
+	COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
+	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
+	COALESCE(min(v.max_depth) || '/' || max(v.max_depth)) AS depth_range, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	min(v.min_lat) AS min_lat, 
+	max(v.max_lat) AS max_lat, 
+	min(v.min_lon) AS min_lon, 
+	max(v.max_lon) AS max_lon, 
+	min(v.max_depth) AS min_depth, 
+	max(v.max_depth) AS max_depth 
   FROM anfog_all_deployments_view v
-    GROUP BY data_type, glider_type 
-    ORDER BY data_type,glider_type;
+	GROUP BY data_type, glider_type 
+	ORDER BY data_type,glider_type;
 
 grant all on table anfog_data_summary_view to public;
 
@@ -787,101 +788,101 @@ CREATE or replace VIEW faimms_data_summary_view AS
 grant all on table faimms_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR SOOP-CPR; Still using what's in legacy_cpr.
+-- VIEW FOR SOOP-CPR;
 -------------------------------
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
-  SELECT DISTINCT p.date_time_utc, 
-  count(DISTINCT p.date_time_utc) AS no_phyto_samples 
-  FROM legacy_cpr.csiro_harvest_phyto p
-  GROUP BY p.date_time_utc 
-  ORDER BY date_time_utc), 
-  
-  zoop AS (
-  SELECT DISTINCT z.date_time_utc, 
-  count(DISTINCT z.date_time_utc) AS no_zoop_samples 
-  FROM legacy_cpr.csiro_harvest_zoop z
-  GROUP BY z.date_time_utc 
-  ORDER BY date_time_utc), 
+	SELECT DISTINCT p."TIME", 
+	count(DISTINCT p."TIME") AS no_phyto_samples 
+  FROM soop_auscpr.soop_auscpr_phyto_trajectory_map p
+	GROUP BY p."TIME" 
+	ORDER BY "TIME"), 
+	
+	zoop AS (
+	SELECT DISTINCT z."TIME", 
+	count(DISTINCT z."TIME") AS no_zoop_samples 
+  FROM soop_auscpr.soop_auscpr_zoop_trajectory_map z
+	GROUP BY z."TIME" 
+	ORDER BY "TIME"), 
 
-  pci AS (
-  SELECT DISTINCT pci.vessel_name, 
-  CASE WHEN pci.start_port < pci.end_port THEN (pci.start_port || '-' || pci.end_port) 
-    ELSE (pci.end_port || '-' || pci.start_port) END AS route, 
-  pci.date_time_utc, 
-  count(DISTINCT pci.date_time_utc) AS no_pci_samples 
-  FROM legacy_cpr.csiro_harvest_pci pci
-  GROUP BY vessel_name, route, date_time_utc 
-  ORDER BY vessel_name, route , date_time_utc) 
+	pci AS (
+	SELECT DISTINCT pci.vessel_name, 
+	CASE WHEN pci.start_port < pci.end_port THEN (pci.start_port || '-' || pci.end_port) 
+		ELSE (pci.end_port || '-' || pci.start_port) END AS route, 
+	pci."TIME", 
+	count(DISTINCT pci."TIME") AS no_pci_samples 
+  FROM soop_auscpr.soop_auscpr_pci_trajectory_map pci
+	GROUP BY vessel_name, route, "TIME" 
+	ORDER BY vessel_name, route , "TIME") 
 
   SELECT 'CPR AUS' AS subfacility,
-  COALESCE(CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END || ' | ' || pci.route) AS vessel_route,
-  CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END AS vessel_name, 
-  pci.route, 
-  cp.trip_code AS deployment_id, 
-  sum(pci.no_pci_samples) AS no_pci_samples, 
-  CASE WHEN sum(phyto.no_phyto_samples) IS NULL THEN 0 ELSE sum(phyto.no_phyto_samples) END AS no_phyto_samples, 
-  CASE WHEN sum(zoop.no_zoop_samples) IS NULL THEN 0 ELSE sum(zoop.no_zoop_samples) END AS no_zoop_samples, 
-  COALESCE(round(min(cp.latitude), 1) || '/' || round(max(cp.latitude), 1)) AS lat_range, 
-  COALESCE(round(min(cp.longitude), 1) || '/' || round(max(cp.longitude), 1)) AS lon_range,
-  date(min(cp.date_time_utc)) AS start_date, 
-  date(max(cp.date_time_utc)) AS end_date, 
-  round(((date_part('day', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric + ((date_part('hours', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric / (24)::numeric)), 1) AS coverage_duration,
-  round(min(cp.latitude), 1) AS min_lat, 
-  round(max(cp.latitude), 1) AS max_lat, 
-  round(min(cp.longitude), 1) AS min_lon, 
-  round(max(cp.longitude), 1) AS max_lon
+	COALESCE(CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END || ' | ' || pci.route) AS vessel_route,
+	CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name::character varying END AS vessel_name, 
+	pci.route, 
+	cp.trip_code::character varying AS deployment_id, 
+	sum(pci.no_pci_samples) AS no_pci_samples, 
+	CASE WHEN sum(phyto.no_phyto_samples) IS NULL THEN 0 ELSE sum(phyto.no_phyto_samples) END AS no_phyto_samples, 
+	CASE WHEN sum(zoop.no_zoop_samples) IS NULL THEN 0 ELSE sum(zoop.no_zoop_samples) END AS no_zoop_samples, 
+	COALESCE(round(min(cp.latitude)::numeric, 1) || '/' || round(max(cp.latitude)::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(cp.longitude)::numeric, 1) || '/' || round(max(cp.longitude)::numeric, 1)) AS lon_range,
+	date(min(cp."TIME")) AS start_date, 
+	date(max(cp."TIME")) AS end_date, 
+	round(((date_part('day', (max(cp."TIME") - min(cp."TIME"))))::numeric + ((date_part('hours', (max(cp."TIME") - min(cp."TIME"))))::numeric / (24)::numeric)), 1) AS coverage_duration,
+	round(min(cp.latitude)::numeric, 1) AS min_lat, 
+	round(max(cp.latitude)::numeric, 1) AS max_lat, 
+	round(min(cp.longitude)::numeric, 1) AS min_lon, 
+	round(max(cp.longitude)::numeric, 1) AS max_lon
   FROM pci 
-  FULL JOIN phyto ON pci.date_time_utc = phyto.date_time_utc
-  FULL JOIN zoop ON pci.date_time_utc = zoop.date_time_utc
-  FULL JOIN legacy_cpr.csiro_harvest_pci cp ON pci.date_time_utc = cp.date_time_utc
-  WHERE pci.vessel_name IS NOT NULL
-  GROUP BY subfacility, pci.vessel_name, pci.route, cp.trip_code 
+  FULL JOIN phyto ON pci."TIME" = phyto."TIME"
+  FULL JOIN zoop ON pci."TIME" = zoop."TIME"
+  FULL JOIN soop_auscpr.soop_auscpr_pci_trajectory_map cp ON pci."TIME" = cp."TIME"
+	WHERE pci.vessel_name IS NOT NULL
+	GROUP BY subfacility, pci.vessel_name, pci.route, cp.trip_code 
 
 UNION ALL 
 
   SELECT 'CPR SO' AS subfacility, 
-  COALESCE(CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
-       WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
-       WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
-       WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
-       WHEN so.ship_code = 'PS' THEN 'Polarstern'
-       WHEN so.ship_code = 'SA' THEN 'San Aotea II'
-       WHEN so.ship_code = 'SH' THEN 'Shirase'
-       WHEN so.ship_code = 'SH2' THEN 'Shirase2'
-       WHEN so.ship_code = 'TA' THEN 'Tangaroa'
-       WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
-       WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
-  END || ' | ' || 'Southern Ocean') AS vessel_route,
-  CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
-       WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
-       WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
-       WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
-       WHEN so.ship_code = 'PS' THEN 'Polarstern'
-       WHEN so.ship_code = 'SA' THEN 'San Aotea II'
-       WHEN so.ship_code = 'SH' THEN 'Shirase'
-       WHEN so.ship_code = 'SH2' THEN 'Shirase2'
-       WHEN so.ship_code = 'TA' THEN 'Tangaroa'
-       WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
-       WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
-  END AS vessel_name, 
-  NULL::text AS route, 
-  COALESCE(so.ship_code || '-' || so.tow_number) AS deployment_id, 
-  sum(CASE WHEN so.pci IS NULL THEN 0 ELSE 1 END) AS no_pci_samples, 
-  NULL::numeric AS no_phyto_samples, 
-  count(so.total_abundance) AS no_zoop_samples, 
-  COALESCE(ROUND(min(ST_Y("position"))::numeric, 1) || '/' || ROUND(max(ST_Y("position"))::numeric, 1)) AS lat_range, 
-  COALESCE(ROUND(min(ST_X("position"))::numeric, 1) || '/' || ROUND(max(ST_X("position"))::numeric, 1)) AS lon_range,
-  date(min(so.date_time)) AS start_date, 
-  date(max(so.date_time)) AS end_date, 
-  round(((date_part('day', (max(so.date_time) - min(so.date_time))))::numeric + ((date_part('hours', (max(so.date_time) - min(so.date_time))))::numeric / (24)::numeric)), 1) AS coverage_duration,
-  ROUND(min(ST_Y("position"))::numeric, 1) AS min_lat, 
-  ROUND(max(ST_Y("position"))::numeric, 1) AS max_lat, 
-  ROUND(min(ST_X("position"))::numeric, 1) AS min_lon, 
-  ROUND(max(ST_X("position"))::numeric, 1) AS max_lon 
+	COALESCE(CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
+	     WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
+	     WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
+	     WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
+	     WHEN so.ship_code = 'PS' THEN 'Polarstern'
+	     WHEN so.ship_code = 'SA' THEN 'San Aotea II'
+	     WHEN so.ship_code = 'SH' THEN 'Shirase'
+	     WHEN so.ship_code = 'SH2' THEN 'Shirase2'
+	     WHEN so.ship_code = 'TA' THEN 'Tangaroa'
+	     WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
+	     WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
+	END || ' | ' || 'Southern Ocean') AS vessel_route,
+	CASE WHEN so.ship_code = 'AA' THEN 'Aurora Australis'
+	     WHEN so.ship_code = 'AF' THEN 'Akademik Federov'
+	     WHEN so.ship_code = 'HM' THEN 'Hakuho Maru'
+	     WHEN so.ship_code = 'KM' THEN 'Kaiyo Maru'
+	     WHEN so.ship_code = 'PS' THEN 'Polarstern'
+	     WHEN so.ship_code = 'SA' THEN 'San Aotea II'
+	     WHEN so.ship_code = 'SH' THEN 'Shirase'
+	     WHEN so.ship_code = 'SH2' THEN 'Shirase2'
+	     WHEN so.ship_code = 'TA' THEN 'Tangaroa'
+	     WHEN so.ship_code = 'UM' THEN 'Umitaka Maru'
+	     WHEN so.ship_code = 'YU' THEN 'Yuzhmorgeologiya'
+	END AS vessel_name, 
+	NULL::text AS route, 
+	COALESCE(so.ship_code || '-' || so.tow_number) AS deployment_id, 
+	sum(CASE WHEN so.pci IS NULL THEN 0 ELSE 1 END) AS no_pci_samples, 
+	NULL::numeric AS no_phyto_samples, 
+	count(so.total_abundance) AS no_zoop_samples, 
+	COALESCE(ROUND(min(ST_Y("position"))::numeric, 1) || '/' || ROUND(max(ST_Y("position"))::numeric, 1)) AS lat_range, 
+	COALESCE(ROUND(min(ST_X("position"))::numeric, 1) || '/' || ROUND(max(ST_X("position"))::numeric, 1)) AS lon_range,
+	date(min(so.date_time)) AS start_date, 
+	date(max(so.date_time)) AS end_date, 
+	round(((date_part('day', (max(so.date_time) - min(so.date_time))))::numeric + ((date_part('hours', (max(so.date_time) - min(so.date_time))))::numeric / (24)::numeric)), 1) AS coverage_duration,
+	ROUND(min(ST_Y("position"))::numeric, 1) AS min_lat, 
+	ROUND(max(ST_Y("position"))::numeric, 1) AS max_lat, 
+	ROUND(min(ST_X("position"))::numeric, 1) AS min_lon, 
+	ROUND(max(ST_X("position"))::numeric, 1) AS max_lon 
   FROM legacy_cpr.so_segment so
-  GROUP BY subfacility, ship_code, tow_number 
-  ORDER BY subfacility, vessel_name, route, start_date, deployment_id;
+	GROUP BY subfacility, ship_code, tow_number 
+	ORDER BY subfacility, vessel_name, route, start_date, deployment_id;
 
 grant all on table soop_cpr_all_deployments_view to public;
 

@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, pg_catalog, public;
+﻿SET search_path = report_test, public;
 
 CREATE or replace VIEW anfog_all_deployments_view AS
   SELECT 'Near real-time data' AS data_type,

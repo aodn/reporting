@@ -2,28 +2,28 @@
 
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
   WITH phyto AS (
-	SELECT DISTINCT p.date_time_utc, 
-	count(DISTINCT p.date_time_utc) AS no_phyto_samples 
-  FROM legacy_cpr.csiro_harvest_phyto p
-	GROUP BY p.date_time_utc 
-	ORDER BY date_time_utc), 
+	SELECT DISTINCT p."TIME", 
+	count(DISTINCT p."TIME") AS no_phyto_samples 
+  FROM soop_auscpr.soop_auscpr_phyto_trajectory_map p
+	GROUP BY p."TIME" 
+	ORDER BY "TIME"), 
 	
 	zoop AS (
-	SELECT DISTINCT z.date_time_utc, 
-	count(DISTINCT z.date_time_utc) AS no_zoop_samples 
-  FROM legacy_cpr.csiro_harvest_zoop z
-	GROUP BY z.date_time_utc 
-	ORDER BY date_time_utc), 
+	SELECT DISTINCT z."TIME", 
+	count(DISTINCT z."TIME") AS no_zoop_samples 
+  FROM soop_auscpr.soop_auscpr_zoop_trajectory_map z
+	GROUP BY z."TIME" 
+	ORDER BY "TIME"), 
 
 	pci AS (
 	SELECT DISTINCT pci.vessel_name, 
 	CASE WHEN pci.start_port < pci.end_port THEN (pci.start_port || '-' || pci.end_port) 
 		ELSE (pci.end_port || '-' || pci.start_port) END AS route, 
-	pci.date_time_utc, 
-	count(DISTINCT pci.date_time_utc) AS no_pci_samples 
-  FROM legacy_cpr.csiro_harvest_pci pci
-	GROUP BY vessel_name, route, date_time_utc 
-	ORDER BY vessel_name, route , date_time_utc) 
+	pci."TIME", 
+	count(DISTINCT pci."TIME") AS no_pci_samples 
+  FROM soop_auscpr.soop_auscpr_pci_trajectory_map pci
+	GROUP BY vessel_name, route, "TIME" 
+	ORDER BY vessel_name, route , "TIME") 
 
   SELECT 'CPR AUS' AS subfacility,
 	COALESCE(CASE WHEN pci.vessel_name = 'Aurora Australia' THEN 'Aurora Australis' ELSE pci.vessel_name END || ' | ' || pci.route) AS vessel_route,
@@ -33,19 +33,19 @@ CREATE or replace VIEW soop_cpr_all_deployments_view AS
 	sum(pci.no_pci_samples) AS no_pci_samples, 
 	CASE WHEN sum(phyto.no_phyto_samples) IS NULL THEN 0 ELSE sum(phyto.no_phyto_samples) END AS no_phyto_samples, 
 	CASE WHEN sum(zoop.no_zoop_samples) IS NULL THEN 0 ELSE sum(zoop.no_zoop_samples) END AS no_zoop_samples, 
-	COALESCE(round(min(cp.latitude), 1) || '/' || round(max(cp.latitude), 1)) AS lat_range, 
-	COALESCE(round(min(cp.longitude), 1) || '/' || round(max(cp.longitude), 1)) AS lon_range,
-	date(min(cp.date_time_utc)) AS start_date, 
-	date(max(cp.date_time_utc)) AS end_date, 
-	round(((date_part('day', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric + ((date_part('hours', (max(cp.date_time_utc) - min(cp.date_time_utc))))::numeric / (24)::numeric)), 1) AS coverage_duration,
-	round(min(cp.latitude), 1) AS min_lat, 
-	round(max(cp.latitude), 1) AS max_lat, 
-	round(min(cp.longitude), 1) AS min_lon, 
-	round(max(cp.longitude), 1) AS max_lon
+	COALESCE(round(min(cp.latitude)::numeric, 1) || '/' || round(max(cp.latitude)::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(cp.longitude)::numeric, 1) || '/' || round(max(cp.longitude)::numeric, 1)) AS lon_range,
+	date(min(cp."TIME")) AS start_date, 
+	date(max(cp."TIME")) AS end_date, 
+	round(((date_part('day', (max(cp."TIME") - min(cp."TIME"))))::numeric + ((date_part('hours', (max(cp."TIME") - min(cp."TIME"))))::numeric / (24)::numeric)), 1) AS coverage_duration,
+	round(min(cp.latitude)::numeric, 1) AS min_lat, 
+	round(max(cp.latitude)::numeric, 1) AS max_lat, 
+	round(min(cp.longitude)::numeric, 1) AS min_lon, 
+	round(max(cp.longitude)::numeric, 1) AS max_lon
   FROM pci 
-  FULL JOIN phyto ON pci.date_time_utc = phyto.date_time_utc
-  FULL JOIN zoop ON pci.date_time_utc = zoop.date_time_utc
-  FULL JOIN legacy_cpr.csiro_harvest_pci cp ON pci.date_time_utc = cp.date_time_utc
+  FULL JOIN phyto ON pci."TIME" = phyto."TIME"
+  FULL JOIN zoop ON pci."TIME" = zoop."TIME"
+  FULL JOIN soop_auscpr.soop_auscpr_pci_trajectory_map cp ON pci."TIME" = cp."TIME"
 	WHERE pci.vessel_name IS NOT NULL
 	GROUP BY subfacility, pci.vessel_name, pci.route, cp.trip_code 
 
