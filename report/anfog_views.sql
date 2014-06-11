@@ -16,7 +16,7 @@ CREATE or replace VIEW anfog_all_deployments_view AS
  	round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
 	max(date(mrt.time_coverage_end)) - min(date(mrt.time_coverage_start)) AS coverage_duration 
   FROM anfog_rt.anfog_rt_trajectory_map mrt
-  RIGHT JOIN anfog_dm.deployments drt ON mrt.file_id = drt.file_id
+  RIGHT JOIN anfog_rt.deployments drt ON mrt.file_id = drt.file_id
 	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
 
 UNION ALL
