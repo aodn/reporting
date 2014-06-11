@@ -1,19 +1,21 @@
-﻿SET search_path = report_test, pg_catalog, public;
+﻿SET search_path = report_test, public;
 
 CREATE or replace VIEW abos_all_deployments_view AS
     WITH table_a AS (
     SELECT 
-    "substring"(url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility, 
+    substring(url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility, 
     CASE WHEN platform_code = 'PULSE' THEN 'Pulse' 
 	ELSE platform_code END AS platform_code, 
     CASE WHEN deployment_code IS NULL THEN COALESCE(platform_code || '-' || CASE WHEN (deployment_number IS NULL) THEN '' 
 	ELSE deployment_number END) || '-' || btrim(to_char(time_coverage_start, 'YYYY')) ELSE deployment_code END AS deployment_code,
-    "substring"(url, '[^/]+nc') AS file_name,
-    ("substring"(url, 'FV0([12]+)'))::integer AS file_version,
-    CASE WHEN "substring"(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|Sub-surface_currents)') = 'Pulse' THEN 'Biogeochemistry' 
-	ELSE "substring"(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|Sub-surface_currents)') END AS data_category,
-    COALESCE("substring"(url, 'Real-time'), 'Delayed-mode') AS data_type, 
-    COALESCE("substring"(url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency, 
+    substring(url, '[^/]+nc') AS file_name,
+    (substring(url, 'FV0([12]+)'))::integer AS file_version,
+    CASE WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Pulse' 
+	OR substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'SAZ' THEN 'Biogeochemistry'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD_timeseries'
+	ELSE substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') END AS data_category,
+    COALESCE(substring(url, 'Real-time'), 'Delayed-mode') AS data_type, 
+    COALESCE(substring(url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency, 
     timezone('UTC'::text, time_coverage_start) AS coverage_start, 
     timezone('UTC'::text, time_coverage_end) AS coverage_end, 
     round(((date_part('day', (time_coverage_end - time_coverage_start)) + (date_part('hours'::text, (time_coverage_end - time_coverage_start)) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
@@ -62,8 +64,13 @@ CREATE or replace VIEW abos_data_summary_view AS
     sum(v.no_fv2) AS no_fv2, 
     min(v.coverage_start) AS coverage_start, 
     max(v.coverage_end) AS coverage_end, 
-    ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric) AS coverage_duration, (sum(v.coverage_duration))::integer AS data_coverage, 
-    CASE WHEN max(v.coverage_end) - min(v.coverage_start) = 0 THEN 0 
+    ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric) AS coverage_duration, 
+    CASE WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
+	THEN ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)::integer
+	ElSE (sum(v.coverage_duration))::integer END AS data_coverage, 
+    CASE WHEN max(v.coverage_end) - min(v.coverage_start) = 0 THEN 0
+	WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
+	THEN (((ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
 	ELSE (((sum(v.coverage_duration) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer END AS percent_coverage, 
     round(avg(v.mean_days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
     round(avg(v.mean_days_to_make_public), 1) AS mean_days_to_make_public, 
