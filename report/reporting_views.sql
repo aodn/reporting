@@ -888,7 +888,7 @@ j AS (SELECT trip_id, COUNT(measurement) AS nb_measurements FROM soop_trv.measur
   COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
@@ -909,7 +909,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -930,7 +930,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -952,7 +952,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -973,7 +973,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -994,7 +994,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -1015,7 +1015,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -1036,7 +1036,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -1057,7 +1057,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min(time_start)) AS start_date, 
   date(max(time_end)) AS end_date,
-  date_part('day',max(time_end) - min(time_start))::numeric AS coverage_duration,
+  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -1079,7 +1079,7 @@ UNION ALL
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
   date(min("TIME")) AS start_date, 
   date(max("TIME")) AS end_date,
-  date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
+  round((date_part('days',max("TIME") - min("TIME")) + date_part('hours',max("TIME") - min("TIME"))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -1099,7 +1099,7 @@ UNION ALL
 	COALESCE(round(min(ST_XMIN(m.geom))::numeric, 1) || '/' || round(max(ST_XMAX(m.geom))::numeric, 1)) AS lon_range,
 	date(min(m."TIME")) AS start_date, 
 	date(max(m."TIME")) AS end_date,
-	date_part('day',max("TIME") - min("TIME"))::numeric AS coverage_duration,
+	round((date_part('days',max("TIME") - min("TIME")) + date_part('hours',max("TIME") - min("TIME"))/24)::numeric, 1) AS coverage_duration,
 	round(min(ST_YMIN(m.geom))::numeric, 1) AS min_lat, 
 	round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
 	round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
@@ -1110,7 +1110,7 @@ UNION ALL
 
 grant all on table soop_all_deployments_view to public;
 
--- Data summary view
+-- Data summary view	
 CREATE or replace VIEW soop_data_summary_view AS
  SELECT 
 	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
@@ -1167,7 +1167,7 @@ CREATE or replace VIEW srs_all_deployments_view AS
 	m.instrument AS sensor_name,
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
-	(date_part('days', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
 	round((ST_Y(m.geom))::numeric, 1) AS lat, 
 	round((ST_X(m.geom))::numeric, 1) AS lon 
   FROM srs_altimetry.srs_altimetry_timeseries_map m 
@@ -1181,7 +1181,7 @@ UNION ALL
 	m.vessel_name AS sensor_name, 
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
-	(date_part('days', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
+	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
 	round(ST_Y(ST_CENTROID(m.geom))::numeric, 1) AS lat, 
 	round(ST_X(ST_CENTROID(m.geom))::numeric, 1) AS lon 
   FROM srs_oc_bodbaw.srs_oc_bodbaw_trajectory_profile_map m 
@@ -1200,7 +1200,8 @@ UNION ALL
 	NULL::character varying AS sensor_name, 
 	date(srs_gridded_products_manual.deployment_start) AS start_date, 
 	CASE WHEN date(srs_gridded_products_manual.deployment_end) IS NULL THEN date(now()) END AS end_date, 
-	((srs_gridded_products_manual.deployment_end - srs_gridded_products_manual.deployment_start))::numeric AS coverage_duration, 
+	round((date_part('days', CASE WHEN srs_gridded_products_manual.deployment_end IS NULL THEN now() END - srs_gridded_products_manual.deployment_start) + 
+	date_part('hours', CASE WHEN srs_gridded_products_manual.deployment_end IS NULL THEN now() END - srs_gridded_products_manual.deployment_start)/24)::numeric, 1) AS coverage_duration, 
 	NULL::numeric AS lat, 
 	NULL::numeric AS lon 
   FROM report.srs_gridded_products_manual 
@@ -1213,7 +1214,7 @@ UNION ALL
 	NULL::character varying AS sensor_name, 
 	min(date(m.time_start)) AS start_date,
 	max(date(m.time_end)) AS end_date, 
-	((max(date(m.time_end)) - min(date(m.time_start))))::numeric AS coverage_duration, 
+	round((date_part('days',max(m.time_end) - min(m.time_start)) + date_part('hours',max(m.time_end) - min(m.time_start))/24)::numeric, 1) AS coverage_duration, 
 	round(AVG(ST_Y(ST_CENTROID(m.geom)))::numeric, 1) AS lat, 
 	round(AVG(ST_X(ST_CENTROID(m.geom)))::numeric, 1) AS lon 
   FROM srs_oc_soop_rad.visualisation_wms m
