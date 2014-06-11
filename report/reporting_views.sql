@@ -1,4 +1,4 @@
-﻿SET search_path = reporting, public;
+﻿SET search_path = report_test, public;
 
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
@@ -25,109 +25,80 @@ grant all on table aatams_acoustictag_data_summary_species_view to public;
 -- All deployments view
  CREATE or replace VIEW aatams_sattag_all_deployments_view AS
   SELECT 'Near real-time CTD data' AS data_type,
-  COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
-  m.sattag_program, 
-  m.pi AS principal_investigator, 
-  m.state_country AS release_site, 
-  m.tag_type, 
-  m.common_name AS species_name, 
-  m.device_id AS tag_code, 
-  COUNT(map.profile_id) AS nb_profiles,
-  SUM(map.nb_measurements) AS nb_measurements,
-  COALESCE(round(min(st_y(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_y(st_centroid(map.geom)))::numeric, 1)) AS lat_range, 
-  COALESCE(round(min(st_x(st_centroid(map.geom)))::numeric, 1) || '/' || round(max(st_x(st_centroid(map.geom)))::numeric, 1)) AS lon_range,
-  COALESCE(min(map.min_pressure) || '-' || max(map.max_pressure)) AS depth_range,
-  min(map."timestamp") AS coverage_start, 
-  max(map."timestamp") AS coverage_end,
-  date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
-  CASE WHEN m.sattag_program IS NULL OR 
-  m.common_name IS NULL OR 
-  m.release_site IS NULL OR 
-  m.pi IS NULL OR 
-  m.tag_type IS NULL OR 
-  m.device_id IS NULL OR 
-  avg(m.release_lat) IS NULL OR 
-  avg(m.release_lon) IS NULL OR 
-  avg(date_part('year', map."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
-  round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
-  round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
-  round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
-  round(max(st_x(st_centroid(map.geom)))::numeric, 1) AS max_lon,
-  min(map.min_pressure) AS min_depth,
-  max(map.max_pressure) AS max_depth
+	COALESCE(m.sattag_program|| ' - ' || m.state_country || ' - ' || m.pi) AS headers,
+	m.sattag_program,
+	m.release_site,
+	m.state_country,
+	m.tag_type, 
+	m.common_name AS species_name, 
+	m.device_id AS tag_code, 
+	COUNT(map.profile_id) AS nb_profiles,
+	SUM(map.nb_measurements) AS nb_measurements,
+	min(map."timestamp") AS coverage_start, 
+	max(map."timestamp") AS coverage_end,
+	date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
+	round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
+	round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
+	round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
+	round(max(st_x(st_centroid(map.geom)))::numeric, 1) AS max_lon,
+	min(map.min_pressure) AS min_depth,
+	max(map.max_pressure) AS max_depth
   FROM aatams_sattag_nrt.aatams_sattag_nrt_metadata m
   LEFT JOIN aatams_sattag_nrt.aatams_sattag_nrt_profile_map map ON m.device_id = map.device_id
-  WHERE m.device_wmo_ref != ''
-  GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
-  HAVING COUNT(map.profile_id) != 0
+	WHERE m.device_wmo_ref != ''
+	GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
+	HAVING COUNT(map.profile_id) != 0
 
 UNION ALL
 
   SELECT 'Delayed mode CTD data' AS data_type,
-  COALESCE(m.sattag_program|| ' - ' || m.common_name || ' - ' || m.release_site || ' - ' || m.pi || ' - ' || m.tag_type) AS headers,
-  m.sattag_program, 
-  m.pi AS principal_investigator, 
-  m.state_country AS release_site, 
-  m.tag_type, 
-  m.common_name AS species_name, 
-  m.device_id AS tag_code, 
-  COUNT(dmap.profile_id) AS nb_profiles,
-  SUM(dmap.nb_measurements) AS nb_measurements,
-  COALESCE(round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) || '/' || round(max(st_y(st_centroid(dmap.geom)))::numeric, 1)) AS lat_range, 
-  COALESCE(round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) || '/' || round(max(st_x(st_centroid(dmap.geom)))::numeric, 1)) AS lon_range,
-  COALESCE(min(dmap.min_pressure) || '-' || max(dmap.max_pressure)) AS depth_range,
-  min(dmap."timestamp") AS coverage_start, 
-  max(dmap."timestamp") AS coverage_end,
-  date_part('days', max(dmap."timestamp") - min(dmap."timestamp"))::integer AS coverage_duration,
-  CASE WHEN m.sattag_program IS NULL OR 
-  m.common_name IS NULL OR 
-  m.release_site IS NULL OR 
-  m.pi IS NULL OR 
-  m.tag_type IS NULL OR 
-  m.device_id IS NULL OR 
-  avg(m.release_lat) IS NULL OR 
-  avg(m.release_lon) IS NULL OR 
-  avg(date_part('year', dmap."timestamp")) IS NULL THEN 'Missing information from AATAMS sub-facility' END AS missing_info, 
-  round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) AS min_lat, 
-  round(max(st_y(st_centroid(dmap.geom)))::numeric, 1) AS max_lat, 
-  round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) AS min_lon, 
-  round(max(st_x(st_centroid(dmap.geom)))::numeric, 1) AS max_lon,
-  min(dmap.min_pressure) AS min_depth,
-  max(dmap.max_pressure) AS max_depth
+	COALESCE(m.sattag_program|| ' - ' || m.state_country || ' - ' || m.pi) AS headers,
+	m.sattag_program, 
+	m.release_site,
+	m.state_country,
+	m.tag_type,
+	m.common_name AS species_name, 
+	m.device_id AS tag_code, 
+	COUNT(dmap.profile_id) AS nb_profiles,
+	SUM(dmap.nb_measurements) AS nb_measurements,
+	min(dmap."timestamp") AS coverage_start, 
+	max(dmap."timestamp") AS coverage_end,
+	date_part('days', max(dmap."timestamp") - min(dmap."timestamp"))::integer AS coverage_duration,
+	round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) AS min_lat, 
+	round(max(st_y(st_centroid(dmap.geom)))::numeric, 1) AS max_lat, 
+	round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) AS min_lon, 
+	round(max(st_x(st_centroid(dmap.geom)))::numeric, 1) AS max_lon,
+	min(dmap.min_pressure) AS min_depth,
+	max(dmap.max_pressure) AS max_depth
   FROM aatams_sattag_nrt.aatams_sattag_nrt_metadata m
   LEFT JOIN aatams_sattag_dm.aatams_sattag_dm_profile_map dmap ON m.device_id = dmap.device_id
-  GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
-  HAVING COUNT(dmap.profile_id) != 0
-  ORDER BY data_type, sattag_program, coverage_start;
+	GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
+	HAVING COUNT(dmap.profile_id) != 0
+	ORDER BY data_type, sattag_program, coverage_start;
 
 grant all on table aatams_sattag_all_deployments_view to public;
 
 -- Data summary view
 CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
   SELECT v.data_type,
-  COALESCE(v.species_name || ' - ' || v.tag_type) AS species_name_tag_type, 
-  v.sattag_program, 
-  v.release_site, 
-  v.principal_investigator, 
-  count(DISTINCT v.tag_code) AS no_tags, 
-  sum(v.nb_profiles) AS total_nb_profiles,
-  sum(v.nb_measurements) AS total_nb_measurements,
-  min(v.coverage_start) AS coverage_start, 
-  max(v.coverage_end) AS coverage_end, 
-  round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
-  v.tag_type, 
-  v.species_name,
-  COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
-  COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range,
-  COALESCE(min(v.min_depth) || '/' || max(v.max_depth)) AS depth_range, 
-  min(v.min_lat) AS min_lat, 
-  max(v.max_lat) AS max_lat, 
-  min(v.min_lon) AS min_lon, 
-  max(v.max_lon) AS max_lon,
-  min(v.min_depth) AS min_depth,
-  max(v.max_depth) AS max_depth
+	v.species_name, 
+	v.sattag_program, 
+	v.state_country AS release_site,
+	count(DISTINCT v.tag_code) AS no_tags, 
+	sum(v.nb_profiles) AS total_nb_profiles,
+	sum(v.nb_measurements) AS total_nb_measurements,
+	min(v.coverage_start) AS coverage_start, 
+	max(v.coverage_end) AS coverage_end, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	v.tag_type,
+	min(v.min_lat) AS min_lat, 
+	max(v.max_lat) AS max_lat, 
+	min(v.min_lon) AS min_lon, 
+	max(v.max_lon) AS max_lon,
+	min(v.min_depth) AS min_depth,
+	max(v.max_depth) AS max_depth
   FROM aatams_sattag_all_deployments_view v
-    GROUP BY v.data_type, v.sattag_program, v.release_site, v.species_name, v.principal_investigator, v.tag_type
+    GROUP BY v.data_type, v.sattag_program, v.state_country, v.species_name, v.tag_type
     HAVING sum(v.nb_profiles) != 0
     ORDER BY v.data_type, v.species_name, v.tag_type, min(v.coverage_start);
 
@@ -139,56 +110,56 @@ grant all on table aatams_sattag_data_summary_view to public;
 -- All deployments view
 CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS 
   SELECT 'Emperor Penguin Fledglings' AS tagged_animals,
-  pttid AS animal_id,
-  no_observations AS nb_measurements,
-  observation_start_date AS start_date,
-  observation_end_date AS end_date,
-  date_part('day', observation_end_date - observation_start_date)::numeric AS coverage_duration,
-  COALESCE(round(ST_YMIN(geom)::numeric, 1) || '/' || round(ST_YMAX(geom)::numeric, 1)) AS lat_range,
-  COALESCE(round(ST_XMIN(geom)::numeric, 1) || '/' || round(ST_XMAX(geom)::numeric, 1)) AS lon_range,
-  round(ST_YMIN(geom)::numeric, 1) AS min_lat,
-  round(ST_YMAX(geom)::numeric, 1) AS max_lat,
-  round(ST_XMIN(geom)::numeric, 1) AS min_lon,
-  round(ST_XMAX(geom)::numeric, 1) AS max_lon
+	pttid AS animal_id,
+	no_observations AS nb_measurements,
+	observation_start_date AS start_date,
+	observation_end_date AS end_date,
+	round(date_part('days', observation_end_date - observation_start_date)::numeric + (date_part('hours', observation_end_date - observation_start_date)::numeric)/24, 1) AS coverage_duration,
+	COALESCE(round(ST_YMIN(geom)::numeric, 1) || '/' || round(ST_YMAX(geom)::numeric, 1)) AS lat_range,
+	COALESCE(round(ST_XMIN(geom)::numeric, 1) || '/' || round(ST_XMAX(geom)::numeric, 1)) AS lon_range,
+	round(ST_YMIN(geom)::numeric, 1) AS min_lat,
+	round(ST_YMAX(geom)::numeric, 1) AS max_lat,
+	round(ST_XMIN(geom)::numeric, 1) AS min_lon,
+	round(ST_XMAX(geom)::numeric, 1) AS max_lon
   FROM aatams_biologging_penguin.aatams_biologging_penguin_map pm
 
 UNION ALL
 
   SELECT 'Short-tailed shearwaters' AS tagged_animals, 
-  ref AS animal_id,
-  no_observations AS nb_measurements,
-  start_date,
-  end_date,
-  date_part('day', end_date - start_date)::numeric AS coverage_duration,
-  COALESCE(round(ST_YMIN(geom)::numeric, 1) || '/' || round(ST_YMAX(geom)::numeric, 1)) AS lat_range,
-  COALESCE(round(ST_XMIN(geom)::numeric, 1) || '/' || round(ST_XMAX(geom)::numeric, 1)) AS lon_range,
-  round(ST_YMIN(geom)::numeric, 1) AS min_lat,
-  round(ST_YMAX(geom)::numeric, 1) AS max_lat,
-  round(ST_XMIN(geom)::numeric, 1) AS min_lon,
-  round(ST_XMAX(geom)::numeric, 1) AS max_lon
+	ref AS animal_id,
+	no_observations AS nb_measurements,
+	start_date,
+	end_date,
+	round(date_part('days', end_date - start_date)::numeric + (date_part('hours', end_date - start_date)::numeric)/24, 1) AS coverage_duration,
+	COALESCE(round(ST_YMIN(geom)::numeric, 1) || '/' || round(ST_YMAX(geom)::numeric, 1)) AS lat_range,
+	COALESCE(round(ST_XMIN(geom)::numeric, 1) || '/' || round(ST_XMAX(geom)::numeric, 1)) AS lon_range,
+	round(ST_YMIN(geom)::numeric, 1) AS min_lat,
+	round(ST_YMAX(geom)::numeric, 1) AS max_lat,
+	round(ST_XMIN(geom)::numeric, 1) AS min_lon,
+	round(ST_XMAX(geom)::numeric, 1) AS max_lon
   FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map sm
-  ORDER BY tagged_animals, animal_id, start_date;
+	ORDER BY tagged_animals, animal_id, start_date;
 
 grant all on table aatams_biologging_all_deployments_view to public;
 
 -- Data summary view
 CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
   SELECT tagged_animals,
-  COUNT(DISTINCT(animal_id)) AS nb_animals,
-  SUM(nb_measurements) AS total_nb_measurements,
-  COALESCE(to_char(min(start_date),'DD/MM/YYYY') || ' - ' || to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
-  round(AVG(coverage_duration),1) AS mean_coverage_duration,
-  COALESCE(round(min(min_lat)::numeric, 1) || '/' || round(max(max_lat)::numeric, 1)) AS lat_range,
-  COALESCE(round(min(min_lon)::numeric, 1) || '/' || round(max(max_lon)::numeric, 1)) AS lon_range,
-  min(start_date) AS earliest_date,
-  max(end_date) AS latest_date,
-  round(min(min_lat)::numeric, 1) AS min_lat,
-  round(max(max_lat)::numeric, 1) AS max_lat,
-  round(min(min_lon)::numeric, 1) AS min_lon,
-  round(max(max_lon)::numeric, 1) AS max_lon
+	COUNT(DISTINCT(animal_id)) AS nb_animals,
+	SUM(nb_measurements) AS total_nb_measurements,
+	COALESCE(to_char(min(start_date),'DD/MM/YYYY') || ' - ' || to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
+	round(AVG(coverage_duration),1) AS mean_coverage_duration,
+	COALESCE(round(min(min_lat)::numeric, 1) || '/' || round(max(max_lat)::numeric, 1)) AS lat_range,
+	COALESCE(round(min(min_lon)::numeric, 1) || '/' || round(max(max_lon)::numeric, 1)) AS lon_range,
+	min(start_date) AS earliest_date,
+	max(end_date) AS latest_date,
+	round(min(min_lat)::numeric, 1) AS min_lat,
+	round(max(max_lat)::numeric, 1) AS max_lat,
+	round(min(min_lon)::numeric, 1) AS min_lon,
+	round(max(max_lon)::numeric, 1) AS max_lon
   FROM aatams_biologging_all_deployments_view v
-  GROUP BY tagged_animals
-  ORDER BY tagged_animals;
+	GROUP BY tagged_animals
+	ORDER BY tagged_animals;
 
 grant all on table aatams_biologging_data_summary_view to public;
 
@@ -221,34 +192,33 @@ CREATE or replace VIEW abos_all_deployments_view AS
     FROM dw_abos.abos_file
     WHERE status IS DISTINCT FROM 'DELETED'
     ORDER BY sub_facility, platform_code, data_category)
-SELECT 
-CASE WHEN a.year_frequency = 'Whole deployment' THEN 'Aggregated files' 
+  SELECT CASE WHEN a.year_frequency = 'Whole deployment' THEN 'Aggregated files' 
 	ELSE 'Daily files' END AS file_type, 
-COALESCE(a.sub_facility || '-' || a.platform_code || ' - ' || a.data_type) AS headers, 
-a.data_type, 
-a.data_category, 
-a.deployment_code, 
-sum(((a.file_version = 1))::integer) AS no_fv1, 
-sum(((a.file_version = 2))::integer) AS no_fv2, 
-date(min(a.coverage_start)) AS coverage_start, 
-date(max(a.coverage_end)) AS coverage_end, 
-min(a.coverage_start) AS time_coverage_start, 
-max(a.coverage_end) AS time_coverage_end, 
-CASE WHEN a.data_type = 'Delayed-mode' AND a.year_frequency = 'Whole deployment' THEN max(a.coverage_duration) 
-	ELSE (date(max(a.coverage_end)) - date(min(a.coverage_start)))::numeric END AS coverage_duration, 
-round(avg(a.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
-round(avg(a.days_to_make_public), 1) AS mean_days_to_make_public, 
-a.deployment_number, a.author, 
-a.principal_investigator, 
-a.platform_code, 
-a.sub_facility 
-FROM table_a a
-GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.author, a.principal_investigator, a.platform_code, a.sub_facility 
-ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
+	COALESCE(a.sub_facility || '-' || a.platform_code || ' - ' || a.data_type) AS headers, 
+	a.data_type, 
+	a.data_category, 
+	a.deployment_code, 
+	sum(((a.file_version = 1))::integer) AS no_fv1, 
+	sum(((a.file_version = 2))::integer) AS no_fv2, 
+	date(min(a.coverage_start)) AS coverage_start, 
+	date(max(a.coverage_end)) AS coverage_end, 
+	min(a.coverage_start) AS time_coverage_start, 
+	max(a.coverage_end) AS time_coverage_end, 
+	CASE WHEN a.data_type = 'Delayed-mode' AND a.year_frequency = 'Whole deployment' THEN max(a.coverage_duration) 
+		ELSE (date(max(a.coverage_end)) - date(min(a.coverage_start)))::numeric END AS coverage_duration, 
+	round(avg(a.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
+	round(avg(a.days_to_make_public), 1) AS mean_days_to_make_public, 
+	a.deployment_number, a.author, 
+	a.principal_investigator, 
+	a.platform_code, 
+	a.sub_facility 
+  FROM table_a a
+	GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.author, a.principal_investigator, a.platform_code, a.sub_facility 
+	ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
 
 grant all on table abos_all_deployments_view to public;
 
-
+-- Data summary view
 CREATE or replace VIEW abos_data_summary_view AS
     SELECT 
     v.file_type, 
@@ -260,13 +230,13 @@ CREATE or replace VIEW abos_data_summary_view AS
     sum(v.no_fv2) AS no_fv2, 
     min(v.coverage_start) AS coverage_start, 
     max(v.coverage_end) AS coverage_end, 
-    ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric) AS coverage_duration, 
+    round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
     CASE WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
-	THEN ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)::integer
-	ElSE (sum(v.coverage_duration))::integer END AS data_coverage, 
+	THEN round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1)
+	ElSE (sum(v.coverage_duration)) END AS data_coverage, 
     CASE WHEN max(v.coverage_end) - min(v.coverage_start) = 0 THEN 0
 	WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
-	THEN (((ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
+	THEN (((round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
 	ELSE (((sum(v.coverage_duration) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer END AS percent_coverage, 
     round(avg(v.mean_days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
     round(avg(v.mean_days_to_make_public), 1) AS mean_days_to_make_public, 
@@ -295,13 +265,25 @@ WITH a AS (
 	site_code,
 	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
 	date_part('year',time)::text AS year
-  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url)
+  FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url),
+       c AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_radial_qc.acorn_radial_qc_timeseries_url),
+         d AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url)
   SELECT 'Gridded product - QC' AS data_type, 
 	substring(u.site_code,'\, (.*)') AS site,
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
 	date(max(time)) AS time_end,
-	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
 	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
 	COALESCE(a.month || ' ' || a.year) AS month_year,
 	a.month,
@@ -317,12 +299,44 @@ UNION ALL
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
 	date(max(time)) AS time_end,
-	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 0) AS coverage_duration,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
 	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
 	COALESCE(b.month || ' ' || b.year) AS month_year,
 	b.month,
 	b.year
   FROM acorn_hourly_avg_nonqc.acorn_hourly_avg_nonqc_timeseries_url u
+  JOIN b ON b.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+
+UNION ALL
+
+  SELECT 'Radials - QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(b.month || ' ' || b.year) AS month_year,
+	b.month,
+	b.year
+  FROM acorn_radial_qc.acorn_radial_qc_timeseries_url u
+  JOIN b ON b.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year
+
+UNION ALL
+
+  SELECT 'Radials - non QC' AS data_type, 
+	substring(u.site_code,'\, (.*)') AS site,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
+	COALESCE(b.month || ' ' || b.year) AS month_year,
+	b.month,
+	b.year
+  FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url u
   JOIN b ON b.timeseries_id = u.timeseries_id
 	GROUP BY data_type, u.site_code, month, year
 	ORDER BY data_type, site, time_start;
@@ -362,7 +376,8 @@ CREATE or replace VIEW anfog_all_deployments_view AS
  	COALESCE(min(round((ST_YMIN(geom))::numeric, 1)) || '/' || max(round((ST_YMAX(geom))::numeric, 1))) AS lat_range,
  	COALESCE(min(round((ST_XMIN(geom))::numeric, 1)) || '/' || max(round((ST_XMAX(geom))::numeric, 1))) AS lon_range,
  	round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
-	max(date(mrt.time_coverage_end)) - min(date(mrt.time_coverage_start)) AS coverage_duration 
+ 	round((date_part('days', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ'))) + 
+ 	date_part('hours', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
   FROM anfog_rt.anfog_rt_trajectory_map mrt
   RIGHT JOIN anfog_rt.deployments drt ON mrt.file_id = drt.file_id
 	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
@@ -382,7 +397,8 @@ UNION ALL
  	COALESCE(round((ST_YMIN(geom))::numeric, 1) || '/' || round((ST_YMAX(geom))::numeric, 1)) AS lat_range,
  	COALESCE(round((ST_XMIN(geom))::numeric, 1) || '/' || round((ST_XMAX(geom))::numeric, 1)) AS lon_range,
  	round(d.geospatial_vertical_max::numeric, 1) AS max_depth, 
-	date(m.time_coverage_end) - date(m.time_coverage_start) AS coverage_duration 
+ 	round((date_part('days', max(to_timestamp(m.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(m.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ'))) + 
+ 	date_part('hours', max(to_timestamp(m.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(m.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
 	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
@@ -420,25 +436,15 @@ grant all on table anfog_data_summary_view to public;
 -- All deployments view
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
   SELECT substring(m.deployment_name, '[^0-9]+') AS site_name, 
-  "substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
-  m.logger_id, 
-  bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 6))) AS good_data, 
-  bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 22))) AS good_22, 
-  bool_or((m.is_primary AND (m.data_path IS NOT NULL))) AS on_viewer, 
-  round(avg((m.receiver_depth)::numeric), 1) AS depth, 
-  min(date(m.time_deployment_start)) AS start_date, 
-  max(date(m.time_deployment_end)) AS end_date, 
-  (max(date(m.time_deployment_end)) - min(date(m.time_deployment_start))) AS coverage_duration, 
-  CASE WHEN m.logger_id IS NULL OR 
-    avg(date_part('year', m.time_deployment_end)) IS NULL OR 
-    bool_or(m.frequency IS NULL) OR 
-    bool_or(m.set_success IS NULL) OR 
-    avg(m.lat) IS NULL OR 
-    avg(m.lon) IS NULL OR 
-    avg(m.receiver_depth) IS NULL OR 
-    bool_or(m.system_gain_file IS NULL) OR 
-    bool_or(m.hydrophone_sensitivity IS NULL) THEN 'Missing information from PAO sub-facility' 
-    ELSE NULL END AS missing_info 
+	"substring"((m.deployment_name), '2[-0-9]+') AS deployment_year, 
+	m.logger_id, 
+	bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 6))) AS good_data, 
+	bool_or((((m.set_success) !~~* '%fail%') AND (m.frequency = 22))) AS good_22, 
+	bool_or((m.is_primary AND (m.data_path IS NOT NULL))) AS on_viewer, 
+	round(avg((m.receiver_depth)::numeric), 1) AS depth, 
+	min(m.time_deployment_start) AS start_date, 
+	max(m.time_deployment_end) AS end_date, 
+	round((date_part('days',max(m.time_deployment_end) - min(m.time_deployment_start)) + date_part('days',max(m.time_deployment_end) - min(m.time_deployment_start))/24)::numeric, 1) AS coverage_duration
   FROM reporting.acoustic_deployments m
   GROUP BY m.deployment_name, m.lat, m.lon, m.logger_id 
   ORDER BY site_name, deployment_year, m.logger_id;
@@ -453,11 +459,9 @@ CREATE or replace VIEW anmn_acoustics_data_summary_view AS
   sum((v.good_data)::integer) AS no_good_data, 
   sum((v.on_viewer)::integer) AS no_sets_on_viewer, 
   sum((v.good_22)::integer) AS no_good_22, 
-  min(v.start_date) AS earliest_date, 
-  max(v.end_date) AS latest_date, 
-  (max(v.end_date) - min(v.start_date)) AS coverage_duration, 
-  sum(CASE WHEN ("substring"(v.missing_info, 'PAO') IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_pao_subfacility, 
-  sum(CASE WHEN ("substring"(v.missing_info, 'eMII') IS NULL) THEN 0 ELSE 1 END) AS no_missing_info_emii 
+  min(date(v.start_date)) AS earliest_date, 
+  max(date(v.end_date)) AS latest_date, 
+  round((date_part('days',max(v.end_date) - min(v.start_date)) + date_part('days',max(v.end_date) - min(v.start_date))/24)::numeric, 1) AS coverage_duration
   FROM anmn_acoustics_all_deployments_view v
   GROUP BY v.site_name, v.deployment_year 
   ORDER BY site_name, deployment_year;
@@ -511,18 +515,12 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	f.deployment_code, 
 	(sum(((f.file_version = '0'))::integer))::numeric AS no_fv00, 
 	(sum(((f.file_version = '1'))::integer))::numeric AS no_fv01, 
-	date(min(f.time_deployment_start)) AS start_date, 
-	date(max(f.time_deployment_end)) AS end_date, 
-	(date_part('day', (max(f.time_deployment_end) - min(f.time_deployment_start))))::numeric AS coverage_duration, 
-	(date_part('day', (max(f.good_data_end) - min(f.good_data_start))))::numeric AS data_coverage, 
-	CASE WHEN sum(CASE WHEN s.site_name IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
-		sum(CASE WHEN f.time_deployment_start IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
-		sum(CASE WHEN f.time_deployment_end IS NULL THEN 0 ELSE 1 END) <> count(f.subfacility) OR 
-		sum(CASE WHEN (f.site_code IS NULL) THEN 0 ELSE 1 END) <> count(f.subfacility) THEN 
-		COALESCE('Missing information from' || ' ' || f.subfacility || ' ' || 'sub-facility') 
-		ELSE NULL END AS missing_info, 
-	date(min(f.good_data_start)) AS good_data_start, 
-	date(max(f.good_data_end)) AS good_data_end, 
+	min(f.time_deployment_start) AS start_date, 
+	max(f.time_deployment_end) AS end_date, 
+	round((date_part('days', (max(f.time_deployment_end) - min(f.time_deployment_start))) + date_part('hours', (max(f.time_deployment_end) - min(f.time_deployment_start)))/24)::numeric, 1) AS coverage_duration, 
+	round((date_part('days', (max(f.good_data_end) - min(f.good_data_start))) + date_part('hours', (max(f.good_data_end) - min(f.good_data_start)))/24)::numeric, 1) AS data_coverage,
+	min(f.good_data_start) AS good_data_start, 
+	max(f.good_data_end) AS good_data_end, 
 	round((min(s.site_lat))::numeric, 1) AS min_lat, 
 	round((min(s.site_lon))::numeric, 1) AS min_lon, 
 	round((max(s.site_lat))::numeric, 1) AS max_lat, 
@@ -551,16 +549,13 @@ CREATE or replace VIEW anmn_data_summary_view AS
 		ELSE COALESCE(CASE WHEN min(v.min_depth) < 0 THEN min(v.min_depth) * (-1) ELSE min(v.min_depth) END || '/' || max(v.max_depth)) END AS depth_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	(max(v.end_date) - min(v.start_date)) AS coverage_duration, 
+	round(((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric, 1) AS coverage_duration, 
 	sum(v.data_coverage) AS data_coverage, 
-	CASE WHEN round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) < 0 
+	CASE WHEN round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) < 0 
 		THEN NULL::numeric 
-		WHEN round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) > 100 
+		WHEN round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) > 100 
 		THEN 100 
-		ELSE round((sum(v.data_coverage) / ((max(v.end_date) - min(v.start_date)))::numeric) * 100, 1) END AS percent_coverage,
-	sum(CASE WHEN v.missing_info IS NULL THEN 0 
-		WHEN "substring"(v.missing_info, 'facility') IS NOT NULL THEN 1 
-		ELSE NULL::integer END) AS missing_info_facility,
+		ELSE round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) END AS percent_coverage,
 	min(v.min_lat) AS min_lat, 
 	min(v.min_lon) AS min_lon, 
 	min(v.min_depth) AS min_depth, 
@@ -587,7 +582,7 @@ CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
         ELSE false END AS qaqc_data,
    time_coverage_start AS start_date,
    time_coverage_end AS end_date,
-   (date_part('day', (time_coverage_end - time_coverage_start)))::numeric AS coverage_duration,
+   round((date_part('days', (time_coverage_end - time_coverage_start)) + date_part('hours', (time_coverage_end - time_coverage_start))/24)::numeric, 1) AS coverage_duration,
    CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
    CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
         ELSE instrument_nominal_depth::numeric END AS sensor_depth
@@ -599,18 +594,18 @@ grant all on table anmn_nrs_realtime_all_deployments_view to public;
 -- Data summary view
 CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
   SELECT v.site_name AS site_name,
-  COUNT(DISTINCT(channel_id)) AS nb_channels,
-  sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
-  COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
-  min(v.start_date) AS earliest_date, 
-  max(v.end_date) AS latest_date, 
-  round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-  min(v.sensor_depth) AS min_depth, 
-  max(v.sensor_depth) AS max_depth 
+	COUNT(DISTINCT(channel_id)) AS nb_channels,
+	sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
+	COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
+	min(v.start_date) AS earliest_date, 
+	max(v.end_date) AS latest_date, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	min(v.sensor_depth) AS min_depth, 
+	max(v.sensor_depth) AS max_depth 
   FROM anmn_nrs_realtime_all_deployments_view v
-  WHERE channel_id != 'Not Specified Not Specified'
-  GROUP BY v.site_name  
-  ORDER BY site_name;
+	WHERE channel_id != 'Not Specified Not Specified'
+	GROUP BY v.site_name  
+	ORDER BY site_name;
 
 grant all on table anmn_nrs_realtime_data_summary_view to public;
 
@@ -619,26 +614,20 @@ grant all on table anmn_nrs_realtime_data_summary_view to public;
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW argo_all_deployments_view AS
-    SELECT 
-    m.data_centre AS organisation, 
-    CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
-    ELSE 'Oxygen sensor' END AS oxygen_sensor, 
-    m.platform_number AS platform_code, 
-    round((m.min_lat)::numeric, 1) AS min_lat, 
-    round((m.max_lat)::numeric, 1) AS max_lat, 
-    round((m.min_long)::numeric, 1) AS min_lon, 
-    round((m.max_long)::numeric, 1) AS max_lon, 
-    COALESCE(round((m.min_lat)::numeric, 1) || '/' || round((m.max_lat)::numeric, 1)) AS lat_range, 
-    COALESCE(round((m.min_long)::numeric, 1) || '/' || round((m.max_long)::numeric, 1)) AS lon_range, 
-    date(m.start_date) AS start_date, 
-    date(m.last_measure_date) AS end_date, 
-    round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) AS coverage_duration, 
-    m.pi_name, 
-    CASE WHEN date_part('day', (m.last_measure_date - m.start_date)) IS NULL THEN 'Missing dates' 
-    WHEN m.uuid IS NULL THEN 'No metadata' 
-    WHEN m.data_centre IS NULL THEN 'No organisation' 
-    WHEN m.pi_name IS NULL THEN 'No principal investigator'::text 
-    ELSE NULL END AS missing_info 
+  SELECT m.data_centre AS organisation, 
+	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
+		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
+	m.platform_number AS platform_code, 
+	round((m.min_lat)::numeric, 1) AS min_lat, 
+	round((m.max_lat)::numeric, 1) AS max_lat, 
+	round((m.min_long)::numeric, 1) AS min_lon, 
+	round((m.max_long)::numeric, 1) AS max_lon, 
+	COALESCE(round((m.min_lat)::numeric, 1) || '/' || round((m.max_lat)::numeric, 1)) AS lat_range, 
+	COALESCE(round((m.min_long)::numeric, 1) || '/' || round((m.max_long)::numeric, 1)) AS lon_range, 
+	date(m.start_date) AS start_date, 
+	date(m.last_measure_date) AS end_date, 
+	round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) AS coverage_duration, 
+	m.pi_name
     FROM argo.argo_float m
     ORDER BY organisation, oxygen_sensor, platform_code;
 
@@ -646,25 +635,23 @@ grant all on table argo_all_deployments_view to public;
 
 -- Data summary view
 CREATE or replace VIEW argo_data_summary_view AS
-    SELECT 
-    v.organisation, 
-    count(DISTINCT v.platform_code) AS no_platforms, 
-    count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 THEN 1 ELSE NULL::integer END) AS no_active_floats, 
-    count(CASE WHEN v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_oxygen_platforms, 
-    count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 AND v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_active_oxygen_platforms, 
-    count(CASE WHEN v.missing_info IS NOT NULL THEN 1 ELSE NULL::integer END) AS no_deployments_with_missing_info, 
-    min(v.min_lat) AS min_lat, 
-    max(v.max_lat) AS max_lat, 
-    min(v.min_lon) AS min_lon, 
-    max(v.max_lon) AS max_lon, 
-    COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
-    COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
-    min(v.start_date) AS earliest_date, 
-    max(v.end_date) AS latest_date, 
-    round(avg(v.coverage_duration), 1) AS mean_coverage_duration 
-    FROM argo_all_deployments_view v
-    GROUP BY v.organisation 
-    ORDER BY organisation;
+  SELECT v.organisation, 
+	count(DISTINCT v.platform_code) AS no_platforms, 
+	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 THEN 1 ELSE NULL::integer END) AS no_active_floats, 
+	count(CASE WHEN v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_oxygen_platforms, 
+	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 AND v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_active_oxygen_platforms, 
+	min(v.min_lat) AS min_lat, 
+	max(v.max_lat) AS max_lat, 
+	min(v.min_lon) AS min_lon, 
+	max(v.max_lon) AS max_lon, 
+	COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
+	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
+	min(v.start_date) AS earliest_date, 
+	max(v.end_date) AS latest_date, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration 
+  FROM argo_all_deployments_view v
+	GROUP BY v.organisation 
+	ORDER BY organisation;
 
 grant all on table argo_data_summary_view to public;
 
@@ -673,46 +660,46 @@ grant all on table argo_data_summary_view to public;
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW auv_all_deployments_view AS
-WITH a AS (
+  WITH a AS (
   SELECT fk_auv_tracks,
-  COUNT(li.pkid) AS no_images
+	COUNT(li.pkid) AS no_images
   FROM legacy_auv.auv_images li
-  GROUP BY fk_auv_tracks)
+	GROUP BY fk_auv_tracks)
   SELECT DISTINCT "substring"((d.campaign_name), '[^0-9]+') AS location, 
-  d.campaign_name AS campaign, 
-  v.dive_name AS site,
-  round(ST_Y(ST_CENTROID(v.geom))::numeric, 1) AS lat_min, 
-  round(ST_X(ST_CENTROID(v.geom))::numeric, 1) AS lon_min, 
-  v.time_start AS start_date,
-  v.time_end AS end_date,
-  ((date_part('hours', (v.time_end - v.time_start)) * (60)::double precision) + ((date_part('minutes', (v.time_end - v.time_start)))::integer)::double precision) AS coverage_duration,
-  a.no_images
+	d.campaign_name AS campaign, 
+	v.dive_name AS site,
+	round(ST_Y(ST_CENTROID(v.geom))::numeric, 1) AS lat_min, 
+	round(ST_X(ST_CENTROID(v.geom))::numeric, 1) AS lon_min, 
+	v.time_start AS start_date,
+	v.time_end AS end_date,
+	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric, 1) AS coverage_duration,
+	a.no_images
   FROM auv.deployments d
   LEFT JOIN auv.auv_trajectory_map v ON v.file_id = d.file_id
   LEFT JOIN legacy_auv.auv_tracks lt ON v.dive_name = lt.site_code
   LEFT JOIN a ON lt.pkid = a.fk_auv_tracks
-  ORDER BY location, campaign, site;
+	ORDER BY location, campaign, site;
 
 grant all on table auv_all_deployments_view to public;
 
 -- Data summary view
 CREATE or replace VIEW auv_data_summary_view AS
   SELECT v.location, 
-  count(DISTINCT CASE WHEN v.campaign IS NULL THEN '1' ELSE v.campaign END) AS no_campaigns, 
-  count(DISTINCT CASE WHEN v.site IS NULL THEN '1' ELSE v.site END) AS no_sites,
-  SUM(no_images) AS total_no_images,
-  COALESCE(min(v.lat_min) || '/' || max(v.lat_min)) AS lat_range, 
-  COALESCE(min(v.lon_min) || '/' || max(v.lon_min)) AS lon_range, 
-  min(v.start_date) AS earliest_date, 
-  max(v.end_date) AS latest_date, 
-  round((sum((v.coverage_duration)::numeric) / 60), 1) AS data_duration, 
-  min(v.lat_min) AS lat_min, 
-  min(v.lon_min) AS lon_min, 
-  max(v.lat_min) AS lat_max, 
-  max(v.lon_min) AS lon_max
+	count(DISTINCT CASE WHEN v.campaign IS NULL THEN '1' ELSE v.campaign END) AS no_campaigns, 
+	count(DISTINCT CASE WHEN v.site IS NULL THEN '1' ELSE v.site END) AS no_sites,
+	SUM(no_images) AS total_no_images,
+	COALESCE(min(v.lat_min) || '/' || max(v.lat_min)) AS lat_range, 
+	COALESCE(min(v.lon_min) || '/' || max(v.lon_min)) AS lon_range, 
+	min(v.start_date) AS earliest_date, 
+	max(v.end_date) AS latest_date, 
+	round((sum((v.coverage_duration)::numeric) / 60), 1) AS data_duration, 
+	min(v.lat_min) AS lat_min, 
+	min(v.lon_min) AS lon_min, 
+	max(v.lat_min) AS lat_max, 
+	max(v.lon_min) AS lon_max
   FROM auv_all_deployments_view v
-  GROUP BY location
-  ORDER BY location;
+	GROUP BY location
+	ORDER BY location;
 
 grant all on table auv_data_summary_view to public;
 
@@ -722,14 +709,14 @@ grant all on table auv_data_summary_view to public;
 -- All deployments view
 CREATE OR REPLACE VIEW facility_summary_view AS 
   SELECT facility.acronym AS facility_acronym,
-  COALESCE(to_char(to_timestamp (date_part('month',facility_summary.reporting_date)::text, 'MM') ,'TMMon')||' '||date_part('year',facility_summary.reporting_date)) AS reporting_month,
-  facility_summary.summary AS updates, 
-  facility_summary_item.name AS issues,
-  facility_summary.reporting_date
+	COALESCE(to_char(to_timestamp (date_part('month',facility_summary.reporting_date)::text, 'MM') ,'TMMon')||' '||date_part('year',facility_summary.reporting_date)) AS reporting_month,
+	facility_summary.summary AS updates, 
+	facility_summary_item.name AS issues,
+	facility_summary.reporting_date
   FROM report.facility_summary
   FULL JOIN report.facility ON facility_summary.facility_name_id = facility.id
   LEFT JOIN report.facility_summary_item ON facility_summary.summary_item_id = facility_summary_item.row_id
-  ORDER BY facility_acronym, reporting_date DESC, issues;
+	ORDER BY facility_acronym, reporting_date DESC, issues;
 
 grant all on table facility_summary_view to public;
 
@@ -740,40 +727,40 @@ grant all on table facility_summary_view to public;
 -- All deployments view
 CREATE or replace VIEW faimms_all_deployments_view AS
   SELECT DISTINCT m.platform_code AS site_name, 
-  m.site_code AS platform_code, 
-  COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
-  (m."DEPTH")::numeric AS sensor_depth, 
-  date(m.time_start) AS start_date, 
-  date(m.time_end) AS end_date, 
-  (date_part('day', (m.time_end - m.time_start)))::numeric AS coverage_duration, 
-  f.instrument AS sensor_name, 
-  m."VARNAME" AS parameter, 
-  m.channel_id AS channel_id,
-  round(ST_X(geom)::numeric, 1) AS lon,
-  round(ST_Y(geom)::numeric, 1) AS lat
+	m.site_code AS platform_code, 
+	COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
+	(m."DEPTH")::numeric AS sensor_depth, 
+	date(m.time_start) AS start_date, 
+	date(m.time_end) AS end_date, 
+	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
+	f.instrument AS sensor_name, 
+	m."VARNAME" AS parameter, 
+	m.channel_id AS channel_id,
+	round(ST_X(geom)::numeric, 1) AS lon,
+	round(ST_Y(geom)::numeric, 1) AS lat
   FROM faimms.faimms_timeseries_map m
   LEFT JOIN faimms.global_attributes_file f ON f.aims_channel_id = m.channel_id
-  ORDER BY site_name, platform_code, sensor_code;
+	ORDER BY site_name, platform_code, sensor_code;
 
 grant all on table faimms_all_deployments_view to public;
 
 -- Data summary view
 CREATE or replace VIEW faimms_data_summary_view AS
   SELECT v.site_name, 
-  count(DISTINCT v.platform_code) AS no_platforms, 
-  count(DISTINCT v.sensor_code) AS no_sensors, 
-  count(DISTINCT v.parameter) AS no_parameters,
-  min(v.lon) AS lon, 
-  min(v.lat) AS lat, 
-  COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range,
-  min(v.start_date) AS earliest_date, 
-  max(v.end_date) AS latest_date, 
-  round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-  min(v.sensor_depth) AS min_depth, 
-  max(v.sensor_depth) AS max_depth
+	count(DISTINCT v.platform_code) AS no_platforms, 
+	count(DISTINCT v.sensor_code) AS no_sensors, 
+	count(DISTINCT v.parameter) AS no_parameters,
+	min(v.lon) AS lon, 
+	min(v.lat) AS lat, 
+	COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range,
+	min(v.start_date) AS earliest_date, 
+	max(v.end_date) AS latest_date, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	min(v.sensor_depth) AS min_depth, 
+	max(v.sensor_depth) AS max_depth
   FROM faimms_all_deployments_view v
-  GROUP BY site_name 
-  ORDER BY site_name;
+	GROUP BY site_name 
+	ORDER BY site_name;
 
 grant all on table faimms_data_summary_view to public;
 
@@ -1327,7 +1314,7 @@ UNION ALL
     COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
     COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
     COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM aatams_sattag_data_summary_view
+  FROM report_test.aatams_sattag_data_summary_view
     GROUP BY data_type
     
 UNION ALL
@@ -1347,7 +1334,7 @@ UNION ALL
     COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
     COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
     COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM aatams_sattag_all_deployments_view
+  FROM report_test.aatams_sattag_all_deployments_view
 
 -- AATAMS - Biologging
 UNION ALL  
@@ -1567,7 +1554,6 @@ UNION ALL
   NULL AS lon_range,
   COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
   FROM anmn_nrs_realtime_data_summary_view
-  ORDER BY facility,subfacility,type;
   
 -- Argo
 UNION ALL
@@ -1708,6 +1694,7 @@ NULL AS lat_range,
 NULL AS lon_range,
 NULL AS depth_range
 FROM srs_data_summary_view
+  ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
 
