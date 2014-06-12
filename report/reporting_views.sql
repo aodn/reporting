@@ -3,21 +3,302 @@
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
 -------------------------------
-CREATE OR REPLACE VIEW aatams_acoustictag_all_deployments_view AS
-    SELECT *
-    FROM dw_aatams_acoustic.aatams_acoustictag_all_deployments_view;
 
-CREATE OR REPLACE VIEW aatams_acoustictag_data_summary_project_view AS
-    SELECT *
-    FROM dw_aatams_acoustic.aatams_acoustictag_data_summary_project_view;
+---- All deployments - Species 
+-- CREATE TABLE aatams_acoustic_species_all_deployments_view AS
+--   SELECT ar.id AS animal_release_id,
+-- 	p.name AS project_name,
+-- 	s.phylum,
+-- 	s.order_name,
+-- 	s.common_name,
+-- 	ar.release_locality,
+-- 	date(ar.embargo_date) AS embargo_date,
+-- 	COUNT(vd.timestamp) AS no_detections,
+-- 	date(min(vd.timestamp)) AS first_detection,
+-- 	date(max(vd.timestamp)) AS last_detection,
+-- 	round((date_part('days', max(vd.timestamp) - min(vd.timestamp)) + date_part('hours', max(vd.timestamp) - min(vd.timestamp))/24)::numeric, 1) AS coverage_duration
+--   FROM valid_detection vd
+--   JOIN detection_surgery ds ON vd.id = ds.detection_id
+--   JOIN surgery su ON ds.surgery_id = su.id
+--   FULL JOIN animal_release ar ON su.release_id = ar.id
+--   JOIN animal a ON ar.animal_id = a.id
+--   JOIN species s ON a.species_id = s.id
+--   JOIN project p ON p.id = ar.project_id
+-- 	GROUP BY ar.id, p.name, s.phylum, s.order_name, s.common_name, ar.embargo_date
+-- 	ORDER BY animal_release_id, phylum,order_name,common_name;
 
-CREATE OR REPLACE VIEW aatams_acoustictag_data_summary_species_view AS
-    SELECT *
-    FROM dw_aatams_acoustic.aatams_acoustictag_data_summary_species_view;
+---- Data summary - Species 
+-- CREATE TABLE aatams_acoustic_species_data_summary_view AS
+-- WITH a AS (
+--   SELECT common_name,
+-- 	COUNT(DISTINCT transmitter_id) AS no_individuals_public,
+-- 	SUM(no_detections) AS no_detections_public
+--   FROM aatams_acoustic_detections_map
+--   WHERE common_name IS NOT NULL
+-- 	GROUP BY common_name)
+--   SELECT v.phylum,
+-- 	v.order_name,
+-- 	v.common_name,
+-- 	COUNT(DISTINCT v.project_name) AS no_projects,
+-- 	COUNT(DISTINCT v.release_locality) AS no_localities,
+-- 	COUNT(v.animal_release_id) AS no_releases,
+-- 	SUM (CASE WHEN v.embargo_date > now() THEN 1 ELSE 0 END) AS no_embargo,
+-- 	SUM (CASE WHEN v.no_detections = 0 THEN 0 ELSE 1 END) AS no_releases_with_detections,
+-- 	CASE WHEN no_individuals_public IS NULL THEN 0 ELSE no_individuals_public END AS no_public_releases_with_detections,
+-- 	max(v.embargo_date) AS latest_embargo_date,
+-- 	SUM(v.no_detections) AS total_no_detections,
+-- 	CASE WHEN no_detections_public IS NULL THEN 0 ELSE no_detections_public END AS no_detections_public,
+-- 	min(v.first_detection) AS earliest_detection,
+-- 	max(v.last_detection) AS latest_detection,
+-- 	round(avg(v.coverage_duration)::numeric, 1) AS mean_coverage_duration
+--   FROM aatams_acoustic_species_all_deployments_view v
+--   FULL JOIN a ON v.common_name = a.common_name
+-- 	GROUP BY v.phylum, v.order_name, v.common_name, no_individuals_public, no_detections_public
+-- 	ORDER BY phylum, order_name, common_name;
 
-grant all on table aatams_acoustictag_all_deployments_view to public;
-grant all on table aatams_acoustictag_data_summary_project_view to public;
-grant all on table aatams_acoustictag_data_summary_species_view to public;
+---- Totals - Species
+-- CREATE TABLE aatams_acoustic_species_totals_view AS
+-- WITH total_species AS (
+--   SELECT COUNT(*) AS t,
+-- 	'total no tagged species' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_species_public AS(
+--   SELECT COUNT(*) AS t, 
+-- 	'no tagged species for which all animals are public' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view
+--     WHERE no_embargo = 0),
+-- total_species_embargo AS (
+--   SELECT COUNT(*) AS t,
+-- 	'no tagged species for which some animals are currently under embargo' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view
+--   WHERE no_embargo != 0),
+-- total_species_detections AS (
+--     SELECT COUNT(*) AS t,
+-- 	'no tagged species with detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view
+--   WHERE total_no_detections != 0),
+-- total_species_public_detections AS (
+--     SELECT COUNT(*) AS t,
+-- 	'no tagged species with public detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view
+--   WHERE no_detections_public != 0),
+-- total_species_embargo_detections AS (
+--     SELECT COUNT(*) AS t,
+-- 	'no tagged species with embargoed detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view
+--   WHERE no_detections_public = 0 AND total_no_detections != 0),
+-- total_animals AS (
+--   SELECT SUM (no_releases) AS t,
+-- 	'total no tagged animals' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_animals_public AS (
+--   SELECT SUM (no_releases) - SUM(no_embargo) AS t, 
+-- 	'no tagged animals that are public' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_animals_embargo AS (
+--   SELECT SUM(no_embargo) AS t, 
+-- 	'no tagged animals currently under embargo' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_animals_detections AS (
+--     SELECT SUM (no_releases_with_detections) AS t,
+-- 	'no tagged animals with detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_animals_public_detections AS (
+--     SELECT SUM (no_public_releases_with_detections) AS t,
+-- 	'no tagged animals with public detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_animals_embargo_detections AS (
+--     SELECT SUM(no_releases_with_detections) - SUM(no_public_releases_with_detections) AS t,
+-- 	'no tagged animals with embargoed detections' AS statistics_type
+--   FROM aatams_acoustic_species_data_summary_view),
+-- total_detections AS (
+--   SELECT SUM (total_no_detections) AS t,
+-- 	'no detections' AS statistics_type
+-- 	FROM aatams_acoustic_species_data_summary_view),
+-- total_detections_public AS (
+--   SELECT SUM (no_detections_public) AS t,
+-- 	'no detections that are public' AS statistics_type
+-- 	FROM aatams_acoustic_species_data_summary_view),
+-- total_detections_embargo AS (
+--   SELECT SUM (total_no_detections) - SUM (no_detections_public) AS t,
+-- 	'no detections that are currently under embargo' AS statistics_type
+-- 	FROM aatams_acoustic_species_data_summary_view),
+-- tag_ids AS (
+--   SELECT COUNT(DISTINCT transmitter_id) AS t,
+-- 	'no unique tag ids detected' AS statistics_type
+--   FROM valid_detection),
+-- tag_aatams_knows AS (
+--   SELECT COUNT(*) AS t,
+-- 	'tag aatams knows about' AS statistics_type
+--   FROM device 
+-- 	WHERE class = 'au.org.emii.aatams.Tag'),
+-- detected_tags_aatams_knows AS (
+--   SELECT COUNT(DISTINCT sensor.transmitter_id) AS t,
+-- 	'no detected tags aatams knows about' AS statistics_type
+--   FROM valid_detection 
+--   JOIN sensor ON valid_detection.transmitter_id = sensor.transmitter_id),
+-- tags_by_species AS (
+--   SELECT COUNT(DISTINCT tag_id) AS t,
+-- 	'tags detected by species' AS statistics_type
+--   FROM valid_detection 
+--   JOIN detection_surgery ON valid_detection.id = detection_surgery.detection_id 
+--   JOIN surgery ON detection_surgery.surgery_id = surgery.id),
+-- embargo_1 AS (
+--   SELECT COUNT(*) AS t, 
+-- 	'Total number of tags embargoed for less than or equal to a year' AS statistics_type
+--   FROM animal_release ar
+--   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 1 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- embargo_2 AS (
+--   SELECT COUNT(*) AS t, 
+-- 	'Total number of tags embargoed for more than a year, but less than or equal to 2 years' AS statistics_type
+--   FROM animal_release ar
+--   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 1 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 2
+--   AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- embargo_3 AS (
+--   SELECT COUNT(*) AS t,
+-- 	'Total number of tags embargoed for more than two years, but less than or equal to 3 years' AS statistics_type
+--   FROM animal_release ar
+--   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 2 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 3
+--   AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- embargo_3_more AS (
+--   SELECT COUNT(*) AS t,
+-- 	'Total number of tags embargoed for more than three years' AS statistics_type
+--   FROM animal_release ar
+--   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 3 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL)
+--   SELECT 'Species' AS type, 
+-- 	s.t AS total, 
+-- 	sp.t AS total_public,
+-- 	se.t AS total_embargo, 
+-- 	sd.t AS detections_total, 
+-- 	spd.t AS detections_public, 
+-- 	sed.t AS detections_embargo,
+-- 	NULL::bigint AS other_1,
+-- 	NULL::bigint AS other_2
+--   FROM total_species s, total_species_public sp,total_species_embargo se, total_species_detections sd, total_species_public_detections spd,total_species_embargo_detections sed
+-- UNION ALL
+--   SELECT 'Animals' AS type, 
+-- 	a.t AS total, 
+-- 	ap.t AS total_public,
+-- 	ae.t AS total_embargo, 
+-- 	ad.t AS detections_total, 
+-- 	apd.t AS detections_public, 
+-- 	aed.t AS detections_embargo,
+-- 	NULL AS other_1,
+-- 	NULL AS other_2
+--   FROM total_animals a, total_animals_public ap,total_animals_embargo ae, total_animals_detections ad, total_animals_public_detections apd,total_animals_embargo_detections aed
+-- UNION ALL
+--   SELECT 'Detections' AS type, 
+-- 	NULL AS total, 
+-- 	NULL AS total_public,
+-- 	NULL AS total_embargo, 
+-- 	d.t AS detections_total, 
+-- 	dp.t AS detections_public, 
+-- 	de.t AS detections_embargo,
+-- 	NULL AS other_1,
+-- 	NULL AS other_2
+--   FROM total_detections d, total_detections_public dp, total_detections_embargo de	
+-- UNION ALL
+--   SELECT 'Other stats' AS type,
+-- 	ti.t AS total, 
+-- 	ta.t AS total_public,
+-- 	dta.t AS total_embargo, 
+-- 	ts.t AS detections_total, 
+-- 	e1.t AS detections_public, 
+-- 	e2.t AS detections_embargo,
+-- 	e3.t AS other_1,
+-- 	e3m.t AS other_2
+--   FROM tag_ids ti, tag_aatams_knows ta, detected_tags_aatams_knows dta, tags_by_species ts, embargo_1 e1, embargo_2 e2, embargo_3 e3, embargo_3_more e3m;
+
+---- All deployments - Project 
+-- CREATE TABLE aatams_acoustic_project_all_deployments_view AS
+--   SELECT CASE WHEN substring(p.name,'AATAMS')='AATAMS' THEN 'IMOS funded and co-invested' 
+-- 	      WHEN p.name = 'Coral Sea  Nautilus tracking project' 
+-- 	      OR p.name = 'Seven Gill Tracking in Coastal Tasmania' 
+-- 	      OR substring(p.name,'Yongala')='Yongala' 
+-- 	      OR p.name = 'Rowley Shoald reef shark tracking 2007' 
+-- 	      OR p.name = 'Wenlock River Array, Gulf of Carpentaria' THEN 'IMOS Receiver Pool' 
+-- 	      ELSE 'Fully Co-Invested' END AS funding_type,
+-- 	p.id AS project_id,
+-- 	p.name AS project_name,
+-- 	i.name AS installation_name,
+-- 	ist.name AS station_name,
+-- 	COUNT(DISTINCT rd.id) AS no_deployments,
+-- 	COUNT(vd.timestamp) AS no_detections,
+-- 	date(min(rd.deploymentdatetime_timestamp)) AS first_deployment_date,
+-- 	date(max(rd.deploymentdatetime_timestamp)) AS last_deployment_date,
+-- 	date(min(vd.timestamp)) AS start_date,
+-- 	date(max(vd.timestamp)) AS end_date,
+-- 	date_part('day', max(vd.timestamp) - min(vd.timestamp))::numeric AS coverage_duration,
+-- 	ROUND(st_y(ist.location)::numeric,1) AS station_lat,
+-- 	ROUND(st_x(ist.location)::numeric,1) AS station_lon,
+-- 	ROUND(min(rd.depth_below_surfacem::integer),1) AS min_depth,
+-- 	ROUND(max(rd.depth_below_surfacem::integer),1) AS max_depth
+--   FROM project p
+--   FULL JOIN installation i ON i.project_id = p.id
+--   FULL JOIN installation_station ist ON ist.installation_id = i.id
+--   FULL JOIN receiver_deployment rd ON rd.station_id = ist.id
+--   FULL JOIN valid_detection vd ON vd.receiver_deployment_id = rd.id
+-- 	WHERE p.name = 'AATAMS Sydney Gate' OR p.name = 'AATAMS Narooma line' OR p.name = 'AATAMS Port Stephens' OR p.name = 'New Zealand white shark tracking' 
+-- 	GROUP BY p.id, p.name,i.name,ist.name,ist.location
+-- 	ORDER BY project_name,installation_name,station_name;
+
+---- Data summary - Project 
+-- CREATE TABLE aatams_acoustic_project_data_summary_view AS
+--   SELECT funding_type,
+-- 	project_name,
+-- 	COUNT (DISTINCT(installation_name))::numeric AS no_installations,
+-- 	COUNT (DISTINCT(station_name))::numeric AS no_stations,
+-- 	SUM(no_deployments)::numeric AS no_deployments,
+-- 	COUNT(DISTINCT ar.id) AS no_releases,
+-- 	SUM(no_detections) AS no_detections,
+-- 	min(first_deployment_date) AS earliest_deployment_date,
+-- 	max(last_deployment_date) AS latest_deployment_date,
+-- 	min(start_date) AS start_date,
+-- 	max(end_date) AS end_date,
+-- 	(max(end_date) - min(start_date))::numeric AS coverage_duration,
+-- 	min(station_lat) AS min_lat,
+-- 	max(station_lat) AS max_lat,
+-- 	min(station_lon) AS min_lon,
+-- 	max(station_lon) AS max_lon,
+-- 	min(min_depth) AS min_depth,
+-- 	max(max_depth) AS max_depth
+--   FROM aatams_acoustic_project_all_deployments_view v
+--   LEFT JOIN animal_release ar ON ar.project_id = v.project_id
+-- 	GROUP BY funding_type,project_name
+-- 	ORDER BY funding_type DESC,project_name;
+
+---- Totals - Project
+-- CREATE TABLE aatams_acoustic_project_totals_view AS
+--   SELECT funding_type,
+-- 	COUNT(DISTINCT(project_name)) AS no_projects,
+-- 	SUM(no_installations) AS no_installations,
+-- 	SUM(no_stations) AS no_stations,
+-- 	SUM(no_deployments) AS no_deployments,
+-- 	SUM(no_releases) AS no_releases,
+-- 	SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_project_data_summary_view
+-- 	GROUP BY funding_type
+-- UNION ALL
+--   SELECT 'TOTAL' AS funding_type,
+-- 	COUNT(DISTINCT(project_name)) AS no_projects,
+-- 	SUM(no_installations) AS no_installations,
+-- 	SUM(no_stations) AS no_stations,
+-- 	SUM(no_deployments) AS no_deployments,
+-- 	SUM(no_releases) AS no_releases,
+-- 	SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_project_data_summary_view
+-- 	ORDER BY funding_type ASC;
+
+-- Create all views in reporting schema
+CREATE OR REPLACE VIEW aatams_acoustic_species_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;
+CREATE OR REPLACE VIEW aatams_acoustic_species_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_data_summary_view;
+CREATE OR REPLACE VIEW aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
+CREATE OR REPLACE VIEW aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
+
+grant all on table aatams_acoustic_species_all_deployments_view to public;
+grant all on table aatams_acoustic_species_data_summary_view to public;
+grant all on table aatams_acoustic_project_all_deployments_view to public;
+grant all on table aatams_acoustic_project_data_summary_view to public;
 
 -------------------------------
 -- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the aatams_sattag manual tables in the report schema.
@@ -1276,27 +1557,27 @@ CREATE or replace view totals_view AS
     NULL AS lat_range,
     NULL AS lon_range,
     NULL AS depth_range
-  FROM dw_aatams_acoustic.aatams_acoustictag_totals_project_view
+  FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view
     
 UNION ALL
 
   SELECT 'AATAMS' AS facility,
     'Acoustic tagging' AS subfacility,
-    'Species' AS type,
-    no_species::bigint AS no_projects,
-    no_species_detected::numeric AS no_platforms,
-    tags_detected_by_species::numeric AS no_instruments,
-    no_releases::numeric AS no_deployments,
-    no_detections::numeric AS no_data,
-    no_unique_tag_ids_detected::numeric AS no_data2,
-    tag_aatams_knows_about::bigint AS no_data3,
-    no_detected_tags_aatams_knows_about::bigint AS no_data4,
+    type AS type,
+    total::bigint AS no_projects,
+    total_public::numeric AS no_platforms,
+    total_embargo::numeric AS no_instruments,
+    detections_total::numeric AS no_deployments,
+    detections_public::numeric AS no_data,
+    detections_embargo::numeric AS no_data2,
+    other_1::bigint AS no_data3,
+    other_2::bigint AS no_data4,
     NULL AS temporal_range,
     NULL AS lat_range,
     NULL AS lon_range,
     NULL AS depth_range
-  FROM aatams_acoustic_table
-
+  FROM dw_aatams_acoustic.aatams_acoustic_species_totals_view
+  
 -- AATAMS - Satellite tagging
 UNION ALL  
 
