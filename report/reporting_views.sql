@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+﻿SET search_path = report_test, public;
 
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
@@ -556,7 +556,8 @@ WITH a AS (
   SELECT timeseries_id,
 	site_code,
 	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
-	date_part('year',time)::text AS year
+	date_part('year',time)::text AS year,
+	substring("ssr_Radar", 'WERA|SeaSonde') AS "ssr_Radar"
   FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url)
   SELECT 'Gridded product - QC' AS data_type, 
 	substring(u.site_code,'\, (.*)') AS site,
@@ -591,34 +592,45 @@ UNION ALL
 UNION ALL
 
   SELECT 'Radials - QC' AS data_type, 
-	substring(u.site_code,'\, (.*)') AS site,
+	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
+	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
+	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
+	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
 	date(max(time)) AS time_end,
 	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
-	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
-	COALESCE(b.month || ' ' || b.year) AS month_year,
-	b.month,
-	b.year
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 2*6*24) * 100, 1) AS monthly_coverage,
+	COALESCE(c.month || ' ' || c.year) AS month_year,
+	c.month,
+	c.year
   FROM acorn_radial_qc.acorn_radial_qc_timeseries_url u
-  JOIN b ON b.timeseries_id = u.timeseries_id
+  JOIN c ON c.timeseries_id = u.timeseries_id
 	GROUP BY data_type, u.site_code, month, year
 
 UNION ALL
 
   SELECT 'Radials - non QC' AS data_type, 
-	substring(u.site_code,'\, (.*)') AS site,
+	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
+	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
+	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
+	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
 	date(max(time)) AS time_end,
 	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
-	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 24) * 100, 1) AS monthly_coverage,
-	COALESCE(b.month || ' ' || b.year) AS month_year,
-	b.month,
-	b.year
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 
+		(CASE WHEN d."ssr_Radar" = 'WERA' THEN 2*6*24 WHEN d."ssr_Radar" = 'SeaSonde' THEN 2* 24 END)) * 100, 1) AS monthly_coverage,
+	COALESCE(d.month || ' ' || d.year) AS month_year,
+	d.month,
+	d.year
   FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url u
-  JOIN b ON b.timeseries_id = u.timeseries_id
-	GROUP BY data_type, u.site_code, month, year
+  JOIN d ON d.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, month, year, d."ssr_Radar"
 	ORDER BY data_type, site, time_start;
 
 grant all on table acorn_all_deployments_view to public;
