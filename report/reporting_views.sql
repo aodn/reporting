@@ -1,5 +1,26 @@
 ﻿SET search_path = report_test, public;
 
+DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS aatams_sattag_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS acorn_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anmn_nrs_bgc_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS argo_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS facility_summary_view CASCADE;
+DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
+
+
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
 -------------------------------
@@ -291,8 +312,10 @@
 -- Create all views in reporting schema
 CREATE OR REPLACE VIEW aatams_acoustic_species_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;
 CREATE OR REPLACE VIEW aatams_acoustic_species_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_data_summary_view;
+CREATE OR REPLACE VIEW aatams_acoustic_species_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_totals_view;
 CREATE OR REPLACE VIEW aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
 CREATE OR REPLACE VIEW aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
+CREATE OR REPLACE VIEW aatams_acoustic_project_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view;
 
 grant all on table aatams_acoustic_species_all_deployments_view to public;
 grant all on table aatams_acoustic_species_data_summary_view to public;
@@ -906,7 +929,7 @@ grant all on table anmn_nrs_realtime_data_summary_view to public;
 -- VIEWS FOR ANMN_NRS_BGC
 -------------------------------
 -- All deployments
-CREATE VIEW anmn_bgc_all_deployments_view AS
+CREATE VIEW anmn_nrs_bgc_all_deployments_view AS
 WITH a AS (
   SELECT 'Chemistry' AS data_type, 
 	"STATION_NAME" AS station_name,
@@ -930,7 +953,8 @@ WITH a AS (
 	SUM(CASE WHEN "TALKALINITY_UMOL_PER_KG" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	min("SAMPLE_DEPTH_M") AS min_depth
+	min("SAMPLE_DEPTH_M") AS min_depth,
+	max("SAMPLE_DEPTH_M") AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_chemistry_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1024,7 +1048,8 @@ UNION ALL
 	SUM(CASE WHEN "PYROPHYTIN_A" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	min("SAMPLE_DEPTH_M") AS min_depth
+	min("SAMPLE_DEPTH_M") AS min_depth,
+	max("SAMPLE_DEPTH_M") AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_phypig_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1042,7 +1067,8 @@ UNION ALL
 	SUM(CASE WHEN "PICOEUKARYOTES_CELLSPERML" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	NULL AS min_depth
+	NULL AS min_depth,
+	NULL AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_picoplankton_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1056,7 +1082,8 @@ UNION ALL
 	SUM(CASE WHEN "MG_PER_M3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	NULL AS min_depth
+	NULL AS min_depth,
+	NULL AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_biomass_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1074,7 +1101,8 @@ UNION ALL
 	SUM(CASE WHEN "BIOVOLUME_ML_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	NULL AS min_depth
+	NULL AS min_depth,
+	NULL AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_phytoplankton_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1090,7 +1118,8 @@ UNION ALL
 	SUM(CASE WHEN "TAXON_PER_M3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	NULL AS min_depth
+	NULL AS min_depth,
+	NULL AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_zooplankton_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
 UNION ALL
@@ -1108,7 +1137,8 @@ UNION ALL
 	SUM(CASE WHEN "ORGANIC_FRACTION_MG_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
-	NULL AS min_depth
+	NULL AS min_depth,
+	NULL AS max_depth
   FROM anmn_nrs_bgc.anmn_nrs_bgc_tss_secchi_data
 	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"),
 b AS ( SELECT data_type,
@@ -1149,7 +1179,8 @@ b AS ( SELECT data_type,
 	CASE WHEN data_type = 'Suspended matter' THEN SUM(no_measurements_with_data) END AS no_measurements_with_data_suspended_matter,
 	min(lon) AS lon,
 	min(lat) AS lat,
-	min(min_depth) AS min_depth
+	min(min_depth) AS min_depth,
+	max(max_depth) AS max_depth
   FROM a
 	GROUP BY data_type, station_name, trip_code
 	ORDER BY station_name,  sample_date)
@@ -1204,15 +1235,16 @@ b AS ( SELECT data_type,
 	SUM(no_measurements_with_data_suspended_matter) AS no_suspended_matter_measurements_with_data,
 	round(min(lon)::numeric,1) AS lon,
 	round(min(lat)::numeric,1) AS lat,
-	round(min(min_depth)::numeric,1) AS min_depth
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
   FROM b
 	GROUP BY station_name, sample_date
 	ORDER BY station_name, sample_date;
 
-grant all on anmn_bgc_all_deployments_view to public;
+grant all on anmn_nrs_bgc_all_deployments_view to public;
 
 ---- Data summary
-CREATE VIEW anmn_bgc_data_summary_view AS
+CREATE VIEW anmn_nrs_bgc_data_summary_view AS
   SELECT 'Chemistry' AS product, 
 	station_name, 
 	min(sample_date) AS first_sample, 
@@ -1221,8 +1253,12 @@ CREATE VIEW anmn_bgc_data_summary_view AS
 	SUM(CASE WHEN total_no_chemistry_parameters = no_chemistry_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_chemistry_parameters_measured < total_no_chemistry_parameters AND no_chemistry_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_chemistry_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_chemistry_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_chemistry_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth	
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_chemistry IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1234,8 +1270,12 @@ UNION ALL
 	SUM(CASE WHEN total_no_phypig_parameters = no_phypig_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_phypig_parameters_measured < total_no_phypig_parameters AND no_phypig_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_phypig_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_phypig_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_phypig_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_phypig IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1247,8 +1287,12 @@ UNION ALL
 	SUM(CASE WHEN total_no_picoplankton_parameters = no_picoplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_picoplankton_parameters_measured < total_no_picoplankton_parameters AND no_picoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_picoplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_picoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_picoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_picoplankton IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1260,8 +1304,12 @@ UNION ALL
 	SUM(CASE WHEN total_no_plankton_biomass_parameters = no_plankton_biomass_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_plankton_biomass_parameters_measured < total_no_plankton_biomass_parameters AND no_plankton_biomass_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_plankton_biomass_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_plankton_biomass_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_plankton_biomass_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_plankton_biomass IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1273,8 +1321,12 @@ UNION ALL
 	SUM(CASE WHEN total_no_phytoplankton_parameters = no_phytoplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_phytoplankton_parameters_measured < total_no_phytoplankton_parameters AND no_phytoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_phytoplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_phytoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_phytoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_phytoplankton IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1286,8 +1338,12 @@ UNION ALL
 	SUM(CASE WHEN total_no_zooplankton_parameters = no_zooplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_zooplankton_parameters_measured < total_no_zooplankton_parameters AND no_zooplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_zooplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND((SUM(CASE WHEN no_zooplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND((SUM(CASE WHEN no_zooplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_zooplankton IS NOT NULL
   GROUP BY station_name
 UNION ALL
@@ -1299,13 +1355,17 @@ UNION ALL
 	SUM(CASE WHEN total_no_suspended_matter_parameters = no_suspended_matter_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
 	SUM(CASE WHEN no_suspended_matter_parameters_measured < total_no_suspended_matter_parameters AND no_suspended_matter_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
 	SUM(CASE WHEN no_suspended_matter_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
-	ROUND(((COUNT(*) - SUM(CASE WHEN no_suspended_matter_parameters_measured = 0 THEN 1 ELSE 0 END))/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok
-  FROM anmn_bgc_all_deployments_view
+	ROUND(((COUNT(*) - SUM(CASE WHEN no_suspended_matter_parameters_measured = 0 THEN 1 ELSE 0 END))/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
+	min(lon) AS lon,
+	min(lat) AS lat,
+	round(min(min_depth)::numeric,1) AS min_depth,
+	round(max(max_depth)::numeric,1) AS max_depth
+  FROM anmn_nrs_bgc_all_deployments_view
   WHERE parameter_status_suspended_matter IS NOT NULL
   GROUP BY station_name
   ORDER BY station_name, product;
 
-grant all on anmn_bgc_data_summary_view to public;
+grant all on anmn_nrs_bgc_data_summary_view to public;
 
 -------------------------------
 -- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
@@ -1948,8 +2008,46 @@ grant all on table srs_data_summary_view to public;
 CREATE or replace view totals_view AS
   WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
-  FROM faimms_all_deployments_view)
-  
+  FROM faimms_all_deployments_view),
+  bgc_chemistry AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_chemistry_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Chemistry'),
+  bgc_phypig AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_phypig_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Phytoplankton pigment'),
+  bgc_phytoplankton AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_phytoplankton_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Phytoplankton'),
+    bgc_zooplankton AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_zooplankton_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Zooplankton'),
+    bgc_picoplankton AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_picoplankton_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Picoplankton'),
+    bgc_plankton_biomass AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_plankton_biomass_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Plankton biomass'),
+    bgc_suspended_matter AS (
+  SELECT SUM(no_sampling_trips)::numeric AS no_suspended_matter_trips
+  FROM anmn_nrs_bgc_data_summary_view
+	WHERE product = 'Suspended matter'),
+    bgc_stats AS (
+  SELECT to_char(min(first_sample),'DD/MM/YYYY') AS first_sample,
+	to_char(max(last_sample),'DD/MM/YYYY') AS last_sample,
+	min(lon) AS min_lon,
+	max(lon) AS max_lon,
+	min(lat) AS min_lat,
+	max(lat) AS max_lat,
+	min(min_depth) AS min_depth,
+	max(max_depth) AS max_depth
+  FROM anmn_nrs_bgc_data_summary_view)
+
 -- AATAMS - Acoustic
   SELECT 'AATAMS' AS facility,
 	'Acoustic tagging - Project' AS subfacility,
@@ -2249,22 +2347,23 @@ UNION ALL
 
 -- ANMN - NRS BGC
 UNION ALL
+
   SELECT 'ANMN' AS facility,
 	'BGC' AS subfacility,
 	'TOTAL' AS type,
-	SUM(CASE WHEN n_logsht IS NULL THEN 0 ELSE 1 END) AS no_projects,
-	SUM(CASE WHEN ns_ctdpro IS NULL THEN 0 ELSE 1 END) AS no_platforms,
-	SUM(CASE WHEN ns_hydall IS NULL THEN 0 ELSE 1 END) AS no_instruments,
-	SUM(CASE WHEN ns_susmat IS NULL THEN 0 ELSE 1 END) AS no_deployments,
-	SUM(CASE WHEN ns_carbon IS NULL THEN 0 ELSE 1 END) AS no_data,
-	SUM(CASE WHEN ns_phypig IS NULL THEN 0 ELSE 1 END) AS no_data2,
-	SUM(CASE WHEN ns_zoo IS NULL THEN 0 ELSE 1 END) AS no_data3,
-	SUM(CASE WHEN ns_phyto IS NULL THEN 0 ELSE 1 END) AS no_data4,
-	COALESCE(to_char(min(sample_date),'DD/MM/YYYY')||' - '||to_char(max(sample_date),'DD/MM/YYYY')) AS temporal_range,
-	NULL AS lat_range,
-	NULL AS lon_range,
-	NULL AS depth_range
-  FROM anmn_bgc_all_deployments_view
+	no_chemistry_trips AS no_projects,
+	no_phypig_trips AS no_platforms,
+	no_phytoplankton_trips AS no_instruments,
+	no_zooplankton_trips AS no_deployments,
+	no_picoplankton_trips AS no_data,
+	no_plankton_biomass_trips AS no_data2,
+	no_suspended_matter_trips AS no_data3,
+	NULL AS no_data4,
+	COALESCE(first_sample||' - '||last_sample) AS temporal_range,
+	COALESCE(min_lat||' - '||max_lat) AS lat_range,
+	COALESCE(min_lon||' - '||max_lon) AS lon_range,
+	COALESCE(min_depth||' - '||max_depth) AS depth_range
+  FROM bgc_chemistry, bgc_phypig, bgc_phytoplankton, bgc_zooplankton, bgc_picoplankton, bgc_plankton_biomass, bgc_suspended_matter, bgc_stats
 
 -- Argo
 UNION ALL
