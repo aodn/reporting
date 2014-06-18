@@ -1249,9 +1249,9 @@ CREATE VIEW anmn_nrs_bgc_data_summary_view AS
 	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_chemistry_parameters = no_chemistry_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_chemistry_parameters_measured < total_no_chemistry_parameters AND no_chemistry_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_chemistry_parameters = no_chemistry_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_chemistry_parameters_measured < total_no_chemistry_parameters AND no_chemistry_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_chemistry_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_chemistry_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1266,9 +1266,9 @@ UNION ALL
   	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_phypig_parameters = no_phypig_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_phypig_parameters_measured < total_no_phypig_parameters AND no_phypig_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_phypig_parameters = no_phypig_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_phypig_parameters_measured < total_no_phypig_parameters AND no_phypig_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_phypig_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_phypig_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1283,9 +1283,9 @@ UNION ALL
     	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_picoplankton_parameters = no_picoplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_picoplankton_parameters_measured < total_no_picoplankton_parameters AND no_picoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_picoplankton_parameters = no_picoplankton_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_picoplankton_parameters_measured < total_no_picoplankton_parameters AND no_picoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_picoplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_picoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1300,9 +1300,9 @@ UNION ALL
 	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_plankton_biomass_parameters = no_plankton_biomass_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_plankton_biomass_parameters_measured < total_no_plankton_biomass_parameters AND no_plankton_biomass_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_plankton_biomass_parameters = no_plankton_biomass_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_plankton_biomass_parameters_measured < total_no_plankton_biomass_parameters AND no_plankton_biomass_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_plankton_biomass_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_plankton_biomass_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1317,9 +1317,9 @@ UNION ALL
 	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_phytoplankton_parameters = no_phytoplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_phytoplankton_parameters_measured < total_no_phytoplankton_parameters AND no_phytoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_phytoplankton_parameters = no_phytoplankton_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_phytoplankton_parameters_measured < total_no_phytoplankton_parameters AND no_phytoplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_phytoplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_phytoplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1334,9 +1334,9 @@ UNION ALL
    	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_zooplankton_parameters = no_zooplankton_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_zooplankton_parameters_measured < total_no_zooplankton_parameters AND no_zooplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_zooplankton_parameters = no_zooplankton_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_zooplankton_parameters_measured < total_no_zooplankton_parameters AND no_zooplankton_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_zooplankton_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND((SUM(CASE WHEN no_zooplankton_parameters_measured > 0 THEN 1 ELSE 0 END)/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -1351,9 +1351,9 @@ UNION ALL
      	station_name, 
 	min(sample_date) AS first_sample, 
 	max(sample_date) AS last_sample, 
-	COUNT(*) AS no_sampling_trips, 
-	SUM(CASE WHEN total_no_suspended_matter_parameters = no_suspended_matter_parameters_measured THEN 1 ELSE 0 END) AS no_trips_full_data,
-	SUM(CASE WHEN no_suspended_matter_parameters_measured < total_no_suspended_matter_parameters AND no_suspended_matter_parameters_measured != 0 THEN 1 ELSE 0 END) AS no_trips_partial_data,
+	COUNT(*) AS ntrip_total, 
+	SUM(CASE WHEN total_no_suspended_matter_parameters = no_suspended_matter_parameters_measured THEN 1 ELSE 0 END) AS ntrip_full_data,
+	SUM(CASE WHEN no_suspended_matter_parameters_measured < total_no_suspended_matter_parameters AND no_suspended_matter_parameters_measured != 0 THEN 1 ELSE 0 END) AS ntrip_partial_data,
 	SUM(CASE WHEN no_suspended_matter_parameters_measured = 0 THEN 1 ELSE 0 END) AS ntrip_no_data,
 	ROUND(((COUNT(*) - SUM(CASE WHEN no_suspended_matter_parameters_measured = 0 THEN 1 ELSE 0 END))/COUNT(*)::numeric)::numeric * 100, 1) AS percent_ok,
 	min(lon) AS lon,
@@ -2010,31 +2010,31 @@ CREATE or replace view totals_view AS
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
   FROM faimms_all_deployments_view),
   bgc_chemistry AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_chemistry_trips
+  SELECT SUM(ntrip_total)::numeric AS no_chemistry_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Chemistry'),
   bgc_phypig AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_phypig_trips
+  SELECT SUM(ntrip_total)::numeric AS no_phypig_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Phytoplankton pigment'),
   bgc_phytoplankton AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_phytoplankton_trips
+  SELECT SUM(ntrip_total)::numeric AS no_phytoplankton_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Phytoplankton'),
     bgc_zooplankton AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_zooplankton_trips
+  SELECT SUM(ntrip_total)::numeric AS no_zooplankton_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Zooplankton'),
     bgc_picoplankton AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_picoplankton_trips
+  SELECT SUM(ntrip_total)::numeric AS no_picoplankton_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Picoplankton'),
     bgc_plankton_biomass AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_plankton_biomass_trips
+  SELECT SUM(ntrip_total)::numeric AS no_plankton_biomass_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Plankton biomass'),
     bgc_suspended_matter AS (
-  SELECT SUM(no_sampling_trips)::numeric AS no_suspended_matter_trips
+  SELECT SUM(ntrip_total)::numeric AS no_suspended_matter_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Suspended matter'),
     bgc_stats AS (
