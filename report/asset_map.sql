@@ -21,7 +21,7 @@ WITH soop_cpr_a AS(
 	'Point'::text AS gtype,
 	'#85BF1F' AS colour
   FROM argo.argo_float
-  --WHERE data_centre = 'csiro'
+  WHERE data_centre = 'csiro'
   
 ---- SOOP-XBT
 UNION ALL
