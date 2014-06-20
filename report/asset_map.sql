@@ -7,7 +7,24 @@ WITH soop_cpr AS (
   SELECT vessel_name AS platform_code,
 	ST_CENTROID(ST_COLLECT(geom)) AS geom
   FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
-	GROUP BY vessel_name, substring(trip_code,'[A-Z]*'))
+	GROUP BY vessel_name, substring(trip_code,'[A-Z]*')),
+  aatams_sattag AS (
+  SELECT 'Seals and sea lions'::text AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM aatams_sattag_nrt.aatams_sattag_nrt_profile_map
+	GROUP BY device_id 
+	ORDER BY random()
+	LIMIT 75),
+  aatams_penguins AS(
+  SELECT ST_CENTROID(geom) AS geom
+  FROM aatams_biologging_penguin.aatams_biologging_penguin_map
+  	ORDER BY random()
+	LIMIT 25),
+  aatams_shearwaters AS(
+  SELECT ST_CENTROID(geom) AS geom
+  FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map
+  	ORDER BY random()
+	LIMIT 25)
 ---- Argo
   SELECT 'Argo'::text AS facility,
 	NULL::text AS subfacility,
@@ -16,7 +33,7 @@ WITH soop_cpr AS (
 	'Point'::text AS gtype,
 	'#85BF1F' AS colour
   FROM argo.argo_float
---   WHERE data_centre = 'csiro'
+	WHERE data_centre_code = 'CS'
   
 ---- SOOP-XBT
 UNION ALL
@@ -176,27 +193,27 @@ UNION ALL
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
 	'Emperor Penguins' AS platform_code,
-	ST_CENTROID(geom) AS geom,
+	geom,
 	'Point' AS gtype,
 	'#15D659' AS colour
-  FROM aatams_biologging_penguin.aatams_biologging_penguin_map
+  FROM aatams_penguins
 UNION ALL
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
 	'Shearwaters' AS platform_code,
-	ST_CENTROID(geom) AS geom,
+	geom,
 	'Point' AS gtype,
 	'#15D659' AS colour
-  FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map
+  FROM aatams_shearwaters
 UNION ALL
-  SELECT 'AATAMS' AS facility,
+	 SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
-	'Seals and sea lions' AS platform_code,
-	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	platform_code,
+	geom,
 	'Point' AS gtype,
 	'#15D659' AS colour
-  FROM aatams_sattag_nrt.aatams_sattag_nrt_profile_map
-  GROUP BY device_id
+  FROM aatams_sattag
+	WHERE st_x(geom) > 0
 
 ---- ABOS-TS
 UNION ALL
@@ -365,10 +382,11 @@ UNION ALL
   SELECT DISTINCT 'AATAMS' AS facility,
 	'Acoustic' AS subfacility,
 	installation_name AS platform_code,
-	geom AS geom,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
   FROM dw_aatams_acoustic.aatams_acoustic_detections_map
+	GROUP BY installation_name
 
 ---- SRS Altimetry
 UNION ALL
