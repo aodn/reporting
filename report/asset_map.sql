@@ -1,18 +1,13 @@
 ﻿SET SEARCH_PATH = report_test, public;
 
+DROP TABLE IF EXISTS asset_map;
+
 CREATE TABLE asset_map AS
-WITH soop_cpr_a AS(
-  SELECT vessel_name, trip_code, geom
+WITH soop_cpr AS (
+  SELECT vessel_name AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
   FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
-  ORDER BY trip_code, vessel_name, "TIME"),
-  soop_cpr_b AS (
-  SELECT vessel_name,trip_code,
-	ST_SIMPLIFY(ST_MAKELINE(geom),1) AS geom
-  FROM soop_cpr_a 
-	GROUP BY trip_code,vessel_name),
-	soop_trv AS(
-  SELECT vessel_name, ST_SIMPLIFY(geom,1) AS geom
-  FROM soop_trv.soop_trv_trajectory_map ORDER BY random() LIMIT 20)
+	GROUP BY vessel_name, substring(trip_code,'[A-Z]*'))
 ---- Argo
   SELECT 'Argo'::text AS facility,
 	NULL::text AS subfacility,
@@ -21,7 +16,7 @@ WITH soop_cpr_a AS(
 	'Point'::text AS gtype,
 	'#85BF1F' AS colour
   FROM argo.argo_float
-  WHERE data_centre = 'csiro'
+--   WHERE data_centre = 'csiro'
   
 ---- SOOP-XBT
 UNION ALL
@@ -99,91 +94,106 @@ UNION ALL
 	'Point' AS gtype,
 	'#591FBF' AS colour
 
-
 ---- SOOP-CO2
 UNION ALL
   SELECT DISTINCT 'SOOP' AS facility,
 	'CO2' AS subfacility,
 	vessel_name AS platform_code,
-	ST_SIMPLIFY(geom,10) AS geom,
-	'Line' AS gtype,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
 	'#591FBF' AS colour
   FROM soop_co2.soop_co2_trajectory_map
+  GROUP BY vessel_name
+  
 
 ---- SOOP-CPR
 UNION ALL
   SELECT DISTINCT 'SOOP' AS facility,
 	'CPR' AS subfacility,
-	vessel_name AS platform_code,
-	geom AS geom,
-	'Line' AS gtype,
+	CASE WHEN platform_code = 'Aurora Australia' THEN 'Aurora Australis' ELSE platform_code END AS platform_code,
+	CASE WHEN platform_code = 'ANL Windarra' THEN ST_SetSRID(ST_GeomFromText('POINT(153.1 -32.4)'),4326) 
+		WHEN platform_code = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('POINT(139.4 -39.1)'),4326)
+		WHEN platform_code = 'ANL Whyalla' THEN ST_SetSRID(ST_GeomFromText('POINT(134.4 -36)'),4326) ELSE
+		ST_CENTROID(ST_COLLECT(geom)) END AS geom,
+	'Point' AS gtype,
 	'#591FBF' AS colour
-  FROM soop_cpr_b
-
+  FROM soop_cpr
+	GROUP BY platform_code
+	
 ---- SOOP-TRV
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'TRV' AS subfacility,
-	vessel_name AS platform_code,
-	geom AS geom,
-	'Line' AS gtype,
+	'Solander' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(121.94 -16.3)'),4326) AS geom,
+	'Point' AS gtype,
 	'#591FBF' AS colour
-  FROM soop_trv
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'TRV' AS subfacility,
+	'Cape Ferguson' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(145 -14)'),4326) AS geom,
+	'Point' AS gtype,
+	'#591FBF' AS colour
 
 ---- SOOP-ASF
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'ASF' AS subfacility,
 	vessel_name AS platform_code,
-	ST_SIMPLIFY(geom,10) AS geom,
-	'Line' AS gtype,
+	CASE WHEN vessel_name = 'Tangaroa' THEN ST_SetSRID(ST_GeomFromText('POINT(171.8 -39.8)'),4326) ELSE ST_CENTROID(ST_COLLECT(geom)) END AS geom,
+	'Point' AS gtype,
 	'#591FBF' AS colour
-  FROM soop_asf_mt.soop_asf_mt_trajectory_map
+  FROM soop_asf_mft.soop_asf_mft_trajectory_map
+  GROUP BY vessel_name
 
 ---- SOOP-SST
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'SST' AS subfacility,
 	vessel_name AS platform_code,
-	ST_SIMPLIFY(geom,10) AS geom,
-	'Line' AS gtype,
+	CASE WHEN vessel_name = 'Xutra Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(116.3 -7.9)'),4326) 
+		WHEN vessel_name = 'Wana Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(123.8 -36)'),4326)
+		WHEN vessel_name = 'Pacific Celebes' THEN ST_SetSRID(ST_GeomFromText('POINT(-131.4 -19)'),4326)
+		WHEN vessel_name = 'Stadacona' THEN ST_SetSRID(ST_GeomFromText('POINT(152 -35)'),4326) ELSE
+		ST_CENTROID(ST_COLLECT(geom)) END AS geom,
+	'Point' AS gtype,
 	'#591FBF' AS colour
   FROM soop_sst.soop_sst_nrt_trajectory_map
-  WHERE vessel_name = 'Linnaeus' OR vessel_name = 'Fantasea Wonder'
+  GROUP BY vessel_name
 
 ---- SRS-Ocean Colour Radiometer
 UNION ALL
   SELECT 'SRS' AS facility,
 	'Radiometer' AS subfacility,
-	vessel_name AS platform_code,
-	ST_SIMPLIFY(geom,10) AS geom,
-	'Line' AS gtype,
+	'Southern Surveyor' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(166.2 -27.1)'),4326)AS geom,
+	'Point' AS gtype,
 	'#4D4A49' AS colour
-  FROM srs_oc_soop_rad.srs_oc_soop_rad_trajectory_map
   
 ---- AATAMS-Biologging
 UNION ALL
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
 	'Emperor Penguins' AS platform_code,
-	ST_SIMPLIFY(geom,1) AS geom,
-	'Line' AS gtype,
+	ST_CENTROID(geom) AS geom,
+	'Point' AS gtype,
 	'#15D659' AS colour
   FROM aatams_biologging_penguin.aatams_biologging_penguin_map
 UNION ALL
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
 	'Shearwaters' AS platform_code,
-	ST_SIMPLIFY(geom,1) AS geom,
-	'Line' AS gtype,
+	ST_CENTROID(geom) AS geom,
+	'Point' AS gtype,
 	'#15D659' AS colour
   FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map
 UNION ALL
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
 	'Seals and sea lions' AS platform_code,
-	make_point_or_shortest_line(ST_POINTN(ST_MAKELINE(geom),1),ST_POINTN(ST_MAKELINE(geom),COUNT(*)::integer)) AS geom,
-	'Line' AS gtype,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
 	'#15D659' AS colour
   FROM aatams_sattag_nrt.aatams_sattag_nrt_profile_map
   GROUP BY device_id
@@ -262,29 +272,32 @@ UNION ALL
 UNION ALL
   SELECT DISTINCT 'ANFOG' AS facility,
 	platform_type AS subfacility,
-	platform_code AS platform_code,
-	ST_POINTN(geom,1) AS geom,
+	substring(deployment_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
   FROM anfog_dm.anfog_dm_trajectory_map
+  GROUP BY platform_type, substring(deployment_name,'[A-Za-z]*')
 UNION ALL
   SELECT DISTINCT 'ANFOG' AS facility,
 	platform_type AS subfacility,
-	platform_code AS platform_code,
-	ST_POINTN(geom,1) AS geom,
+	substring(deployment_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
   FROM anfog_rt.anfog_rt_trajectory_map              
-
+  GROUP BY platform_type, substring(deployment_name,'[A-Za-z]*')
+  
 ---- AUV
 UNION ALL
   SELECT DISTINCT 'AUV' AS facility,
 	NULL AS subfacility,
-	campaign_name AS platform_code,
-	ST_POINTN(geom,1) AS geom,
+	substring(campaign_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
   FROM auv.auv_trajectory_map
+  GROUP BY substring(campaign_name,'[A-Za-z]*')
 
 ---- ACORN
 UNION ALL
