@@ -1923,13 +1923,14 @@ CREATE or replace VIEW srs_all_deployments_view AS
 	m.site_name AS parameter_site, 
 	COALESCE(d.site_code || '-' || "substring"((d.instrument), '([^_]+)-')) AS deployment_code, 
 	m.instrument AS sensor_name,
-	date(m.time_start) AS start_date, 
-	date(m.time_end) AS end_date, 
-	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
-	round((ST_Y(m.geom))::numeric, 1) AS lat, 
-	round((ST_X(m.geom))::numeric, 1) AS lon 
+	min(date(m.time_start)) AS start_date, 
+	max(date(m.time_end)) AS end_date, 
+	round((date_part('days', (max(m.time_end) - min(m.time_start))) + date_part('hours', (max(m.time_end) - min(m.time_start)))/24)::numeric, 1) AS coverage_duration, 
+	round(ST_Y(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lat, 
+	round(ST_X(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lon
   FROM srs_altimetry.srs_altimetry_timeseries_map m 
   LEFT JOIN srs_altimetry.deployments d ON d.file_id = m.file_id
+	GROUP BY m.site_name, d.site_code, d.instrument, m.instrument
 
 UNION ALL 
 
@@ -1937,12 +1938,13 @@ UNION ALL
 	m.data_type AS parameter_site, 
 	m.cruise_id AS deployment_code, 
 	m.vessel_name AS sensor_name, 
-	date(m.time_start) AS start_date, 
-	date(m.time_end) AS end_date, 
-	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
-	round(ST_Y(ST_CENTROID(m.geom))::numeric, 1) AS lat, 
-	round(ST_X(ST_CENTROID(m.geom))::numeric, 1) AS lon 
-  FROM srs_oc_bodbaw.srs_oc_bodbaw_trajectory_profile_map m 
+	min(date(m.time_start)) AS start_date, 
+	max(date(m.time_end)) AS end_date, 
+	round((date_part('days', (max(m.time_end) - min(m.time_start))) + date_part('hours', (max(m.time_end) - min(m.time_start)))/24)::numeric, 1) AS coverage_duration, 
+	round(ST_Y(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lat, 
+	round(ST_X(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lon 
+  FROM srs_oc_bodbaw.srs_oc_bodbaw_trajectory_profile_map m
+	GROUP BY m.data_type, m.cruise_id, m.vessel_name
 
 UNION ALL 
 
