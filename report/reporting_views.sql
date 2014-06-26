@@ -339,7 +339,7 @@ grant all on table aatams_acoustic_project_data_summary_view to public;
 	SUM(map.nb_measurements) AS nb_measurements,
 	min(map."timestamp") AS coverage_start, 
 	max(map."timestamp") AS coverage_end,
-	date_part('days', max(map."timestamp") - min(map."timestamp"))::integer AS coverage_duration,
+	round((date_part('days', max(map."timestamp") - min(map."timestamp")) + (date_part('hours', max(map."timestamp") - min(map."timestamp")))/24)::numeric, 1) AS coverage_duration,
 	round(min(st_y(st_centroid(map.geom)))::numeric, 1) AS min_lat, 
 	round(max(st_y(st_centroid(map.geom)))::numeric, 1) AS max_lat, 
 	round(min(st_x(st_centroid(map.geom)))::numeric, 1) AS min_lon, 
@@ -366,7 +366,7 @@ UNION ALL
 	SUM(dmap.nb_measurements) AS nb_measurements,
 	min(dmap."timestamp") AS coverage_start, 
 	max(dmap."timestamp") AS coverage_end,
-	date_part('days', max(dmap."timestamp") - min(dmap."timestamp"))::integer AS coverage_duration,
+	round((date_part('days', max(dmap."timestamp") - min(dmap."timestamp")) + (date_part('hours', max(dmap."timestamp") - min(dmap."timestamp")))/24)::numeric, 1) AS coverage_duration,
 	round(min(st_y(st_centroid(dmap.geom)))::numeric, 1) AS min_lat, 
 	round(max(st_y(st_centroid(dmap.geom)))::numeric, 1) AS max_lat, 
 	round(min(st_x(st_centroid(dmap.geom)))::numeric, 1) AS min_lon, 
@@ -377,7 +377,7 @@ UNION ALL
   LEFT JOIN aatams_sattag_dm.aatams_sattag_dm_profile_map dmap ON m.device_id = dmap.device_id
 	GROUP BY m.sattag_program, m.device_id, m.tag_type, m.pi, m.common_name, m.release_site
 	HAVING COUNT(dmap.profile_id) != 0
-	ORDER BY data_type, sattag_program, coverage_start;
+	ORDER BY data_type, sattag_program, species_name, tag_code;
 
 grant all on table aatams_sattag_all_deployments_view to public;
 
