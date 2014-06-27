@@ -2,12 +2,16 @@
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_project_totals_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_species_totals_view CASCADE;
 DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_sattag_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
-DROP VIEW IF EXISTS acorn_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS acorn_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS acorn_radials_stations_view CASCADE;
+DROP TABLE IF EXISTS acorn_data_summary_view CASCADE;
 DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
@@ -19,6 +23,7 @@ DROP VIEW IF EXISTS facility_summary_view CASCADE;
 DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
 
 
 -------------------------------
@@ -264,29 +269,30 @@ DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
 
 ---- Data summary - Project 
 -- CREATE TABLE aatams_acoustic_project_data_summary_view AS
+-- WITH a AS (SELECT project_id, COUNT(DISTINCT ar.id) AS no_releases FROM dw_aatams_acoustic.animal_release ar GROUP BY project_id)
 --   SELECT funding_type,
 -- 	project_name,
 -- 	COUNT (DISTINCT(installation_name))::numeric AS no_installations,
 -- 	COUNT (DISTINCT(station_name))::numeric AS no_stations,
 -- 	SUM(no_deployments)::numeric AS no_deployments,
--- 	COUNT(DISTINCT ar.id) AS no_releases,
+-- 	ROUND(AVG(a.no_releases),0) AS no_releases,
 -- 	SUM(no_detections) AS no_detections,
 -- 	min(first_deployment_date) AS earliest_deployment_date,
 -- 	max(last_deployment_date) AS latest_deployment_date,
 -- 	min(start_date) AS start_date,
 -- 	max(end_date) AS end_date,
---  round((date_part('days', max(end_date) - min(start_date)) + date_part('hours', max(end_date) - min(start_date))/24)::numeric, 1) AS coverage_duration,
+-- 	round((date_part('days', max(end_date) - min(start_date)) + date_part('hours', max(end_date) - min(start_date))/24)::numeric, 1) AS coverage_duration,
 -- 	min(station_lat) AS min_lat,
 -- 	max(station_lat) AS max_lat,
 -- 	min(station_lon) AS min_lon,
 -- 	max(station_lon) AS max_lon,
 -- 	min(min_depth) AS min_depth,
 -- 	max(max_depth) AS max_depth
---   FROM aatams_acoustic_project_all_deployments_view v
---   LEFT JOIN animal_release ar ON ar.project_id = v.project_id
+--   FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view v
+--   LEFT JOIN a ON a.project_id = v.project_id
 -- 	GROUP BY funding_type,project_name
 -- 	ORDER BY funding_type DESC,project_name;
-
+	
 ---- Totals - Project
 -- CREATE TABLE aatams_acoustic_project_totals_view AS
 --   SELECT funding_type,
@@ -556,7 +562,7 @@ grant all on table abos_data_summary_view to public;
 -- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore. Still work needed to incorporate acorn_radials schemas.
 -------------------------------
 -- All deployments view
-CREATE OR REPLACE VIEW acorn_all_deployments_view AS
+CREATE TABLE acorn_all_deployments_view AS
 WITH a AS (
   SELECT timeseries_id,
 	site_code,
@@ -654,12 +660,73 @@ UNION ALL
   FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url u
   JOIN d ON d.timeseries_id = u.timeseries_id
 	GROUP BY data_type, u.site_code, month, year, d."ssr_Radar"
-	ORDER BY data_type, site, time_start;
+	ORDER BY data_type, site, time_start DESC;
 
 grant all on table acorn_all_deployments_view to public;
 
+-- Radials data
+CREATE TABLE acorn_radials_stations_view AS
+WITH c AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year
+  FROM acorn_radial_qc.acorn_radial_qc_timeseries_url),
+         d AS (
+  SELECT timeseries_id,
+	site_code,
+	to_char(to_timestamp (date_part('month',time)::text, 'MM'), 'Month') AS month,
+	date_part('year',time)::text AS year,
+	substring("ssr_Radar", 'WERA|SeaSonde') AS "ssr_Radar"
+  FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url)
+  SELECT 'Radials - QC' AS data_type, 
+	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
+	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
+	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
+	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
+	u.platform_code,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 6*24) * 100, 1) AS monthly_coverage,
+	COALESCE(c.month || ' ' || c.year) AS month_year,
+	c.month,
+	c.year
+  FROM acorn_radial_qc.acorn_radial_qc_timeseries_url u
+  JOIN c ON c.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, u.platform_code, month, year
+
+UNION ALL
+
+  SELECT 'Radials - non QC' AS data_type, 
+	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
+	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
+	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
+	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
+	u.platform_code,
+	COUNT(u.timeseries_id) AS no_files,
+	date(min(time)) AS time_start,
+	date(max(time)) AS time_end,
+	round((date_part('day',max(time)-min(time)) + date_part('hours',max(time)-min(time))/24)::numeric, 1) AS coverage_duration,
+	round(COUNT(u.timeseries_id) / (round((DATE_PART('days', DATE_TRUNC('month', min(time)) + '1 MONTH'::INTERVAL - DATE_TRUNC('month', min(time))))::numeric, 0) * 
+		(CASE WHEN d."ssr_Radar" = 'WERA' THEN 6*24 WHEN d."ssr_Radar" = 'SeaSonde' THEN 24 END)) * 100, 1) AS monthly_coverage,
+	COALESCE(d.month || ' ' || d.year) AS month_year,
+	d.month,
+	d.year
+  FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url u
+  JOIN d ON d.timeseries_id = u.timeseries_id
+	GROUP BY data_type, u.site_code, u.platform_code, month, year, d."ssr_Radar"
+	ORDER BY data_type, site, time_start DESC, platform_code;
+
+grant all on table acorn_radials_stations_view to public;
+
 -- Data summary view
-CREATE OR REPLACE VIEW acorn_data_summary_view AS
+CREATE TABLE acorn_data_summary_view AS
   SELECT data_type,
 	site,
 	SUM(no_files) AS total_no_files,
