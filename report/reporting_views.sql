@@ -9,9 +9,10 @@ DROP VIEW IF EXISTS aatams_acoustic_species_totals_view CASCADE;
 DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_sattag_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
-DROP TABLE IF EXISTS acorn_all_deployments_view CASCADE;
-DROP TABLE IF EXISTS acorn_radials_stations_view CASCADE;
-DROP TABLE IF EXISTS acorn_data_summary_view CASCADE;
+DROP TABLE IF EXISTS acorn_hourly_vectors_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS acorn_radials_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS acorn_hourly_vectors_data_summary_view CASCADE;
+DROP TABLE IF EXISTS acorn_radials_data_summary_view CASCADE;
 DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
@@ -559,7 +560,7 @@ CREATE or replace VIEW abos_data_summary_view AS
 grant all on table abos_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore. Still work needed to incorporate acorn_radials schemas.
+-- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore.
 -------------------------------
 -- All deployments view
 CREATE TABLE acorn_all_deployments_view AS
