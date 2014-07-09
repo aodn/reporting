@@ -1,4 +1,4 @@
-﻿SET search_path = reporting, public;
+﻿SET search_path = report_test, public;
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
