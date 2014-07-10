@@ -18,7 +18,7 @@ DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_nrs_bgc_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
-DROP VIEW IF EXISTS argo_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS argo_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS facility_summary_view CASCADE;
 DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
@@ -1399,11 +1399,14 @@ grant all on anmn_nrs_bgc_data_summary_view to public;
 -- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW argo_all_deployments_view AS
+CREATE TABLE argo_all_deployments_view AS
+WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.profile_download GROUP BY platform_number)
   SELECT m.data_centre AS organisation, 
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
-	m.platform_number AS platform_code, 
+	m.platform_number AS platform_code,
+	a.no_profiles,
+	a.no_measurements,
 	round((m.min_lat)::numeric, 1) AS min_lat, 
 	round((m.max_lat)::numeric, 1) AS max_lat, 
 	round((m.min_long)::numeric, 1) AS min_lon, 
@@ -1415,6 +1418,7 @@ CREATE or replace VIEW argo_all_deployments_view AS
 	round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) AS coverage_duration, 
 	m.pi_name
     FROM argo.argo_float m
+    LEFT JOIN a ON m.platform_number = a.platform_number
     ORDER BY organisation, oxygen_sensor, platform_code;
 
 grant all on table argo_all_deployments_view to public;
@@ -1425,7 +1429,9 @@ CREATE or replace VIEW argo_data_summary_view AS
 	count(DISTINCT v.platform_code) AS no_platforms, 
 	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 THEN 1 ELSE NULL::integer END) AS no_active_floats, 
 	count(CASE WHEN v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_oxygen_platforms, 
-	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 AND v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_active_oxygen_platforms, 
+	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 AND v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_active_oxygen_platforms,
+	SUM(no_profiles) AS total_no_profiles,
+	SUM(no_measurements) AS total_no_measurements,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
 	min(v.min_lon) AS min_lon, 
@@ -2446,8 +2452,8 @@ UNION ALL
 	SUM(no_oxygen_platforms) AS no_instruments,
 	SUM(no_active_floats) AS no_deployments,
 	SUM(no_active_oxygen_platforms)  AS no_data,
-	NULL AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(total_no_profiles) AS no_data2,
+	SUM(total_no_measurements) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
