@@ -947,7 +947,6 @@ CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
 	min(v.sensor_depth) AS min_depth, 
 	max(v.sensor_depth) AS max_depth 
   FROM anmn_nrs_realtime_all_deployments_view v
-	WHERE channel_id != 'Not Specified Not Specified'
 	GROUP BY v.site_name  
 	ORDER BY site_name;
 
