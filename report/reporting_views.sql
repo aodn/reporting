@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
@@ -436,7 +436,7 @@ CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS
 UNION ALL
 
   SELECT 'Short-tailed shearwaters' AS tagged_animals, 
-	ref AS animal_id,
+	animal_id,
 	no_observations AS nb_measurements,
 	start_date,
 	end_date,
