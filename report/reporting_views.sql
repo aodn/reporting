@@ -25,6 +25,7 @@ DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS totals_view CASCADE;
 
 
 -------------------------------
@@ -741,8 +742,8 @@ UNION ALL
  	COALESCE(round((ST_YMIN(geom))::numeric, 1) || '/' || round((ST_YMAX(geom))::numeric, 1)) AS lat_range,
  	COALESCE(round((ST_XMIN(geom))::numeric, 1) || '/' || round((ST_XMAX(geom))::numeric, 1)) AS lon_range,
  	round(d.geospatial_vertical_max::numeric, 1) AS max_depth, 
- 	round((date_part('days', max(to_timestamp(m.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(m.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ'))) + 
- 	date_part('hours', max(to_timestamp(m.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(m.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
+ 	round((date_part('days', max(m.time_coverage_end) - min(m.time_coverage_start)) + 
+ 	date_part('hours', max(m.time_coverage_end) - min(m.time_coverage_start))/24)::numeric, 1) AS coverage_duration
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
 	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
@@ -881,7 +882,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 grant all on table anmn_all_deployments_view to public;
 
 -- Data summary view
-CREATE or replace VIEW anmn_data_summary_view AS
+CREATE OR REPLACE VIEW anmn_data_summary_view AS
   SELECT v.subfacility, 
 	v.site_name_code, 
 	v.data_category, 
@@ -1902,7 +1903,7 @@ UNION ALL
 grant all on table soop_all_deployments_view to public;
 
 -- Data summary view	
-CREATE or replace VIEW soop_data_summary_view AS
+CREATE OR REPLACE VIEW soop_data_summary_view AS
  SELECT 
 	substring(vw.subfacility, '[a-zA-Z0-9]+') AS subfacility,
 	CASE WHEN substring(vw.subfacility, '[^ ]* (.*)') IS NULL THEN 'Delayed-mode' ELSE substring(vw.subfacility, '[^ ]* (.*)') END AS data_type,
@@ -2040,7 +2041,7 @@ grant all on table srs_data_summary_view to public;
 -------------------------------
 -- TOTALS VIEW
 -------------------------------
-CREATE or replace view totals_view AS
+CREATE TABLE totals_view AS
   WITH interm_table AS (
   SELECT COUNT(DISTINCT(parameter)) AS no_parameters
   FROM faimms_all_deployments_view),
