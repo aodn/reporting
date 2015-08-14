@@ -776,7 +776,7 @@ CREATE or replace VIEW anfog_data_summary_view AS
 grant all on table anfog_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANMN Acoustics; Using the report.acoustic_deployments table only.
+-- VIEW FOR ANMN Acoustics; Uses the anmn_acoustics schema now!
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
@@ -790,7 +790,7 @@ CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
 	min(m.time_deployment_start) AS start_date, 
 	max(m.time_deployment_end) AS end_date, 
 	round((date_part('days',max(m.time_deployment_end) - min(m.time_deployment_start)) + date_part('days',max(m.time_deployment_end) - min(m.time_deployment_start))/24)::numeric, 1) AS coverage_duration
-  FROM reporting.acoustic_deployments m
+  FROM anmn_acoustics.acoustic_deployments m
   GROUP BY m.deployment_name, m.lat, m.lon, m.logger_id 
   ORDER BY site_name, deployment_year, m.logger_id;
 
@@ -896,7 +896,8 @@ CREATE OR REPLACE VIEW anmn_data_summary_view AS
 	max(v.end_date) AS latest_date, 
 	round(((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric, 1) AS coverage_duration, 
 	sum(v.data_coverage) AS data_coverage, 
-	CASE WHEN round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) < 0 
+	CASE WHEN (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) = 0 
+		OR round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) < 0 
 		THEN NULL::numeric 
 		WHEN round(sum(v.data_coverage) / (((date_part('days',max(v.end_date) - min(v.start_date))) + (date_part('hours',max(v.end_date) - min(v.start_date)))/24)::numeric) * 100, 1) > 100 
 		THEN 100 
@@ -1122,11 +1123,11 @@ UNION ALL
 	3 AS total_no_parameters,
 	CASE WHEN SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
 	CASE WHEN SUM(CASE WHEN "CELL_PER_LITRE" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "BIOVOLUME_ML_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+	CASE WHEN SUM(CASE WHEN "BIOVOLUME_UM3_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
 	COUNT("NRS_SAMPLE_CODE") * 3 AS total_no_measurements,
 	SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) +
 	SUM(CASE WHEN "CELL_PER_LITRE" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "BIOVOLUME_ML_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+	SUM(CASE WHEN "BIOVOLUME_UM3_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
 	min("LONGITUDE") AS lon,
 	min("LATITUDE") AS lat,
 	NULL AS min_depth,
@@ -1413,9 +1414,9 @@ WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, 
 	round((m.max_long)::numeric, 1) AS max_lon, 
 	COALESCE(round((m.min_lat)::numeric, 1) || '/' || round((m.max_lat)::numeric, 1)) AS lat_range, 
 	COALESCE(round((m.min_long)::numeric, 1) || '/' || round((m.max_long)::numeric, 1)) AS lon_range, 
-	date(m.start_date) AS start_date, 
+	CASE WHEN date(m.start_date) IS NULL THEN date(m.launch_date) ELSE date(m.start_date) END AS start_date, 
 	date(m.last_measure_date) AS end_date, 
-	round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) AS coverage_duration, 
+	CASE WHEN round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) IS NULL THEN round((((date_part('day', (m.last_measure_date - m.launch_date)))::integer)::numeric / 365.242), 1) ELSE round((((date_part('day', (m.last_measure_date - m.start_date)))::integer)::numeric / 365.242), 1) END AS coverage_duration, 
 	m.pi_name
     FROM argo.argo_float m
     LEFT JOIN a ON m.platform_number = a.platform_number
@@ -1448,14 +1449,14 @@ CREATE or replace VIEW argo_data_summary_view AS
 grant all on table argo_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR AUV; Now using what's in the auv schema so don't need the legacy_auv schema anymore, nor the report.auv_manual table.
+-- VIEW FOR AUV; Now using what's in the auv and auv_viewer_track schema. So don't need the legacy_auv schema anymore, nor the report.auv_manual table.
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW auv_all_deployments_view AS
   WITH a AS (
   SELECT fk_auv_tracks,
 	COUNT(li.pkid) AS no_images
-  FROM legacy_auv.auv_images li
+  FROM auv_viewer_track.auv_images li
 	GROUP BY fk_auv_tracks)
   SELECT DISTINCT "substring"((d.campaign_name), '[^0-9]+') AS location, 
 	d.campaign_name AS campaign, 
@@ -1468,7 +1469,7 @@ CREATE or replace VIEW auv_all_deployments_view AS
 	a.no_images
   FROM auv.deployments d
   LEFT JOIN auv.auv_trajectory_map v ON v.file_id = d.file_id
-  LEFT JOIN legacy_auv.auv_tracks lt ON v.dive_name = lt.site_code
+  LEFT JOIN auv_viewer_track.auv_tracks lt ON v.dive_name = lt.dive_code
   LEFT JOIN a ON lt.pkid = a.fk_auv_tracks
 	ORDER BY location, campaign, site;
 
