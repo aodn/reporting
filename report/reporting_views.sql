@@ -1,4 +1,4 @@
-﻿SET search_path = reporting, public;
+﻿SET search_path = report_test, public;
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
@@ -395,7 +395,7 @@ CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
 	v.species_name, 
 	v.sattag_program, 
 	v.state_country AS release_site,
-	count(DISTINCT v.tag_code) AS no_tags, 
+	count(DISTINCT v.tag_code) AS no_animals, 
 	sum(v.nb_profiles) AS total_nb_profiles,
 	sum(v.nb_measurements) AS total_nb_measurements,
 	min(v.coverage_start) AS coverage_start, 
@@ -438,7 +438,7 @@ UNION ALL
 
   SELECT 'Short-tailed shearwaters' AS tagged_animals, 
 	animal_id,
-	no_observations AS nb_measurements,
+	no_observations AS nb_locations,
 	start_date,
 	end_date,
 	round(date_part('days', end_date - start_date)::numeric + (date_part('hours', end_date - start_date)::numeric)/24, 1) AS coverage_duration,
@@ -457,7 +457,7 @@ grant all on table aatams_biologging_all_deployments_view to public;
 CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
   SELECT tagged_animals,
 	COUNT(DISTINCT(animal_id)) AS nb_animals,
-	SUM(nb_measurements) AS total_nb_measurements,
+	SUM(nb_locations) AS total_nb_locations,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY') || ' - ' || to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	round(AVG(coverage_duration),1) AS mean_coverage_duration,
 	COALESCE(round(min(min_lat)::numeric, 1) || '/' || round(max(max_lat)::numeric, 1)) AS lat_range,
@@ -2131,7 +2131,7 @@ UNION ALL
 	COUNT(DISTINCT(sattag_program)) AS no_projects,
 	COUNT(DISTINCT(species_name)) AS no_platforms,
 	COUNT(DISTINCT(tag_type)) AS no_instruments,
-	SUM(no_tags) AS no_deployments,
+	SUM(no_animals) AS no_deployments,
 	SUM(total_nb_profiles) AS no_data,
 	SUM(total_nb_measurements) AS no_data2,
 	NULL::numeric AS no_data3,
