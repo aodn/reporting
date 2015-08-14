@@ -422,7 +422,7 @@ grant all on table aatams_sattag_data_summary_view to public;
 CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS 
   SELECT 'Emperor Penguin Fledglings' AS tagged_animals,
 	pttid AS animal_id,
-	no_observations AS nb_measurements,
+	no_observations AS nb_locations,
 	observation_start_date AS start_date,
 	observation_end_date AS end_date,
 	round(date_part('days', observation_end_date - observation_start_date)::numeric + (date_part('hours', observation_end_date - observation_start_date)::numeric)/24, 1) AS coverage_duration,
@@ -2172,7 +2172,7 @@ UNION ALL
 	nb_animals AS no_platforms,
 	NULL AS no_instruments,
 	NULL AS no_deployments,
-	total_nb_measurements AS no_data,
+	total_nb_locations AS no_data,
 	NULL AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
