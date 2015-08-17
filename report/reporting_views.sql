@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
@@ -21,7 +21,8 @@ DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS argo_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS facility_summary_view CASCADE;
-DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
+DROP TABLE IF EXISTS faimms_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
@@ -331,7 +332,7 @@ grant all on table aatams_acoustic_project_all_deployments_view to public;
 grant all on table aatams_acoustic_project_data_summary_view to public;
 
 -------------------------------
--- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the aatams_sattag manual tables in the report schema.
+-- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the report.aatams_sattag tables.
 -------------------------------
 -- All deployments view
  CREATE or replace VIEW aatams_sattag_all_deployments_view AS
@@ -1514,26 +1515,35 @@ CREATE OR REPLACE VIEW facility_summary_view AS
 grant all on table facility_summary_view to public;
 
 
+
 -------------------------------
--- VIEW FOR FAIMMS; Now using what's in the faimms schema so don't need the legacy_faimms schema anymore, nor the report.faimms_manual table.
+-- VIEWS FOR FAIMMS; The legacy_faimms schema and report.faimms_manual table are not being used anymore.
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW faimms_all_deployments_view AS
+CREATE TABLE faimms_all_deployments_view AS
+(WITH d_1 AS (SELECT channel_id, "VALUES_quality_control", COUNT(*) AS no_measurements FROM faimms.faimms_timeseries_data GROUP BY channel_id, "VALUES_quality_control"),
+d_2 AS (SELECT channel_id,
+SUM(CASE WHEN "VALUES_quality_control" != '0' THEN no_measurements ELSE 0 END) qaqc,
+SUM(CASE WHEN "VALUES_quality_control" = '0' THEN no_measurements ELSE 0 END) no_qaqc
+FROM d_1 GROUP BY channel_id)
   SELECT DISTINCT m.platform_code AS site_name, 
 	m.site_code AS platform_code, 
 	COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
 	(m."DEPTH")::numeric AS sensor_depth, 
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
-	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
+	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric/365.25, 1) AS coverage_duration, 
 	f.instrument AS sensor_name, 
 	m."VARNAME" AS parameter, 
 	m.channel_id AS channel_id,
 	round(ST_X(geom)::numeric, 1) AS lon,
-	round(ST_Y(geom)::numeric, 1) AS lat
+	round(ST_Y(geom)::numeric, 1) AS lat,
+	d_2.qaqc,
+	d_2.no_qaqc
   FROM faimms.faimms_timeseries_map m
   LEFT JOIN faimms.global_attributes_file f ON f.aims_channel_id = m.channel_id
-	ORDER BY site_name, platform_code, sensor_code;
+  LEFT JOIN d_2 ON d_2.channel_id = m.channel_id
+	ORDER BY site_name, platform_code, sensor_code);
 
 grant all on table faimms_all_deployments_view to public;
 
@@ -1549,8 +1559,11 @@ CREATE or replace VIEW faimms_data_summary_view AS
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-	min(v.sensor_depth) AS min_depth, 
-	max(v.sensor_depth) AS max_depth
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
+	CASE WHEN min(v.sensor_depth) >0 THEN min(v.sensor_depth) ELSE 0 END AS min_depth, -- To fix up negative depths
+	max(v.sensor_depth) AS max_depth,
+	SUM(CASE WHEN v.qaqc = 0 THEN 0 ELSE 1 END) AS qaqc_data,
+	SUM(v.qaqc + v.no_qaqc) AS no_measurements
   FROM faimms_all_deployments_view v
 	GROUP BY site_name 
 	ORDER BY site_name;
@@ -2043,8 +2056,10 @@ grant all on table srs_data_summary_view to public;
 -- TOTALS VIEW
 -------------------------------
 CREATE TABLE totals_view AS
-  WITH interm_table AS (
-  SELECT COUNT(DISTINCT(parameter)) AS no_parameters
+WITH i AS (
+  SELECT COUNT(DISTINCT(parameter)) AS no_parameters, 
+	SUM(qaqc) AS qaqc, 
+	SUM(no_qaqc) AS no_qaqc
   FROM faimms_all_deployments_view),
   bgc_chemistry AS (
   SELECT SUM(ntrip_total)::numeric AS no_chemistry_trips
@@ -2485,22 +2500,23 @@ UNION ALL
 -- FAIMMS
 UNION ALL
 
-  SELECT 'FAIMMS' AS facility,
+SELECT 'FAIMMS' AS facility,
 	NULL AS subfacility,
 	'TOTAL' AS type,
-	COUNT(*) AS no_projects,
-	SUM(no_platforms) AS no_platforms,
-	SUM(no_sensors) AS no_instruments,
-	ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
-	NULL AS no_data,
-	NULL AS no_data2,
-	NULL::numeric AS no_data3,
-	NULL::numeric AS no_data4,
-	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-	COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
-	COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
-	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM faimms_data_summary_view, interm_table
+	COUNT(s.*) AS no_projects,
+	SUM(s.no_platforms) AS no_platforms,
+	ROUND(AVG(i.no_parameters),0) AS no_deployments,
+	SUM(s.no_sensors) AS no_instruments,
+	SUM(s.qaqc_data) AS no_data, -- Calculate number of quality controlled datasets
+	SUM(s.no_measurements) AS no_data2, -- Calculate total number of measurements
+	i.qaqc AS no_data3, -- Calculate number of QAQC measurements
+	i.no_qaqc AS no_data4, -- Calculate number of non QAQC measurements
+	COALESCE(to_char(min(s.earliest_date),'DD/MM/YYYY')||' - '||to_char(max(s.latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(s.lat)||' - '||max(s.lat)) AS lat_range,
+	COALESCE(min(s.lon)||' - '||max(s.lon)) AS lon_range,
+	COALESCE(min(s.min_depth)||' - '||max(s.max_depth)) AS depth_range
+  FROM faimms_data_summary_view s, i
+  GROUP BY i.qaqc, i.no_qaqc
 
 -- SOOP
 UNION ALL
