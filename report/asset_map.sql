@@ -226,14 +226,14 @@ UNION ALL
   FROM abos_ts.abos_ts_timeseries_map
 
 ---- ABOS-Pulse
-UNION ALL
-  SELECT 'ABOS' AS facility,
-	site_code AS subfacility,
-	platform_code AS platform_code,
-	geom AS geom,
-	'Point' AS gtype,
-	'#CC4712' AS colour
-  FROM abos_pulse.abos_pulse_map
+-- UNION ALL
+--   SELECT 'ABOS' AS facility,
+-- 	site_code AS subfacility,
+-- 	platform_code AS platform_code,
+-- 	geom AS geom,
+-- 	'Point' AS gtype,
+-- 	'#CC4712' AS colour
+--   FROM abos_pulse.abos_pulse_map
 
 ---- ABOS-Currents
 UNION ALL
@@ -283,7 +283,7 @@ UNION ALL
 	geom AS geom,
 	'Point' AS gtype,
 	'#8212CC' AS colour
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_chemistry_map
+  FROM anmn_nrs_bgc.station_name
 
 ---- ANFOG
 UNION ALL
