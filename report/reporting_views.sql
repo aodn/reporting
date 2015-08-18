@@ -1,4 +1,4 @@
-﻿SET search_path = reporting, public;
+﻿SET search_path = report_test, public;
 
 DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
@@ -402,7 +402,8 @@ CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
 	sum(v.nb_measurements) AS total_nb_measurements,
 	min(v.coverage_start) AS coverage_start, 
 	max(v.coverage_end) AS coverage_end, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	v.tag_type,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
@@ -462,6 +463,7 @@ CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
 	SUM(nb_locations) AS total_nb_locations,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY') || ' - ' || to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	round(AVG(coverage_duration),1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	COALESCE(round(min(min_lat)::numeric, 1) || '/' || round(max(max_lat)::numeric, 1)) AS lat_range,
 	COALESCE(round(min(min_lon)::numeric, 1) || '/' || round(max(max_lon)::numeric, 1)) AS lon_range,
 	min(start_date) AS earliest_date,
