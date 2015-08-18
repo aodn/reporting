@@ -2318,6 +2318,7 @@ CREATE or replace VIEW srs_data_summary_view AS
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	min(v.lon) AS min_lon, 
 	max(v.lon) AS max_lon, 
 	min(v.lat) AS min_lat, 
