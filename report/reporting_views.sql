@@ -13,7 +13,8 @@ DROP TABLE IF EXISTS acorn_hourly_vectors_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_hourly_vectors_data_summary_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_data_summary_view CASCADE;
-DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
+DROP TABLE IF EXISTS anfog_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_nrs_bgc_all_deployments_view CASCADE;
@@ -704,15 +705,19 @@ CREATE TABLE acorn_radials_data_summary_view AS
 
 grant all on table acorn_radials_data_summary_view to public;
 
+
 -------------------------------
--- VIEW FOR ANFOG; Now using the anfog_dm and anfog_rt schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
+-- VIEW FOR ANFOG; The legacy_anfog schema and report.anfog_manual table are not being used anymore.
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW anfog_all_deployments_view AS
+CREATE TABLE anfog_all_deployments_view AS
+WITH rt AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_rt.anfog_rt_trajectory_data GROUP BY deployment_name),
+dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_dm_trajectory_data GROUP BY deployment_name)
   SELECT 'Near real-time data' AS data_type,
 	 mrt.platform_type AS glider_type, 
 	 mrt.platform_code AS platform, 
-	 mrt.deployment_name AS deployment_id, 
+	 mrt.deployment_name AS deployment_id,
+	 rt.no_measurements,
 	 min(date(mrt.time_coverage_start)) AS start_date, 
 	 max(date(mrt.time_coverage_end)) AS end_date,
  	 min(round((ST_YMIN(geom))::numeric, 1)) AS min_lat,
@@ -726,14 +731,16 @@ CREATE or replace VIEW anfog_all_deployments_view AS
  	date_part('hours', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
   FROM anfog_rt.anfog_rt_trajectory_map mrt
   RIGHT JOIN anfog_rt.deployments drt ON mrt.file_id = drt.file_id
-	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
+  LEFT JOIN rt ON rt.deployment_name = mrt.deployment_name
+	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name, rt.no_measurements
 
 UNION ALL
 
   SELECT 'Delayed mode data' AS data_type,
 	 m.platform_type AS glider_type, 
 	 m.platform_code AS platform, 
-	 m.deployment_name AS deployment_id, 
+	 m.deployment_name AS deployment_id,
+	 dm.no_measurements,
 	 date(m.time_coverage_start) AS start_date, 
 	 date(m.time_coverage_end) AS end_date,
  	 round((ST_YMIN(geom))::numeric, 1) AS min_lat,
@@ -747,7 +754,8 @@ UNION ALL
  	date_part('hours', max(m.time_coverage_end) - min(m.time_coverage_start))/24)::numeric, 1) AS coverage_duration
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
-	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
+  LEFT JOIN dm ON dm.deployment_name = m.deployment_name
+	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max, dm.no_measurements
 	ORDER BY data_type, glider_type, platform, deployment_id;
 
 grant all on table anfog_all_deployments_view to public;
@@ -757,13 +765,15 @@ CREATE or replace VIEW anfog_data_summary_view AS
   SELECT v.data_type,
 	v.glider_type AS glider_type, 
 	count(DISTINCT v.platform) AS no_platforms, 
-	count(DISTINCT v.deployment_id) AS no_deployments, 
+	count(DISTINCT v.deployment_id) AS no_deployments,
+	SUM(no_measurements) AS no_measurements,
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
 	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
 	COALESCE(min(v.max_depth) || '/' || max(v.max_depth)) AS depth_range, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
 	min(v.min_lon) AS min_lon, 
@@ -2586,14 +2596,14 @@ UNION ALL
 -- ANFOG
 UNION ALL
 
-  SELECT 'ANFOG' AS facility,
+SELECT 'ANFOG' AS facility,
 	NULL AS subfacility,
 	data_type AS type,
 	NULL::bigint AS no_projects,
 	SUM(no_platforms) AS no_platforms,
 	NULL::bigint AS no_instruments,
 	SUM(no_deployments) AS no_deployments,
-	NULL AS no_data,
+	SUM(no_measurements) AS no_data,
 	NULL AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
@@ -2613,7 +2623,7 @@ UNION ALL
 	COUNT(DISTINCT(platform)) AS no_platforms,
 	NULL::bigint AS no_instruments,
 	COUNT(DISTINCT(deployment_id)) AS no_deployments,
-	NULL AS no_data,
+	SUM(no_measurements) AS no_data,
 	NULL AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
