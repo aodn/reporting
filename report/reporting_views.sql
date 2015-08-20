@@ -1410,12 +1410,12 @@ UNION ALL
 grant all on anmn_nrs_bgc_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
+-- VIEW FOR Argo; The dw_argo schema is not being used for reporting anymore.
 -------------------------------
 -- All deployments view
 CREATE TABLE argo_all_deployments_view AS
 WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.profile_download GROUP BY platform_number)
-  SELECT m.data_centre AS organisation, 
+  SELECT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
 	m.platform_number AS platform_code,
@@ -1433,6 +1433,7 @@ WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, 
 	m.pi_name
     FROM argo.argo_float m
     LEFT JOIN a ON m.platform_number = a.platform_number
+    LEFT JOIN argo.profile_summary ps ON m.platform_number = ps.platform_number
     ORDER BY organisation, oxygen_sensor, platform_code;
 
 grant all on table argo_all_deployments_view to public;
@@ -1454,7 +1455,8 @@ CREATE or replace VIEW argo_data_summary_view AS
 	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days -- Range in number of data days
   FROM argo_all_deployments_view v
 	GROUP BY v.organisation 
 	ORDER BY organisation;
