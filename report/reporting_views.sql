@@ -479,7 +479,7 @@ CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
 grant all on table aatams_biologging_data_summary_view to public;
 
 -------------------------------
--- VIEWS FOR ABOS; Uses what's in the dw_abos schema.
+-- VIEWS FOR ABOS;
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW abos_all_deployments_view AS
@@ -494,7 +494,12 @@ CREATE or replace VIEW abos_all_deployments_view AS
     (substring(url, 'FV0([12]+)'))::integer AS file_version,
     CASE WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Pulse' 
 	OR substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'SAZ' THEN 'Biogeochemistry'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD_timeseries'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD timeseries'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_currents' THEN 'Sub-surface currents'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_temperature_pressure_conductivity' THEN 'Sub-surface CTD'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_fluxes' THEN 'Surface fluxes'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_properties' THEN 'Surface properties'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_waves' THEN 'Surface waves'
 	ELSE substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') END AS data_category,
     COALESCE(substring(url, 'Real-time'), 'Delayed-mode') AS data_type, 
     COALESCE(substring(url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency, 
@@ -548,7 +553,7 @@ CREATE or replace VIEW abos_data_summary_view AS
     round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
     CASE WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
 	THEN round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1)
-	ElSE (sum(v.coverage_duration)) END AS data_coverage, 
+	ElSE (sum(v.coverage_duration)) END AS data_coverage,
     CASE WHEN max(v.coverage_end) - min(v.coverage_start) = 0 THEN 0
 	WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
 	THEN (((round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
