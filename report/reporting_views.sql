@@ -794,7 +794,7 @@ CREATE or replace VIEW anfog_data_summary_view AS
 grant all on table anfog_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANMN Acoustics; Uses the anmn_acoustics schema now!
+-- VIEW FOR ANMN Acoustics
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
@@ -1285,6 +1285,7 @@ b AS ( SELECT data_type,
 	round(min(min_depth)::numeric,1) AS min_depth,
 	round(max(max_depth)::numeric,1) AS max_depth
   FROM b
+    WHERE station_name != 'Port Hacking 4' -- Get rid of erroneous metadata from Port Hacking 4
 	GROUP BY station_name, sample_date
 	ORDER BY station_name, sample_date;
 
