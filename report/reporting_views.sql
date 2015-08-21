@@ -571,7 +571,7 @@ grant all on table abos_data_summary_view to public;
 
 
 -------------------------------
--- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore.
+-- VIEW FOR ACORN; The report.acorn_manual table is not being used for reporting anymore.
 -------------------------------
 -- All hourly vectors data
 CREATE TABLE acorn_hourly_vectors_all_deployments_view AS
