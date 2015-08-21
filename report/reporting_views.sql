@@ -1469,7 +1469,7 @@ CREATE or replace VIEW argo_data_summary_view AS
 grant all on table argo_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR AUV; Now using what's in the auv and auv_viewer_track schema. So don't need the legacy_auv schema anymore, nor the report.auv_manual table.
+-- VIEW FOR AUV; The legacy_auv schema and report.auv_manual table are not being used for reporting anymore.
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW auv_all_deployments_view AS
@@ -1485,7 +1485,7 @@ CREATE or replace VIEW auv_all_deployments_view AS
 	round(ST_X(ST_CENTROID(v.geom))::numeric, 1) AS lon_min, 
 	v.time_start AS start_date,
 	v.time_end AS end_date,
-	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric, 1) AS coverage_duration,
+	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric/60, 1) AS coverage_duration,
 	a.no_images
   FROM auv.deployments d
   LEFT JOIN auv.auv_trajectory_map v ON v.file_id = d.file_id
@@ -1505,7 +1505,7 @@ CREATE or replace VIEW auv_data_summary_view AS
 	COALESCE(min(v.lon_min) || '/' || max(v.lon_min)) AS lon_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	round((sum((v.coverage_duration)::numeric) / 60), 1) AS data_duration, 
+	round((sum((v.coverage_duration)::numeric)), 1) AS data_duration, 
 	min(v.lat_min) AS lat_min, 
 	min(v.lon_min) AS lon_min, 
 	max(v.lat_min) AS lat_max, 
