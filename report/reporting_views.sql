@@ -840,11 +840,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
   SELECT m.site_code, 
 	m.site_name, 
 	avg(m.lat) AS site_lat, 
-	avg(m.lon) AS site_lon, 
-	(avg(m.depth))::integer AS site_depth, 
-	min(m.first_deployed) AS site_first_deployed, 
-	max(m.discontinued) AS site_discontinued, 
-	bool_or(m.active) AS site_active 
+	avg(m.lon) AS site_lon
   FROM report.anmn_platforms_manual m
 	GROUP BY m.site_code, m.site_name 
 	ORDER BY m.site_code), 
@@ -873,8 +869,11 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	ORDER BY subfacility, deployment_code, data_category)
   SELECT 
 	f.subfacility, 
-	COALESCE(s.site_name || ' (' || f.site_code || ')' || ' - Lat/Lon:' || round((min(s.site_lat))::numeric, 1) || '/' || round((min(s.site_lon))::numeric, 1)) AS site_name_code, 
-	f.data_category, 
+	CASE WHEN s.site_name IS NULL THEN f.site_code ELSE s.site_name END AS site_name_code, 
+	CASE WHEN f.data_category = 'CTD_timeseries' THEN 'CTD timeseries' 
+		WHEN f.data_category = 'Biogeochem_timeseries' THEN 'Biogeochemical timeseries' 
+		WHEN f.data_category = 'Biogeochem_profiles' THEN 'Biogeochemical profiles'
+		ELSE f.data_category END AS data_category,
 	f.deployment_code, 
 	(sum(((f.file_version = '0'))::integer))::numeric AS no_fv00, 
 	(sum(((f.file_version = '1'))::integer))::numeric AS no_fv01, 
@@ -892,7 +891,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	round((max(f.geospatial_vertical_max))::numeric, 1) AS max_depth,
 	f.site_code 
   FROM file_view f 
-  NATURAL LEFT JOIN site_view s 
+  LEFT JOIN site_view s ON f.site_code = s.site_code
 	WHERE f.status IS NULL 
 	GROUP BY f.subfacility, f.site_code, s.site_name, f.data_category, f.deployment_code 
 	ORDER BY f.subfacility, f.site_code, f.data_category, f.deployment_code;
