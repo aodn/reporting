@@ -385,7 +385,8 @@ UNION ALL
 	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
-  FROM dw_aatams_acoustic.aatams_acoustic_detections_map
+  FROM dw_aatams_acoustic.installation_summary
+  WHERE st_y(geom) < 0
 	GROUP BY installation_name
 
 ---- SRS Altimetry
