@@ -1593,7 +1593,7 @@ CREATE or replace VIEW faimms_data_summary_view AS
 grant all on table faimms_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR SOOP-CPR; Waiting for the new so_cpr harvester...
+-- VIEW FOR SOOP-CPR
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
@@ -1693,7 +1693,7 @@ UNION ALL
 grant all on table soop_cpr_all_deployments_view to public;
 
 -------------------------------
--- VIEW FOR SOOP; Now using what's in the soop schema so don't need the dw_soop schema anymore, nor any report.manual tables.
+-- VIEW FOR SOOP; The dw_soop schema and report.manual tables are not being used for reporting anymore.
 ------------------------------- 
 -- All deployments view
 CREATE or replace VIEW soop_all_deployments_view AS
@@ -1898,7 +1898,7 @@ UNION ALL
 UNION ALL 
 
   SELECT 'XBT Near real-time' AS subfacility,
-  COALESCE("XBT_line" || ' | ' || vessel_name) AS vessel_name,
+  COALESCE("XBT_line" || ' | ' || CASE WHEN vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE vessel_name END) AS vessel_name,
   NULL AS deployment_id,
   date_part('year',"TIME") AS year,
   COUNT(profile_id) AS no_files_profiles,
@@ -2819,7 +2819,7 @@ UNION ALL
 	SUM(no_deployments) AS no_deployments,
 	SUM(no_files_profiles) AS no_data,
 	SUM(total_no_measurements) AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(coverage_duration) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
@@ -2839,7 +2839,7 @@ UNION ALL
 	count(CASE WHEN deployment_id IS NULL THEN '1'::character varying ELSE deployment_id END) AS no_deployments,
 	sum(CASE WHEN no_files_profiles IS NULL THEN (1)::bigint ELSE no_files_profiles END) AS no_data,
 	SUM(no_measurements) AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(coverage_duration) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
