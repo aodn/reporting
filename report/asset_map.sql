@@ -397,6 +397,15 @@ UNION ALL
 	geom AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
-  FROM srs_altimetry.srs_altimetry_timeseries_map;
+  FROM srs_altimetry.srs_altimetry_timeseries_map
+
+  ---- SRS Lucinda Jetty
+UNION ALL
+  SELECT 'SRS' AS facility,
+	'Ocean colour' AS subfacility,
+	'Lucinda Jetty Coastal Observatory' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(146.39 -18.52)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour;
 
 grant all on asset_map TO public, harvest_read_group;
