@@ -285,6 +285,16 @@ UNION ALL
 	'#8212CC' AS colour
   FROM anmn_nrs_bgc.station_name
 
+---- ANMN-AM
+UNION ALL
+  SELECT 'ANMN' AS facility,
+	'Temperature and Salinity' AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_ts.anmn_ts_timeseries_map  
+  
 ---- ANFOG
 UNION ALL
   SELECT DISTINCT 'ANFOG' AS facility,
