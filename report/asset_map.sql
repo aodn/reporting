@@ -109,19 +109,44 @@ UNION ALL
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'BA' AS subfacility,
+	'Mauritius - WA' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 90.3 -25.1, 115.18 -34.5)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Mauritius - South Madagascar' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 48.9 -35.7)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
 	'Tasman Sea' AS platform_code,
 	ST_SetSRID(ST_GeomFromText('LINESTRING (147.5 -43.1, 172.7 -40.5)'),4326) AS geom,
 	'Line' AS gtype,
 	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Hobart - Fiji' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (147.5 -43.1, 177.4 -18.2)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
 
----- SOOP-CO2
+---- SOOP-CO2 and SOOP-ASF
 UNION ALL
   SELECT DISTINCT 'SOOP' AS facility,
-	'CO2' AS subfacility,
+	'CO2 and ASF' AS subfacility,
 	vessel_name AS platform_code,
-	ST_CENTROID(ST_COLLECT(geom)) AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
+	CASE WHEN vessel_name = 'RV Tangaroa' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (177.4 -35.85, 167.9 -32.3, 174.77 -48.1, 170.2 -52.7, 170.7 -46.4, 147.3 -65.6, 140.1 -65, 140 -60.5, 159.5 -56.6, 178.5 -38.7)'),4326)
+		WHEN vessel_name = 'Aurora Australis' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (147.7 -43.6, 131.2 -64.5, 59.5 -66.1, 115.18 -32.3, 114.8 -61.5)'),4326)
+		WHEN vessel_name = 'L''Astrolabe' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (147.3 -43.4, 137.3 -64.1, 155.8 -64.9, 147.3 -43.4)'),4326)
+		WHEN vessel_name = 'Southern Surveyor' THEN make_trajectory(ST_SetSRID(ST_GeomFromText('LINESTRING (141.9 -46.9, 148.8 -43.1, 154.2 -26.9, 143.8 -10, 129.9 -10.7, 112.7 -21.6, 113.2 -31.3, 100 -25, 100 -29, 116.75 -35.3,
+		131.4 -33.75, 148.75 -40.6, -172.6 -13, -171.17 -49, 174.1 -41.1)'),4326)) END AS geom,
+	'Line' AS gtype,
+	'#ED3B8B' AS colour
   FROM soop_co2.soop_co2_trajectory_map
   GROUP BY vessel_name
   
@@ -149,46 +174,39 @@ UNION ALL
   SELECT 'SOOP' AS facility,
 	'TRV' AS subfacility,
 	'Solander' AS platform_code,
-	ST_SetSRID(ST_GeomFromText('POINT(121.94 -16.3)'),4326) AS geom,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (113.9 -28.8, 112.86 -26, 113.76 -21.9, 122.1 -18, 121.8 -17.2, 124 -15.72, 125.7 -13.6, 130.6 -12.3, 127.4 -8.5, 116 -20.5)'),4326) AS geom,
 	'Point' AS gtype,
-	'#591FBF' AS colour
+	'#E69777' AS colour
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'TRV' AS subfacility,
 	'Cape Ferguson' AS platform_code,
-	ST_SetSRID(ST_GeomFromText('POINT(145 -14)'),4326) AS geom,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (151.76 -23.5, 148.8 -20.06, 146.7 -18.7, 146 -16.8, 145.4 -14.7, 143.3 -11.4)'),4326) AS geom,
 	'Point' AS gtype,
-	'#591FBF' AS colour
-
----- SOOP-ASF
-UNION ALL
-  SELECT 'SOOP' AS facility,
-	'ASF' AS subfacility,
-	vessel_name AS platform_code,
-	CASE WHEN vessel_name = 'Tangaroa' THEN ST_SetSRID(ST_GeomFromText('POINT(171.8 -39.8)'),4326) ELSE ST_CENTROID(ST_COLLECT(geom)) END AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
-  FROM soop_asf_mft.soop_asf_mft_trajectory_map
-  GROUP BY vessel_name
+	'#E69777' AS colour
 
 ---- SOOP-SST
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'SST' AS subfacility,
 	vessel_name AS platform_code,
-	CASE WHEN vessel_name = 'Xutra Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(116.3 -7.9)'),4326) 
-		WHEN vessel_name = 'Wana Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(123.8 -36)'),4326)
-		WHEN vessel_name = 'Pacific Celebes' THEN ST_SetSRID(ST_GeomFromText('POINT(-131.4 -19)'),4326)
-		WHEN vessel_name = 'OOCL Panama' THEN ST_SetSRID(ST_GeomFromText('POINT(105.0 -1.4)'),4326)
-		WHEN vessel_name = 'Linnaeus' THEN ST_SetSRID(ST_GeomFromText('POINT(113.13 -24.4)'),4326)
-		WHEN vessel_name = 'Iron Yandi' THEN ST_SetSRID(ST_GeomFromText('POINT(126.8 18.9)'),4326)
-		WHEN vessel_name = 'Stadacona' THEN ST_SetSRID(ST_GeomFromText('POINT(152 -35)'),4326) ELSE
-		ST_CENTROID(ST_COLLECT(geom)) END AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
+	CASE WHEN vessel_name = 'Highland Chief' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(144.9 -38.3, 146.8 -39.5, 150.2 -37.9, 154.6 -26.7, 159.7 -9.1, 172.8 1.25, 139.5 34.8)'),4326) 
+		WHEN vessel_name = 'Iron Yandi' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(118.7 38.7, 123.46 37.5, 126.6 26.56, 127.4 4.4, 118.4 -20.2)'),4326)
+		WHEN vessel_name = 'Pacific Celebes' THEN make_trajectory(ST_SetSRID(ST_GeomFromText('LINESTRING(152.1 -33.4, -125.26 48, -124.9 40.3, -118.76 32.4, -149.3 -17.6, -79.7 7.4, -79.56 12.32, -89.7 29.7, -79.4 23.4, -73.93 38.5, -66.4 42.7,
+		-6.26 36.06, 8.67 38.34, 32.23 31.48, 33.28 28.32, 43.66 12.1, 71.8 18.65, 76.35 8.28, 80.57 5.5, 96.0 6.2, 110.6 -4.4, 20.6 -35.8, -73.93 38.5)'),4326))
+		WHEN vessel_name = 'OOCL Panama' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(143.4 -38.95, 117.2 -35.6, 114.9 -34.56, 105.05 -6.7, 107.95 -4.3, 104.4 1.38)'),4326)
+		WHEN vessel_name = 'Pacific Sun' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(151.5 -33.9, 169.65 -20.3, 167.36 -15.58, 153.4 -27, 153.3 -21.7, 150.4 -16.28, 145.8 -16.5, 144.4 -10.5, 132 -10.8, 131.1 -12.2)'),4326)
+		WHEN vessel_name = 'Portland' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(119.55 34.7, 123 34.6, 124.6 30.9, 119.5 15.97, 121.4 10.4, 118.3 -3.4, 112.25 -25.1, 115.6 -32.25)'),4326)
+		WHEN vessel_name = 'Stadacona' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(125.1 29.8, 145.6 -4.5, 151.2 -8.3, 153.6 -20.6, 151.2 -23.5)'),4326)
+		WHEN vessel_name = 'WAKMATHA' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(141.6 -12.7, 141.5 -11.3, 142.75 -10.7, 145.4 -14.7, 146.5 -18.5, 149.1 -20, 151.5 -23.7)'),4326)
+		WHEN vessel_name = 'L''Astrolabe' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(147.4 -43.1, 159.03 -54.5, 141.5 -66.4, 147.4 -43.1)'),4326)
+		WHEN vessel_name = 'Wana Bhum' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(103.9 1.1, 105.1 1.2, 117.3 -8.1, 125.8 -8, 142.58 -10.54, 145.4 -14.7, 153.5 -24.56, 153.17 -27.33)'),4326) END AS geom,
+	'Line' AS gtype,
+	'#F0A732' AS colour
   FROM soop_sst.soop_sst_nrt_trajectory_map
---   WHERE vessel_name != 'Pacific Celebes' 
+  WHERE vessel_name NOT IN ('Fantasea Wonder', 'Xutra Bhum', 'Spirit of Tasmania 2', 'RV Cape Ferguson', 'Linnaeus', 'SeaFlyte')
   GROUP BY vessel_name
+  
 -- UNION ALL
 --   SELECT 'SOOP' AS facility,
 -- 	'SST' AS subfacility,
