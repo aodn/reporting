@@ -7,24 +7,28 @@ WITH soop_cpr AS (
   SELECT vessel_name AS platform_code,
 	ST_CENTROID(ST_COLLECT(geom)) AS geom
   FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
+    WHERE vessel_name != 'RV Cape Ferguson' AND vessel_name != 'RV Solander'
 	GROUP BY vessel_name, substring(trip_code,'[A-Z]*')),
   aatams_sattag AS (
   SELECT 'Seals and sea lions'::text AS platform_code,
 	ST_CENTROID(ST_COLLECT(geom)) AS geom
-  FROM aatams_sattag_nrt.aatams_sattag_nrt_profile_map
+  FROM aatams_sattag_dm.aatams_sattag_dm_profile_map
 	GROUP BY device_id 
 	ORDER BY random()
-	LIMIT 75),
+	LIMIT 75
+	),
   aatams_penguins AS(
   SELECT ST_CENTROID(geom) AS geom
   FROM aatams_biologging_penguin.aatams_biologging_penguin_map
   	ORDER BY random()
-	LIMIT 25),
+	LIMIT 25
+	),
   aatams_shearwaters AS(
   SELECT ST_CENTROID(geom) AS geom
   FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map
   	ORDER BY random()
-	LIMIT 25)
+	LIMIT 25
+	)
 ---- Argo
   SELECT 'Argo'::text AS facility,
 	NULL::text AS subfacility,
@@ -34,7 +38,6 @@ WITH soop_cpr AS (
 	'#85BF1F' AS colour
   FROM argo.argo_float
 	WHERE data_centre_code = 'CS'
-  
 ---- SOOP-XBT
 UNION ALL
   SELECT 'SOOP' AS facility,
@@ -100,16 +103,16 @@ UNION ALL
   SELECT 'SOOP' AS facility,
 	'BA' AS subfacility,
 	'Indian Ocean' AS platform_code,
-	ST_SetSRID(ST_GeomFromText('POINT(64.0 -36)'),4326) AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 70 -49.1)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
 UNION ALL
   SELECT 'SOOP' AS facility,
 	'BA' AS subfacility,
 	'Tasman Sea' AS platform_code,
-	ST_SetSRID(ST_GeomFromText('POINT(160.0 -42)'),4326) AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
+	ST_SetSRID(ST_GeomFromText('LINESTRING (147.5 -43.1, 172.7 -40.5)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
 
 ---- SOOP-CO2
 UNION ALL
@@ -122,18 +125,22 @@ UNION ALL
   FROM soop_co2.soop_co2_trajectory_map
   GROUP BY vessel_name
   
-
 ---- SOOP-CPR
 UNION ALL
   SELECT DISTINCT 'SOOP' AS facility,
 	'CPR' AS subfacility,
 	CASE WHEN platform_code = 'Aurora Australia' THEN 'Aurora Australis' ELSE platform_code END AS platform_code,
-	CASE WHEN platform_code = 'ANL Windarra' THEN ST_SetSRID(ST_GeomFromText('POINT(153.1 -32.4)'),4326) 
-		WHEN platform_code = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('POINT(139.4 -39.1)'),4326)
-		WHEN platform_code = 'ANL Whyalla' THEN ST_SetSRID(ST_GeomFromText('POINT(134.4 -36)'),4326) ELSE
-		ST_CENTROID(ST_COLLECT(geom)) END AS geom,
-	'Point' AS gtype,
-	'#591FBF' AS colour
+	CASE WHEN platform_code = 'ANL Windarra' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (138.1 -35.7, 140.7 -38.8, 149.6 -39.2, 154.2 -28.7, 153.4 -26.7)'),4326)
+		WHEN platform_code = 'Aurora Australia' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.2 -44.3, 89.7 -62.5)'),4326)
+		WHEN platform_code = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.4 -43.9, 114.9 -35.1, 112.5 -22.5, 119.5 -18.9)'),4326)
+		WHEN platform_code = 'Rehua' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.9 -40.8, 173.1 -40.6)'),4326)
+		WHEN platform_code = 'ANL Whyalla' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (118.4 -35.1, 138.3 -35.5)'),4326)
+		WHEN platform_code = 'Hespérides' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (115.2 -35.07, 142.4 -40.6)'),4326)
+		WHEN platform_code = 'Island Chief' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (151.5 -34.6, 154.5 -27.4, 152.9 -20.5)'),4326)
+		WHEN platform_code = 'RV Investigator' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.2 -43.4, 151.4 -33.75)'),4326)
+		WHEN platform_code = 'Kweichow' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (150.95 -22.2, 145.94 -16.8)'),4326) END AS geom,
+	'Line' AS gtype,
+	'#F7722A' AS colour
   FROM soop_cpr
 	GROUP BY platform_code
 	
@@ -172,12 +179,25 @@ UNION ALL
 	CASE WHEN vessel_name = 'Xutra Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(116.3 -7.9)'),4326) 
 		WHEN vessel_name = 'Wana Bhum' THEN ST_SetSRID(ST_GeomFromText('POINT(123.8 -36)'),4326)
 		WHEN vessel_name = 'Pacific Celebes' THEN ST_SetSRID(ST_GeomFromText('POINT(-131.4 -19)'),4326)
+		WHEN vessel_name = 'OOCL Panama' THEN ST_SetSRID(ST_GeomFromText('POINT(105.0 -1.4)'),4326)
+		WHEN vessel_name = 'Linnaeus' THEN ST_SetSRID(ST_GeomFromText('POINT(113.13 -24.4)'),4326)
+		WHEN vessel_name = 'Iron Yandi' THEN ST_SetSRID(ST_GeomFromText('POINT(126.8 18.9)'),4326)
 		WHEN vessel_name = 'Stadacona' THEN ST_SetSRID(ST_GeomFromText('POINT(152 -35)'),4326) ELSE
 		ST_CENTROID(ST_COLLECT(geom)) END AS geom,
 	'Point' AS gtype,
 	'#591FBF' AS colour
   FROM soop_sst.soop_sst_nrt_trajectory_map
+--   WHERE vessel_name != 'Pacific Celebes' 
   GROUP BY vessel_name
+-- UNION ALL
+--   SELECT 'SOOP' AS facility,
+-- 	'SST' AS subfacility,
+-- 	vessel_name AS platform_code,
+-- 	geom,
+-- 	'Line' AS gtype,
+-- 	'#F0A732' AS colour
+--   FROM soop_sst.soop_sst_nrt_trajectory_map
+--   WHERE vessel_name = 'Pacific Celebes' AND time_end < '2010-01-11'
 
 ---- SRS-Ocean Colour Radiometer
 UNION ALL
@@ -217,37 +237,29 @@ UNION ALL
 
 ---- ABOS-TS
 UNION ALL
-  SELECT 'ABOS' AS facility,
-	'Temperature and Salinity' AS subfacility,
-	platform_code AS platform_code,
-	geom AS geom,
+  SELECT DISTINCT 'ABOS' AS facility,
+	'Temperature, Salinity, Currents' AS subfacility,
+	CASE WHEN m.platform_code = '' THEN ma.platform_code ELSE m.platform_code END AS platform_code,
+	CASE WHEN m.geom IS NULL THEN ma.geom ELSE m.geom END AS platform_code,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_ts.abos_ts_timeseries_map
+  FROM abos_ts.abos_ts_timeseries_map m
+  FULL JOIN abos_currents.abos_currents_map ma ON m.platform_code = ma.platform_code
 
----- ABOS-Pulse
--- UNION ALL
---   SELECT 'ABOS' AS facility,
--- 	site_code AS subfacility,
--- 	platform_code AS platform_code,
--- 	geom AS geom,
--- 	'Point' AS gtype,
--- 	'#CC4712' AS colour
---   FROM abos_pulse.abos_pulse_map
-
----- ABOS-Currents
+---- ABOS SOFS AND SOTS
 UNION ALL
-  SELECT 'ABOS' AS facility,
-	'Currents' AS subfacility,
-	platform_code AS platform_code,
+  SELECT DISTINCT 'ABOS' AS facility,
+	'SOFS and SOTS' AS subfacility,
+	deployment_number AS platform_code,
 	geom AS geom,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_currents.abos_currents_map                         
+  FROM abos_sofs_fl.abos_sofs_surfaceflux_rt_map
+	WHERE deployment_number != ''                
 
 ---- ANMN-AM
 UNION ALL
-  SELECT 'ANMN' AS facility,
+  SELECT DISTINCT 'ANMN' AS facility,
 	'Acidification' AS subfacility,
 	platform_code AS platform_code,
 	geom AS geom,
@@ -287,7 +299,7 @@ UNION ALL
 
 ---- ANMN-AM
 UNION ALL
-  SELECT 'ANMN' AS facility,
+  SELECT DISTINCT 'ANMN' AS facility,
 	'Temperature and Salinity' AS subfacility,
 	platform_code AS platform_code,
 	geom AS geom,
@@ -339,6 +351,7 @@ UNION ALL
 	NULL AS subfacility,
 	'Rottnest Shelf' AS platform_code,
 	ST_SetSRID(ST_GeomFromText('POINT(115.75 -32.05)'),4326) AS geom,
+-- 	ST_SetSRID(ST_GeomFromText('POLYGON((113.95 -31.3, 115.46 -31.34, 115.58 -32.4, 114.08 -32.34, 113.95 -31.3))'),4326) AS geom,
 	'Point' AS gtype,
 	'#FF0000' AS colour
 UNION ALL
