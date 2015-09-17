@@ -1,11 +1,14 @@
-﻿SET search_path = reporting, public;
+﻿SET search_path = report_test, public;
 
-DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
-DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_embargo_totals_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_registered_totals_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_stats_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
+DROP TABLE IF EXISTS aatams_acoustic_species_totals_view CASCADE; -- Delete that row once script has run once on reporting schema
 DROP VIEW IF EXISTS aatams_acoustic_project_totals_view CASCADE;
-DROP VIEW IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
-DROP VIEW IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
-DROP VIEW IF EXISTS aatams_acoustic_species_totals_view CASCADE;
 DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_sattag_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
@@ -13,7 +16,8 @@ DROP TABLE IF EXISTS acorn_hourly_vectors_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_hourly_vectors_data_summary_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_data_summary_view CASCADE;
-DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
+DROP TABLE IF EXISTS anfog_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_acoustics_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS anmn_nrs_bgc_all_deployments_view CASCADE;
@@ -21,283 +25,495 @@ DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS argo_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS facility_summary_view CASCADE;
-DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
+DROP TABLE IF EXISTS faimms_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS totals_view CASCADE;
 
-
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
 -------------------------------
----- All deployments - Species 
--- CREATE TABLE aatams_acoustic_species_all_deployments_view AS
---   SELECT ar.id AS animal_release_id,
+-- aatams_acoustic_detections_data
+-- SELECT DISTINCT vd.id AS detection_id,
 -- 	p.name AS project_name,
--- 	s.phylum,
--- 	s.order_name,
--- 	s.common_name,
--- 	ar.release_locality,
+-- 	i.name AS installation_name,
+-- 	ist.name AS station_name,
+-- 	vd.receiver_name,
+-- 	rd.bottom_depthm AS bottom_depth,
+-- 	sp.common_name AS common_name,
+-- 	vd.transmitter_id AS transmitter_id,
+-- 	ar.releasedatetime_timestamp AT TIME ZONE 'UTC' AS release_date,
+-- 	ar.release_locality AS release_locality,
+-- 	vd.timestamp AT TIME ZONE 'UTC' AS detection_date,
+-- 	ST_X(ist.location) AS longitude,
+-- 	ST_Y(ist.location) AS latitude,
+-- 	sex.sex AS sex,
+-- 	sp.scientific_name AS scientific_name,
+-- 	ist.location AS geom,
+-- 	'TRUE' AS detected
+--   FROM valid_detection vd
+--   LEFT JOIN receiver_deployment rd ON vd.receiver_deployment_id = rd.id
+--   LEFT JOIN installation_station ist ON ist.id = rd.station_id
+--   LEFT JOIN installation i ON i.id = ist.installation_id
+--   LEFT JOIN project p ON p.id = i.project_id  
+--   LEFT JOIN sensor on vd.transmitter_id = sensor.transmitter_id
+--   LEFT JOIN device d on sensor.tag_id = d.id
+--   LEFT JOIN surgery s ON s.tag_id = d.id
+--   LEFT JOIN animal_release ar ON ar.id = s.release_id
+--   LEFT JOIN animal a ON a.id = ar.animal_id
+--   LEFT JOIN species sp ON sp.id = a.species_id 
+--   LEFT JOIN sex ON a.sex_id = sex.id
+-- 	WHERE date_part('day', ar.embargo_date - now()) < 0 AND p.is_protected = FALSE AND
+-- 	ar.releasedatetime_timestamp AT TIME ZONE 'UTC' < vd.timestamp AT TIME ZONE 'UTC' AND
+-- 	sp.common_name IS NOT NULL AND sp.scientific_name IS NOT NULL
+-- 	ORDER BY transmitter_id, detection_date;
+
+-- -- aatams_acoustic_detections_map
+-- WITH a AS (
+--   SELECT DISTINCT common_name
+--   FROM aatams_acoustic_detections_data),
+--   b AS (
+--   SELECT a.common_name,
+-- 	 COALESCE('#'||''||lpad(to_hex(trunc(random() * 16777215)::integer),6,'0')) AS colour
+--   FROM a),
+--   c AS (
+--   SELECT station_name, transmitter_id,
+-- 	 COUNT(DISTINCT detection_id) AS no_detections
+--   FROM aatams_acoustic_detections_data
+-- 	GROUP BY station_name, transmitter_id)
+--   SELECT project_name,
+-- 	installation_name,
+-- 	d.station_name,
+-- 	d.common_name,
+-- 	d.transmitter_id,
+-- 	release_locality,
+-- 	date(min(detection_date)) AS first_detection_date,
+-- 	date(max(detection_date)) AS last_detection_date,
+-- 	sex,
+-- 	scientific_name,
+-- 	replace(ST_AsEWKT(ST_SIMPLIFY(ST_MAKELINE(geom),0.01)), 'LINESTRING','MULTIPOINT')::geometry AS geom,
+-- 	b.colour AS colour,
+-- 	c.no_detections,
+-- 	bool_or(no_detections > 0) AS detected
+--   FROM aatams_acoustic_detections_data d
+--   LEFT JOIN b ON b.common_name = d.common_name
+--   LEFT JOIN c ON c.station_name = d.station_name AND c.transmitter_id = d.transmitter_id
+--   	GROUP BY project_name, installation_name, d.station_name, d.common_name, d.transmitter_id, release_locality, sex, scientific_name, colour, no_detections
+-- UNION ALL
+--   SELECT p.name AS project_name, 
+-- 	i.name AS installation_name, 
+-- 	ist.name AS station_name,
+-- 	NULL AS common_name,
+-- 	NULL AS transmitter_id,
+-- 	NULL AS release_locality,
+-- 	NULL AS first_detection_date,
+-- 	NULL AS last_detection_date,
+-- 	NULL AS sex,
+-- 	NULL AS scientific_name,
+-- 	ist.location AS geom,
+-- 	'#FF0000' AS colour,
+-- 	0 AS no_detections,
+-- 	'FALSE' AS detected
+--   FROM installation_station ist
+--   LEFT JOIN installation i ON i.id = ist.installation_id
+--   LEFT JOIN project p ON p.id = i.project_id 
+-- 	WHERE ist.name NOT IN (SELECT DISTINCT station_name FROM aatams_acoustic_detections_data)
+-- 	ORDER BY detected, common_name, transmitter_id, first_detection_date;
+
+-- -- installation_summary
+--   SELECT DISTINCT p.name AS project_name,
+-- 	i.name AS installation_name,
+-- 	ist.name AS station_name,
+-- 	ist.location AS geom
+--   FROM installation_station ist
+--   LEFT JOIN installation i ON i.id = ist.installation_id
+--   LEFT JOIN project p ON i.project_id = p.id
+-- 	ORDER BY i.name;
+
+-- -- All deployments - Species
+-- WITH a AS (SELECT DISTINCT transmitter_id FROM valid_detection
+--   UNION ALL 
+--   SELECT DISTINCT transmitter_id FROM sensor),
+--  sub AS (SELECT DISTINCT transmitter_id FROM a)
+--   SELECT DISTINCT sub.transmitter_id, 
+-- 	d.id AS tag_id,
+-- 	su.release_id,
+-- 	p.name AS project_name,
+-- 	sp.common_name,
+-- 	CASE WHEN d.id IS NULL THEN FALSE ELSE TRUE END AS registered,
+-- 	p.is_protected AS protected,
+-- 	CASE WHEN capture_location IS NULL AND release_location IS NULL THEN FALSE ELSE TRUE END AS releaselocation_info,
 -- 	date(ar.embargo_date) AS embargo_date,
 -- 	COUNT(vd.timestamp) AS no_detections,
 -- 	date(min(vd.timestamp)) AS first_detection,
 -- 	date(max(vd.timestamp)) AS last_detection,
 -- 	round((date_part('days', max(vd.timestamp) - min(vd.timestamp)) + date_part('hours', max(vd.timestamp) - min(vd.timestamp))/24)::numeric, 1) AS coverage_duration
---   FROM valid_detection vd
---   JOIN detection_surgery ds ON vd.id = ds.detection_id
---   JOIN surgery su ON ds.surgery_id = su.id
---   FULL JOIN animal_release ar ON su.release_id = ar.id
---   JOIN animal a ON ar.animal_id = a.id
---   JOIN species s ON a.species_id = s.id
---   JOIN project p ON p.id = ar.project_id
--- 	GROUP BY ar.id, p.name, s.phylum, s.order_name, s.common_name, ar.embargo_date
--- 	ORDER BY animal_release_id, phylum,order_name,common_name;
+--   FROM sub
+--   LEFT JOIN valid_detection vd ON sub.transmitter_id = vd.transmitter_id
+--   LEFT JOIN sensor s ON s.transmitter_id = sub.transmitter_id
+--   LEFT JOIN surgery su ON s.tag_id = su.tag_id
+--   LEFT JOIN device d ON d.id = s.tag_id OR d.id = su.tag_id
+--   LEFT JOIN animal_release ar ON ar.id = su.release_id
+--   LEFT JOIN project p ON p.id = ar.project_id
+--   LEFT JOIN animal a ON a.id = ar.animal_id
+--   LEFT JOIN species sp ON sp.id = a.species_id
+-- 	WHERE sub.transmitter_id != ''
+-- 	GROUP BY sub.transmitter_id, p.name, d.id, su.release_id, ar.animal_id, sp.common_name, p.is_protected, capturedatetime_timestamp, releasedatetime_timestamp, capture_location, release_location, ar.embargo_date
+-- 	ORDER BY registered, transmitter_id, common_name, tag_id, release_id;
 
----- Data summary - Species 
--- CREATE TABLE aatams_acoustic_species_data_summary_view AS
--- WITH a AS (
---   SELECT common_name,
--- 	COUNT(DISTINCT transmitter_id) AS no_individuals_public,
--- 	SUM(no_detections) AS no_detections_public
---   FROM aatams_acoustic_detections_map
---   WHERE common_name IS NOT NULL
--- 	GROUP BY common_name)
---   SELECT v.phylum,
--- 	v.order_name,
--- 	v.common_name,
--- 	COUNT(DISTINCT v.project_name) AS no_projects,
--- 	COUNT(DISTINCT v.release_locality) AS no_localities,
--- 	COUNT(v.animal_release_id) AS no_releases,
--- 	SUM (CASE WHEN v.embargo_date > now() THEN 1 ELSE 0 END) AS no_embargo,
--- 	SUM (CASE WHEN v.no_detections = 0 THEN 0 ELSE 1 END) AS no_releases_with_detections,
--- 	CASE WHEN no_individuals_public IS NULL THEN 0 ELSE no_individuals_public END AS no_public_releases_with_detections,
--- 	max(v.embargo_date) AS latest_embargo_date,
--- 	SUM(v.no_detections) AS total_no_detections,
--- 	CASE WHEN no_detections_public IS NULL THEN 0 ELSE no_detections_public END AS no_detections_public,
+-- -- Update aatams_acoustic_species_all_deployments_view table to flag sentinel tags
+-- UPDATE aatams_acoustic_species_all_deployments_view
+-- SET common_name = 'All sentinel tags'
+-- WHERE transmitter_id IN ('A69-1303-54479','A69-1303-54488','A69-1303-54490','A69-1303-54480','A69-1303-54486','A69-1303-54489',
+-- 'A69-1303-54483','A69-1303-54481','A69-1303-54482','A69-1303-54485','A69-1303-54487','A69-1601-31224','A69-1303-60940');
+
+-- -- Data summary - Species 
+--   SELECT CASE WHEN registered = FALSE THEN 'Unregistered tags' ELSE 'Registered tags' END AS registered,
+-- 	CASE WHEN common_name IS NULL AND registered = FALSE THEN 'All unregistered tags' 
+-- 		WHEN common_name IS NULL AND registered = TRUE THEN 'All registered tags with no species info'
+-- 		ELSE common_name END AS common_name,
+-- 	COUNT(transmitter_id) AS no_transmitters,
+-- 	COUNT(release_id) AS no_releases,
+-- 	SUM(CASE WHEN releaselocation_info = FALSE THEN 0 ELSE 1 END) AS no_releases_with_location,
+-- 	SUM(CASE WHEN v.embargo_date > now() THEN 1 ELSE 0 END) AS no_embargo,
+-- 	SUM(CASE WHEN v.is_protected = FALSE OR v.is_protected IS NULL THEN 0 ELSE 1 END) AS no_protected,
+-- 	CASE WHEN SUM(CASE WHEN v.embargo_date > now() THEN 1 ELSE 0 END) = 0 THEN NULL ELSE max(v.embargo_date) END AS latest_embargo_date,
+-- 	SUM(no_detections) AS total_no_detections,
+-- 	SUM(CASE WHEN v.embargo_date < now() OR v.embargo_date IS NULL THEN no_detections ELSE 0 END) AS no_detections_public,
 -- 	min(v.first_detection) AS earliest_detection,
 -- 	max(v.last_detection) AS latest_detection,
--- 	round(avg(v.coverage_duration)::numeric, 1) AS mean_coverage_duration
+-- 	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days
 --   FROM aatams_acoustic_species_all_deployments_view v
---   FULL JOIN a ON v.common_name = a.common_name
--- 	GROUP BY v.phylum, v.order_name, v.common_name, no_individuals_public, no_detections_public
--- 	ORDER BY phylum, order_name, common_name;
+-- 	GROUP BY v.common_name, registered
+-- 	ORDER BY registered, common_name;
 
----- Totals - Species
--- CREATE TABLE aatams_acoustic_species_totals_view AS
+-- -- Totals - Embargo
 -- WITH total_species AS (
 --   SELECT COUNT(*) AS t,
 -- 	'total no tagged species' AS statistics_type
---   FROM aatams_acoustic_species_data_summary_view),
+--   FROM aatams_acoustic_species_data_summary_view
+--   WHERE common_name NOT LIKE 'All %'),
+  
 -- total_species_public AS(
 --   SELECT COUNT(*) AS t, 
 -- 	'no tagged species for which all animals are public' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view
---     WHERE no_embargo = 0),
+--     WHERE no_embargo = 0 AND common_name NOT LIKE 'All %'),
+    
 -- total_species_embargo AS (
 --   SELECT COUNT(*) AS t,
 -- 	'no tagged species for which some animals are currently under embargo' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view
---   WHERE no_embargo != 0),
--- total_species_detections AS (
---     SELECT COUNT(*) AS t,
--- 	'no tagged species with detections' AS statistics_type
---   FROM aatams_acoustic_species_data_summary_view
---   WHERE total_no_detections != 0),
--- total_species_public_detections AS (
---     SELECT COUNT(*) AS t,
--- 	'no tagged species with public detections' AS statistics_type
---   FROM aatams_acoustic_species_data_summary_view
---   WHERE no_detections_public != 0),
--- total_species_embargo_detections AS (
---     SELECT COUNT(*) AS t,
--- 	'no tagged species with embargoed detections' AS statistics_type
---   FROM aatams_acoustic_species_data_summary_view
---   WHERE no_detections_public = 0 AND total_no_detections != 0),
+--   WHERE no_embargo != 0 AND common_name NOT LIKE 'All %'),
+-- -- ANIMAL RELEASES  
 -- total_animals AS (
 --   SELECT SUM (no_releases) AS t,
 -- 	'total no tagged animals' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
+  
 -- total_animals_public AS (
 --   SELECT SUM (no_releases) - SUM(no_embargo) AS t, 
 -- 	'no tagged animals that are public' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
+
 -- total_animals_embargo AS (
 --   SELECT SUM(no_embargo) AS t, 
 -- 	'no tagged animals currently under embargo' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
--- total_animals_detections AS (
---     SELECT SUM (no_releases_with_detections) AS t,
--- 	'no tagged animals with detections' AS statistics_type
+-- -- TAGS
+-- total_tags AS (
+--   SELECT SUM(no_transmitters) AS t,
+-- 	'total no tags' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
--- total_animals_public_detections AS (
---     SELECT SUM (no_public_releases_with_detections) AS t,
--- 	'no tagged animals with public detections' AS statistics_type
+
+-- total_tags_public AS (
+--   SELECT SUM(no_transmitters) - SUM(no_embargo) AS t,
+-- 	'no tags that are public' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
--- total_animals_embargo_detections AS (
---     SELECT SUM(no_releases_with_detections) - SUM(no_public_releases_with_detections) AS t,
--- 	'no tagged animals with embargoed detections' AS statistics_type
+
+-- total_tags_embargo AS (
+--   SELECT SUM(no_embargo) AS t, 
+-- 	'no tags currently under embargo' AS statistics_type
 --   FROM aatams_acoustic_species_data_summary_view),
+-- -- DETECTIONS
 -- total_detections AS (
 --   SELECT SUM (total_no_detections) AS t,
 -- 	'no detections' AS statistics_type
--- 	FROM aatams_acoustic_species_data_summary_view),
+--   FROM aatams_acoustic_species_data_summary_view),
+	
 -- total_detections_public AS (
 --   SELECT SUM (no_detections_public) AS t,
 -- 	'no detections that are public' AS statistics_type
--- 	FROM aatams_acoustic_species_data_summary_view),
+--   FROM aatams_acoustic_species_data_summary_view),
+	
 -- total_detections_embargo AS (
 --   SELECT SUM (total_no_detections) - SUM (no_detections_public) AS t,
 -- 	'no detections that are currently under embargo' AS statistics_type
--- 	FROM aatams_acoustic_species_data_summary_view),
--- tag_ids AS (
---   SELECT COUNT(DISTINCT transmitter_id) AS t,
--- 	'no unique tag ids detected' AS statistics_type
---   FROM valid_detection),
--- tag_aatams_knows AS (
---   SELECT COUNT(*) AS t,
--- 	'tag aatams knows about' AS statistics_type
---   FROM device 
--- 	WHERE class = 'au.org.emii.aatams.Tag'),
--- detected_tags_aatams_knows AS (
---   SELECT COUNT(DISTINCT sensor.transmitter_id) AS t,
--- 	'no detected tags aatams knows about' AS statistics_type
---   FROM valid_detection 
---   JOIN sensor ON valid_detection.transmitter_id = sensor.transmitter_id),
--- tags_by_species AS (
---   SELECT COUNT(DISTINCT tag_id) AS t,
--- 	'tags detected by species' AS statistics_type
---   FROM valid_detection 
---   JOIN detection_surgery ON valid_detection.id = detection_surgery.detection_id 
---   JOIN surgery ON detection_surgery.surgery_id = surgery.id),
+--   FROM aatams_acoustic_species_data_summary_view),
+-- -- EMBARGO
 -- embargo_1 AS (
---   SELECT COUNT(*) AS t, 
--- 	'Total number of tags embargoed for less than or equal to a year' AS statistics_type
---   FROM animal_release ar
---   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 1 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- 	  SELECT COUNT(DISTINCT common_name) AS s,
+-- 		COUNT(DISTINCT release_id) AS r,
+-- 		COUNT(*) AS t,
+-- 		SUM(no_detections) AS d,
+-- 		'Number of tags - detections currently embargoed for less than 1 year' AS statistics_type
+-- 	  FROM aatams_acoustic_species_all_deployments_view
+-- 		WHERE date_part('days', embargo_date - now()) > 0 AND date_part('days', embargo_date - now()) <= 365.25 AND 
+-- 		date_part('days', embargo_date - now()) IS NOT NULL),
+		
 -- embargo_2 AS (
---   SELECT COUNT(*) AS t, 
--- 	'Total number of tags embargoed for more than a year, but less than or equal to 2 years' AS statistics_type
---   FROM animal_release ar
---   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 1 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 2
---   AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- 	  SELECT COUNT(DISTINCT common_name) AS s,
+-- 		COUNT(DISTINCT release_id) AS r,
+-- 		COUNT(*) AS t,
+-- 		SUM(no_detections) AS d,
+-- 		'Number of tags - detections currently embargoed for more than 1 year, but less than 2' AS statistics_type
+-- 	  FROM aatams_acoustic_species_all_deployments_view
+-- 		WHERE date_part('days', embargo_date - now()) > 365.25 AND date_part('days', embargo_date - now()) <= (2 * 365.25) AND 
+-- 		date_part('days', embargo_date - now()) IS NOT NULL),
+		
 -- embargo_3 AS (
---   SELECT COUNT(*) AS t,
--- 	'Total number of tags embargoed for more than two years, but less than or equal to 3 years' AS statistics_type
---   FROM animal_release ar
---   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 2 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) <= 3
---   AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL),
+-- 	  SELECT COUNT(DISTINCT common_name) AS s,
+-- 		COUNT(DISTINCT release_id) AS r,
+-- 		COUNT(*) AS t,
+-- 		SUM(no_detections) AS d,
+-- 		'Number of tags - detections currently embargoed for more than 2 years, but less than 3' AS statistics_type
+-- 	  FROM aatams_acoustic_species_all_deployments_view
+-- 		WHERE date_part('days', embargo_date - now()) > (2 * 365.25) AND date_part('days', embargo_date - now()) <= (3 * 365.25) AND 
+-- 		date_part('days', embargo_date - now()) IS NOT NULL),
+		
 -- embargo_3_more AS (
---   SELECT COUNT(*) AS t,
--- 	'Total number of tags embargoed for more than three years' AS statistics_type
---   FROM animal_release ar
---   WHERE ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) > 3 AND ROUND((EXTRACT (day FROM embargo_date - releasedatetime_timestamp)/365.25)::numeric,1) IS NOT NULL)
+-- 	  SELECT COUNT(DISTINCT common_name) AS s,
+-- 		COUNT(DISTINCT release_id) AS r,
+-- 		COUNT(*) AS t,
+-- 		SUM(no_detections) AS d,
+-- 		'Number of tags - detections currently embargoed for more than three years' AS statistics_type
+-- 	  FROM aatams_acoustic_species_all_deployments_view
+-- 		WHERE date_part('days', embargo_date - now()) > (3 * 365.25) AND date_part('days', embargo_date - now()) IS NOT NULL)
 --   SELECT 'Species' AS type, 
 -- 	s.t AS total, 
 -- 	sp.t AS total_public,
--- 	se.t AS total_embargo, 
--- 	sd.t AS detections_total, 
--- 	spd.t AS detections_public, 
--- 	sed.t AS detections_embargo,
--- 	NULL::bigint AS other_1,
--- 	NULL::bigint AS other_2
---   FROM total_species s, total_species_public sp,total_species_embargo se, total_species_detections sd, total_species_public_detections spd,total_species_embargo_detections sed
+-- 	se.t AS total_embargo,
+-- 	e1.s AS embargo_1,
+-- 	e2.s AS embargo_2,
+-- 	e3.s AS embargo_3,
+-- 	e3m.s AS embargo_3_more
+--   FROM total_species s, total_species_public sp,total_species_embargo se,embargo_1 e1,embargo_2 e2, embargo_3 e3, embargo_3_more e3m
 -- UNION ALL
 --   SELECT 'Animals' AS type, 
 -- 	a.t AS total, 
 -- 	ap.t AS total_public,
--- 	ae.t AS total_embargo, 
--- 	ad.t AS detections_total, 
--- 	apd.t AS detections_public, 
--- 	aed.t AS detections_embargo,
--- 	NULL AS other_1,
--- 	NULL AS other_2
---   FROM total_animals a, total_animals_public ap,total_animals_embargo ae, total_animals_detections ad, total_animals_public_detections apd,total_animals_embargo_detections aed
+-- 	ae.t AS total_embargo,
+-- 	e1.r AS embargo_1,
+-- 	e2.r AS embargo_2,
+-- 	e3.r AS embargo_3,
+-- 	e3m.r AS embargo_3_more
+--   FROM total_animals a, total_animals_public ap,total_animals_embargo ae,embargo_1 e1,embargo_2 e2, embargo_3 e3, embargo_3_more e3m
+-- UNION ALL
+--   SELECT 'Tags' AS type, 
+-- 	tr.t AS total, 
+-- 	trp.t AS total_public,
+-- 	tre.t AS total_embargo,
+-- 	e1.t AS embargo_1,
+-- 	e2.t AS embargo_2,
+-- 	e3.t AS embargo_3,
+-- 	e3m.t AS embargo_3_more
+--   FROM total_tags tr, total_tags_public trp,total_tags_embargo tre,embargo_1 e1,embargo_2 e2, embargo_3 e3, embargo_3_more e3m
 -- UNION ALL
 --   SELECT 'Detections' AS type, 
--- 	NULL AS total, 
--- 	NULL AS total_public,
--- 	NULL AS total_embargo, 
--- 	d.t AS detections_total, 
--- 	dp.t AS detections_public, 
--- 	de.t AS detections_embargo,
--- 	NULL AS other_1,
--- 	NULL AS other_2
---   FROM total_detections d, total_detections_public dp, total_detections_embargo de	
--- UNION ALL
---   SELECT 'Other stats' AS type,
--- 	ti.t AS total, 
--- 	ta.t AS total_public,
--- 	dta.t AS total_embargo, 
--- 	ts.t AS detections_total, 
--- 	e1.t AS detections_public, 
--- 	e2.t AS detections_embargo,
--- 	e3.t AS other_1,
--- 	e3m.t AS other_2
---   FROM tag_ids ti, tag_aatams_knows ta, detected_tags_aatams_knows dta, tags_by_species ts, embargo_1 e1, embargo_2 e2, embargo_3 e3, embargo_3_more e3m;
+-- 	d.t AS total, 
+-- 	dp.t AS total_public,
+-- 	de.t AS total_embargo,
+-- 	e1.d AS embargo_1,
+-- 	e2.d AS embargo_2,
+-- 	e3.d AS embargo_3,
+-- 	e3m.d AS embargo_3_more
+--   FROM total_detections d, total_detections_public dp, total_detections_embargo de,embargo_1 e1,embargo_2 e2, embargo_3 e3, embargo_3_more e3m;
 
----- All deployments - Project 
--- CREATE TABLE aatams_acoustic_project_all_deployments_view AS
+-- -- Totals - Registered vs. Unregistered
+-- WITH zero AS (
+--   SELECT CASE WHEN registered = FALSE THEN 'Unregistered tags' ELSE 'Registered tags' END AS registered, COUNT(transmitter_id) AS no_transmitters, SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_species_all_deployments_view
+--   WHERE no_detections = 0
+-- 	GROUP BY registered),
+-- one AS (
+--   SELECT CASE WHEN registered = FALSE THEN 'Unregistered tags' ELSE 'Registered tags' END AS registered, COUNT(transmitter_id) AS no_transmitters, SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_species_all_deployments_view
+--   WHERE no_detections = 1
+-- 	GROUP BY registered),
+-- morethanone AS (
+--   SELECT CASE WHEN registered = FALSE THEN 'Unregistered tags' ELSE 'Registered tags' END AS registered, COUNT(transmitter_id) AS no_transmitters, SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_species_all_deployments_view
+--   WHERE no_detections > 1
+-- 	GROUP BY registered),
+-- subtotal AS (
+--   SELECT CASE WHEN registered = FALSE THEN 'Unregistered tags' ELSE 'Registered tags' END AS registered, COUNT(transmitter_id) AS no_transmitters, SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_species_all_deployments_view
+-- 	GROUP BY registered),
+-- total AS (
+--   SELECT COUNT(transmitter_id) AS no_transmitters, SUM(no_detections) AS no_detections
+--   FROM aatams_acoustic_species_all_deployments_view)
+--   SELECT registered, '0' AS no_times_detected, no_transmitters, no_detections FROM zero
+-- UNION ALL
+--   SELECT registered, '1' AS no_times_detected, no_transmitters, no_detections FROM one WHERE registered = 'Registered tags'
+-- UNION ALL
+--   SELECT registered, '> 1' AS no_times_detected, no_transmitters, no_detections FROM morethanone WHERE registered = 'Registered tags'
+-- UNION ALL
+--   SELECT registered, 'Subtotal' AS no_times_detected, no_transmitters, no_detections FROM subtotal WHERE registered = 'Registered tags'
+-- UNION ALL
+--   SELECT registered, '1' AS no_times_detected, no_transmitters, no_detections FROM one WHERE registered = 'Unregistered tags'
+-- UNION ALL
+--   SELECT registered, '> 1' AS no_times_detected, no_transmitters, no_detections FROM morethanone WHERE registered = 'Unregistered tags'
+-- UNION ALL
+--   SELECT registered, 'Subtotal' AS no_times_detected, no_transmitters, no_detections FROM subtotal WHERE registered = 'Unregistered tags'
+-- UNION ALL
+--   SELECT NULL AS registered, 'Total' AS no_times_detected, no_transmitters, no_detections FROM total;
+
+-- -- Totals - Other stats
+-- WITH total_detections_registered_public AS (
+-- 	  SELECT SUM (no_detections_public) AS t,
+-- 		'no detections for registered tags that are public' AS statistics_type
+-- 	  FROM aatams_acoustic_species_data_summary_view
+-- 		WHERE registered = 'Registered tags'),
+		
+-- total_detections_species AS (
+-- 	  SELECT SUM (total_no_detections) AS t,
+-- 		'no detections at species level' AS statistics_type
+-- 	  FROM aatams_acoustic_species_data_summary_view
+-- 		WHERE common_name NOT LIKE 'All %'),
+
+-- total_detections_species_public AS (
+-- 	  SELECT SUM (no_detections_public) AS t,
+-- 		'no public detections at species level' AS statistics_type
+-- 	  FROM aatams_acoustic_species_data_summary_view
+-- 		WHERE common_name NOT LIKE 'All %'),
+-- -- OTHER TOTALS
+-- tag_ids AS (
+-- 	  SELECT COUNT(DISTINCT transmitter_id) AS t,
+-- 		'no unique tag ids detected' AS statistics_type
+-- 	  FROM valid_detection),
+
+-- tag_aatams_knows AS (
+-- 	  SELECT COUNT(*) AS t,
+-- 		'no unique registered tag ids' AS statistics_type
+-- 	  FROM device 
+-- 		WHERE class = 'au.org.emii.aatams.Tag'),
+-- detected_tags_aatams_knows AS (
+-- 	  SELECT COUNT(DISTINCT sensor.transmitter_id) AS t,
+-- 		'no unique tag ids detected that aatams knows about' AS statistics_type
+-- 	  FROM valid_detection 
+-- 	  JOIN sensor ON valid_detection.transmitter_id = sensor.transmitter_id),
+	  
+-- tags_by_species AS (
+-- 	  SELECT COUNT(DISTINCT s.tag_id) AS t,
+-- 		'tags detected by species' AS statistics_type
+-- 	  FROM valid_detection vd
+-- 	  LEFT JOIN sensor on vd.transmitter_id = sensor.transmitter_id
+-- 	  LEFT JOIN device d on sensor.tag_id = d.id
+-- 	  JOIN surgery s ON s.tag_id = d.id)
+--   SELECT 'Species' AS type, t, statistics_type::text FROM total_detections_registered_public
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM total_detections_species
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM total_detections_species_public
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM tag_ids
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM tag_aatams_knows
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM detected_tags_aatams_knows
+-- UNION ALL
+--   SELECT 'Species' AS type, t, statistics_type::text FROM tags_by_species;
+
+-- -- All deployments - Project
+-- WITH vd AS (
+--   SELECT DISTINCT p.id AS project_id,
+-- 	p.name AS project_name,
+-- 	i.name AS installation_name,
+-- 	ist.name AS station_name,
+-- 	vd.transmitter_id, 
+-- 	CASE WHEN vd.receiver_deployment_id IS NULL THEN rd.id ELSE vd.receiver_deployment_id END AS receiver_deployment_id, 
+-- 	registered, 
+-- 	COUNT(timestamp) AS no_detections,
+-- 	min(timestamp) AS start_date,
+-- 	max(timestamp) AS end_date,
+-- 	round((date_part('days', max(timestamp) - min(timestamp)) + date_part('hours', max(timestamp) - min(timestamp))/24)::numeric/365.25, 1) AS coverage_duration
+--   FROM valid_detection vd
+--   LEFT JOIN aatams_acoustic_species_all_deployments_view a ON a.transmitter_id = vd.transmitter_id
+--   FULL JOIN receiver_deployment rd ON rd.id = vd.receiver_deployment_id
+--   FULL JOIN installation_station ist ON ist.id = rd.station_id
+--   FULL JOIN installation i ON i.id = ist.installation_id
+--   FULL JOIN project p ON p.id = i.project_id
+-- 	GROUP BY vd.transmitter_id, vd.receiver_deployment_id, registered,rd.id,p.id, p.name,i.name,ist.name)
 --   SELECT CASE WHEN substring(p.name,'AATAMS')='AATAMS' THEN 'IMOS funded and co-invested' 
 -- 	      WHEN p.name = 'Coral Sea  Nautilus tracking project' 
--- 	      OR p.name = 'Seven Gill Tracking in Coastal Tasmania' 
--- 	      OR substring(p.name,'Yongala')='Yongala' 
--- 	      OR p.name = 'Rowley Shoald reef shark tracking 2007' 
+-- 	      OR p.name = 'Seven Gill tracking in Coastal Tasmania' 
+-- 	      OR substring(p.name,'Yongala')='Yongala'
+-- 	      OR p.name = 'Rowley Shoals reef shark tracking 2007' 
 -- 	      OR p.name = 'Wenlock River Array, Gulf of Carpentaria' THEN 'IMOS Receiver Pool' 
 -- 	      ELSE 'Fully Co-Invested' END AS funding_type,
 -- 	p.id AS project_id,
 -- 	p.name AS project_name,
 -- 	i.name AS installation_name,
 -- 	ist.name AS station_name,
--- 	COUNT(DISTINCT rd.id) AS no_deployments,
--- 	COUNT(vd.timestamp) AS no_detections,
+-- 	COUNT(DISTINCT receiver_deployment_id) AS no_deployments,
+-- 	CASE WHEN SUM(no_detections) IS NULL THEN 0 ELSE SUM(no_detections) END AS no_detections,
 -- 	min(rd.deploymentdatetime_timestamp) AS first_deployment_date,
 -- 	max(rd.deploymentdatetime_timestamp) AS last_deployment_date,
--- 	min(vd.timestamp) AS start_date,
--- 	max(vd.timestamp) AS end_date,
--- 	round((date_part('days', max(vd.timestamp) - min(vd.timestamp)) + date_part('hours', max(vd.timestamp) - min(vd.timestamp))/24)::numeric, 1)
+-- 	min(vd.start_date) AS start_date,
+-- 	max(vd.end_date) AS end_date,
+-- 	round((date_part('days', max(vd.end_date) - min(vd.start_date)) + date_part('hours', max(vd.end_date) - min(vd.start_date))/24)::numeric/365.25, 1) AS coverage_duration,
 -- 	ROUND(st_y(ist.location)::numeric,1) AS station_lat,
 -- 	ROUND(st_x(ist.location)::numeric,1) AS station_lon,
 -- 	ROUND(min(rd.depth_below_surfacem::integer),1) AS min_depth,
--- 	ROUND(max(rd.depth_below_surfacem::integer),1) AS max_depth
+-- 	ROUND(max(rd.depth_below_surfacem::integer),1) AS max_depth,
+-- 	p.is_protected,
+-- 	COUNT(DISTINCT CASE WHEN registered = FALSE THEN transmitter_id ELSE NULL END) AS no_unreg_transmitters,
+-- 	SUM(CASE WHEN registered = FALSE THEN no_detections ELSE 0 END) AS no_unreg_detections,
+-- 	COUNT(DISTINCT transmitter_id) AS no_transmitters
 --   FROM project p
 --   FULL JOIN installation i ON i.project_id = p.id
 --   FULL JOIN installation_station ist ON ist.installation_id = i.id
 --   FULL JOIN receiver_deployment rd ON rd.station_id = ist.id
---   FULL JOIN valid_detection vd ON vd.receiver_deployment_id = rd.id
--- 	WHERE p.name = 'AATAMS Sydney Gate' OR p.name = 'AATAMS Narooma line' OR p.name = 'AATAMS Port Stephens' OR p.name = 'New Zealand white shark tracking' 
--- 	GROUP BY p.id, p.name,i.name,ist.name,ist.location
+--   FULL JOIN vd ON vd.receiver_deployment_id = rd.id
+-- 	WHERE p.id IS NOT NULL
+-- 	GROUP BY p.id, p.name,i.name,ist.name,p.is_protected,ist.location
 -- 	ORDER BY project_name,installation_name,station_name;
 
----- Data summary - Project 
--- CREATE TABLE aatams_acoustic_project_data_summary_view AS
--- WITH a AS (SELECT project_id, COUNT(DISTINCT ar.id) AS no_releases FROM dw_aatams_acoustic.animal_release ar GROUP BY project_id)
+-- -- Data summary - Project 
+-- WITH a AS (SELECT project_id, COUNT(DISTINCT ar.id) AS no_releases FROM animal_release ar GROUP BY project_id)
 --   SELECT funding_type,
 -- 	project_name,
 -- 	COUNT (DISTINCT(installation_name))::numeric AS no_installations,
 -- 	COUNT (DISTINCT(station_name))::numeric AS no_stations,
 -- 	SUM(no_deployments)::numeric AS no_deployments,
--- 	ROUND(AVG(a.no_releases),0) AS no_releases,
+-- 	CASE WHEN a.no_releases IS NULL THEN 0 ELSE a.no_releases END AS no_releases,
 -- 	SUM(no_detections) AS no_detections,
 -- 	min(first_deployment_date) AS earliest_deployment_date,
 -- 	max(last_deployment_date) AS latest_deployment_date,
 -- 	min(start_date) AS start_date,
 -- 	max(end_date) AS end_date,
--- 	round((date_part('days', max(end_date) - min(start_date)) + date_part('hours', max(end_date) - min(start_date))/24)::numeric, 1) AS coverage_duration,
+-- 	round((date_part('days', max(end_date) - min(start_date)) + date_part('hours', max(end_date) - min(start_date))/24)::numeric/365.25, 1) AS coverage_duration,
 -- 	min(station_lat) AS min_lat,
 -- 	max(station_lat) AS max_lat,
 -- 	min(station_lon) AS min_lon,
 -- 	max(station_lon) AS max_lon,
 -- 	min(min_depth) AS min_depth,
--- 	max(max_depth) AS max_depth
---   FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view v
+-- 	max(max_depth) AS max_depth,
+-- 	is_protected,
+-- 	SUM(no_transmitters) AS no_transmitters,
+-- 	SUM(no_unreg_transmitters) AS no_unreg_transmitters,
+-- 	CASE WHEN SUM(no_transmitters) = 0 THEN NULL ELSE ROUND(SUM(no_unreg_transmitters)/SUM(no_transmitters) * 100, 1) END AS prop_unreg_transmitters,
+-- 	SUM(no_unreg_detections) AS no_unreg_detections,
+-- 	CASE WHEN SUM(no_transmitters) = 0 THEN NULL ELSE ROUND(SUM(no_unreg_detections)/SUM(no_detections) * 100, 1) END AS prop_unreg_detections
+--   FROM aatams_acoustic_project_all_deployments_view v
 --   LEFT JOIN a ON a.project_id = v.project_id
--- 	GROUP BY funding_type,project_name
+-- 	GROUP BY funding_type,project_name, is_protected, a.no_releases
 -- 	ORDER BY funding_type DESC,project_name;
 	
----- Totals - Project
--- CREATE TABLE aatams_acoustic_project_totals_view AS
---   SELECT funding_type,
+-- -- Totals - Project
+-- SELECT funding_type,
 -- 	COUNT(DISTINCT(project_name)) AS no_projects,
 -- 	SUM(no_installations) AS no_installations,
 -- 	SUM(no_stations) AS no_stations,
@@ -317,21 +533,53 @@ DROP TABLE IF EXISTS totals_view CASCADE;
 --   FROM aatams_acoustic_project_data_summary_view
 -- 	ORDER BY funding_type ASC;
 
+-- -- Other totals
+-- INSERT INTO aatams_acoustic_stats_view 
+--   SELECT 'Project' AS type,
+-- 	COUNT(*) AS t, 
+-- 	'Number of projects with no installation or release' AS statistics_type 
+--   FROM aatams_acoustic_project_data_summary_view v 
+-- 	WHERE no_installations = 0 AND no_releases = 0
+-- UNION ALL
+--   SELECT 'Project' AS type,
+-- 	COUNT(*) AS t, 
+-- 	'Number of projects with installations but no detection' AS statistics_type 
+--   FROM aatams_acoustic_project_data_summary_view v 
+-- 	WHERE no_installations != 0 AND no_detections = 0
+-- UNION ALL
+--   SELECT 'Project' AS type,
+-- 	COUNT(*) AS t, 
+-- 	'Number of protected projects' AS statistics_type 
+--   FROM aatams_acoustic_project_data_summary_view v 
+-- 	WHERE is_protected = TRUE
+-- UNION ALL
+--   SELECT 'Project' AS type,
+-- 	COUNT(*) AS t, 
+-- 	'Number of projects with receiver deployments during the past year' AS statistics_type 
+--   FROM aatams_acoustic_project_data_summary_view v 
+-- 	WHERE date_part('days',now() - latest_deployment_date) < 365.25;
+
 -- Create all views in reporting schema
 CREATE OR REPLACE VIEW aatams_acoustic_species_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;
 CREATE OR REPLACE VIEW aatams_acoustic_species_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_data_summary_view;
-CREATE OR REPLACE VIEW aatams_acoustic_species_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_totals_view;
+CREATE OR REPLACE VIEW aatams_acoustic_embargo_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_embargo_totals_view;
+CREATE OR REPLACE VIEW aatams_acoustic_registered_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_registered_totals_view;
+CREATE OR REPLACE VIEW aatams_acoustic_stats_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_stats_view;
 CREATE OR REPLACE VIEW aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
 CREATE OR REPLACE VIEW aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
 CREATE OR REPLACE VIEW aatams_acoustic_project_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view;
 
 grant all on table aatams_acoustic_species_all_deployments_view to public;
 grant all on table aatams_acoustic_species_data_summary_view to public;
+grant all on table aatams_acoustic_embargo_totals_view to public;
+grant all on table aatams_acoustic_registered_totals_view to public;
+grant all on table aatams_acoustic_stats_view to public;
 grant all on table aatams_acoustic_project_all_deployments_view to public;
 grant all on table aatams_acoustic_project_data_summary_view to public;
+grant all on table aatams_acoustic_project_totals_view to public;
 
 -------------------------------
--- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the aatams_sattag manual tables in the report schema.
+-- VIEWS FOR AATAMS_SATTAG_NRT and AATAMS_SATTAG_DM; Can delete the report.aatams_sattag tables.
 -------------------------------
 -- All deployments view
  CREATE or replace VIEW aatams_sattag_all_deployments_view AS
@@ -395,12 +643,13 @@ CREATE OR REPLACE VIEW aatams_sattag_data_summary_view AS
 	v.species_name, 
 	v.sattag_program, 
 	v.state_country AS release_site,
-	count(DISTINCT v.tag_code) AS no_tags, 
+	count(DISTINCT v.tag_code) AS no_animals, 
 	sum(v.nb_profiles) AS total_nb_profiles,
 	sum(v.nb_measurements) AS total_nb_measurements,
 	min(v.coverage_start) AS coverage_start, 
 	max(v.coverage_end) AS coverage_end, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	v.tag_type,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
@@ -422,7 +671,7 @@ grant all on table aatams_sattag_data_summary_view to public;
 CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS 
   SELECT 'Emperor Penguin Fledglings' AS tagged_animals,
 	pttid AS animal_id,
-	no_observations AS nb_measurements,
+	no_observations AS nb_locations,
 	observation_start_date AS start_date,
 	observation_end_date AS end_date,
 	round(date_part('days', observation_end_date - observation_start_date)::numeric + (date_part('hours', observation_end_date - observation_start_date)::numeric)/24, 1) AS coverage_duration,
@@ -438,7 +687,7 @@ UNION ALL
 
   SELECT 'Short-tailed shearwaters' AS tagged_animals, 
 	animal_id,
-	no_observations AS nb_measurements,
+	no_observations AS nb_locations,
 	start_date,
 	end_date,
 	round(date_part('days', end_date - start_date)::numeric + (date_part('hours', end_date - start_date)::numeric)/24, 1) AS coverage_duration,
@@ -457,9 +706,10 @@ grant all on table aatams_biologging_all_deployments_view to public;
 CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
   SELECT tagged_animals,
 	COUNT(DISTINCT(animal_id)) AS nb_animals,
-	SUM(nb_measurements) AS total_nb_measurements,
+	SUM(nb_locations) AS total_nb_locations,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY') || ' - ' || to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	round(AVG(coverage_duration),1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	COALESCE(round(min(min_lat)::numeric, 1) || '/' || round(max(max_lat)::numeric, 1)) AS lat_range,
 	COALESCE(round(min(min_lon)::numeric, 1) || '/' || round(max(max_lon)::numeric, 1)) AS lon_range,
 	min(start_date) AS earliest_date,
@@ -475,7 +725,7 @@ CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
 grant all on table aatams_biologging_data_summary_view to public;
 
 -------------------------------
--- VIEWS FOR ABOS; Uses what's in the dw_abos schema.
+-- VIEWS FOR ABOS;
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW abos_all_deployments_view AS
@@ -490,7 +740,12 @@ CREATE or replace VIEW abos_all_deployments_view AS
     (substring(url, 'FV0([12]+)'))::integer AS file_version,
     CASE WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Pulse' 
 	OR substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'SAZ' THEN 'Biogeochemistry'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD_timeseries'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD timeseries'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_currents' THEN 'Sub-surface currents'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_temperature_pressure_conductivity' THEN 'Sub-surface CTD'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_fluxes' THEN 'Surface fluxes'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_properties' THEN 'Surface properties'
+	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_waves' THEN 'Surface waves'
 	ELSE substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') END AS data_category,
     COALESCE(substring(url, 'Real-time'), 'Delayed-mode') AS data_type, 
     COALESCE(substring(url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency, 
@@ -544,7 +799,7 @@ CREATE or replace VIEW abos_data_summary_view AS
     round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
     CASE WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
 	THEN round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1)
-	ElSE (sum(v.coverage_duration)) END AS data_coverage, 
+	ElSE (sum(v.coverage_duration)) END AS data_coverage,
     CASE WHEN max(v.coverage_end) - min(v.coverage_start) = 0 THEN 0
 	WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
 	THEN (((round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
@@ -562,7 +817,7 @@ grant all on table abos_data_summary_view to public;
 
 
 -------------------------------
--- VIEW FOR ACORN; Doesn't use the report.acorn_manual table anymore.
+-- VIEW FOR ACORN; The report.acorn_manual table is not being used for reporting anymore.
 -------------------------------
 -- All hourly vectors data
 CREATE TABLE acorn_hourly_vectors_all_deployments_view AS
@@ -703,15 +958,27 @@ CREATE TABLE acorn_radials_data_summary_view AS
 
 grant all on table acorn_radials_data_summary_view to public;
 
+
 -------------------------------
--- VIEW FOR ANFOG; Now using the anfog_dm and anfog_rt schema only so don't need the legacy_anfog schema, nor report.anfog_manual anymore.
+-- VIEW FOR ANFOG; The legacy_anfog schema and report.anfog_manual table are not being used anymore.
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW anfog_all_deployments_view AS
+CREATE TABLE anfog_all_deployments_view AS
+WITH rt AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_rt.anfog_rt_trajectory_data GROUP BY deployment_name),
+dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_dm_trajectory_data GROUP BY deployment_name)
   SELECT 'Near real-time data' AS data_type,
 	 mrt.platform_type AS glider_type, 
 	 mrt.platform_code AS platform, 
-	 mrt.deployment_name AS deployment_id, 
+	 mrt.deployment_name AS deployment_id,
+	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
+		ELSE substring(mrt.deployment_name, '[aA-zZ]+') END AS deployment_location,
+	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'TAS'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo') THEN 'WA' END AS deployment_state,
+	 rt.no_measurements,
 	 min(date(mrt.time_coverage_start)) AS start_date, 
 	 max(date(mrt.time_coverage_end)) AS end_date,
  	 min(round((ST_YMIN(geom))::numeric, 1)) AS min_lat,
@@ -725,14 +992,24 @@ CREATE or replace VIEW anfog_all_deployments_view AS
  	date_part('hours', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
   FROM anfog_rt.anfog_rt_trajectory_map mrt
   RIGHT JOIN anfog_rt.deployments drt ON mrt.file_id = drt.file_id
-	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name
+  LEFT JOIN rt ON rt.deployment_name = mrt.deployment_name
+	GROUP BY mrt.platform_type, mrt.platform_code, mrt.deployment_name, rt.no_measurements
 
 UNION ALL
 
   SELECT 'Delayed mode data' AS data_type,
 	 m.platform_type AS glider_type, 
 	 m.platform_code AS platform, 
-	 m.deployment_name AS deployment_id, 
+	 m.deployment_name AS deployment_id,
+	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
+		WHEN substring(m.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
+		ELSE substring(m.deployment_name, '[aA-zZ]+') END AS deployment_location,
+	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'TAS'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo') THEN 'WA' END AS deployment_state,
+	 dm.no_measurements,
 	 date(m.time_coverage_start) AS start_date, 
 	 date(m.time_coverage_end) AS end_date,
  	 round((ST_YMIN(geom))::numeric, 1) AS min_lat,
@@ -746,23 +1023,29 @@ UNION ALL
  	date_part('hours', max(m.time_coverage_end) - min(m.time_coverage_start))/24)::numeric, 1) AS coverage_duration
   FROM anfog_dm.anfog_dm_trajectory_map m
   RIGHT JOIN anfog_dm.deployments d ON m.file_id = d.file_id
-	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max
-	ORDER BY data_type, glider_type, platform, deployment_id;
+  LEFT JOIN dm ON dm.deployment_name = m.deployment_name
+	GROUP BY m.platform_type, m.platform_code, m.deployment_name, m.time_coverage_start, m.time_coverage_end, m.geom, d.geospatial_vertical_max, dm.no_measurements
+	ORDER BY data_type, deployment_state, deployment_location, deployment_id;
 
 grant all on table anfog_all_deployments_view to public;
 
 -- Data summary view
 CREATE or replace VIEW anfog_data_summary_view AS
   SELECT v.data_type,
-	v.glider_type AS glider_type, 
+	v.deployment_state,
+	v.deployment_location,
+	SUM(CASE WHEN v.glider_type = 'slocum glider' THEN 1 ELSE 0 END) AS no_slocum_deployments,
+	SUM(CASE WHEN v.glider_type = 'seaglider' THEN 1 ELSE 0 END) AS no_seaglider_deployments, 
 	count(DISTINCT v.platform) AS no_platforms, 
-	count(DISTINCT v.deployment_id) AS no_deployments, 
+	count(DISTINCT COALESCE (v.platform || '-' || v.deployment_id)) AS no_deployments,
+	SUM(no_measurements) AS no_measurements,
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	COALESCE(min(v.min_lat) || '/' || max(v.max_lat)) AS lat_range, 
 	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
 	COALESCE(min(v.max_depth) || '/' || max(v.max_depth)) AS depth_range, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
 	min(v.min_lon) AS min_lon, 
@@ -770,13 +1053,13 @@ CREATE or replace VIEW anfog_data_summary_view AS
 	min(v.max_depth) AS min_depth, 
 	max(v.max_depth) AS max_depth 
   FROM anfog_all_deployments_view v
-	GROUP BY data_type, glider_type 
-	ORDER BY data_type,glider_type;
+	GROUP BY data_type, deployment_state, deployment_location
+	ORDER BY data_type, deployment_state, deployment_location;
 
 grant all on table anfog_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANMN Acoustics; Uses the anmn_acoustics schema now!
+-- VIEW FOR ANMN Acoustics
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_acoustics_all_deployments_view AS
@@ -822,11 +1105,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
   SELECT m.site_code, 
 	m.site_name, 
 	avg(m.lat) AS site_lat, 
-	avg(m.lon) AS site_lon, 
-	(avg(m.depth))::integer AS site_depth, 
-	min(m.first_deployed) AS site_first_deployed, 
-	max(m.discontinued) AS site_discontinued, 
-	bool_or(m.active) AS site_active 
+	avg(m.lon) AS site_lon
   FROM report.anmn_platforms_manual m
 	GROUP BY m.site_code, m.site_name 
 	ORDER BY m.site_code), 
@@ -855,8 +1134,11 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	ORDER BY subfacility, deployment_code, data_category)
   SELECT 
 	f.subfacility, 
-	COALESCE(s.site_name || ' (' || f.site_code || ')' || ' - Lat/Lon:' || round((min(s.site_lat))::numeric, 1) || '/' || round((min(s.site_lon))::numeric, 1)) AS site_name_code, 
-	f.data_category, 
+	CASE WHEN s.site_name IS NULL THEN f.site_code ELSE s.site_name END AS site_name_code, 
+	CASE WHEN f.data_category = 'CTD_timeseries' THEN 'CTD timeseries' 
+		WHEN f.data_category = 'Biogeochem_timeseries' THEN 'Biogeochemical timeseries' 
+		WHEN f.data_category = 'Biogeochem_profiles' THEN 'Biogeochemical profiles'
+		ELSE f.data_category END AS data_category,
 	f.deployment_code, 
 	(sum(((f.file_version = '0'))::integer))::numeric AS no_fv00, 
 	(sum(((f.file_version = '1'))::integer))::numeric AS no_fv01, 
@@ -874,7 +1156,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	round((max(f.geospatial_vertical_max))::numeric, 1) AS max_depth,
 	f.site_code 
   FROM file_view f 
-  NATURAL LEFT JOIN site_view s 
+  LEFT JOIN site_view s ON f.site_code = s.site_code
 	WHERE f.status IS NULL 
 	GROUP BY f.subfacility, f.site_code, s.site_name, f.data_category, f.deployment_code 
 	ORDER BY f.subfacility, f.site_code, f.data_category, f.deployment_code;
@@ -914,13 +1196,13 @@ CREATE OR REPLACE VIEW anmn_data_summary_view AS
 grant all on table anmn_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR ANMN NRS real-time; Only using the anmn_realtime schema. Can get rid of legacy_anmn schema and report.nrs_aims_manual
+-- VIEW FOR ANMN NRS real-time; The legacy_anmn schema and report.nrs_aims_manual table are not being used for reporting anymore.
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
         WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
-        WHEN site_code = 'NRSDAR' THEN 'Darwin'
+        WHEN site_code = 'NRSDAR' OR site_code = 'Darwin NRS Buoy' THEN 'Darwin'
         WHEN site_code = 'NRSNSI' THEN 'North Stradbroke Island' END as site_name,
    CASE WHEN source = instrument THEN source
         ELSE COALESCE(source || '-' || instrument) END AS channel_id,
@@ -929,10 +1211,11 @@ CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
    time_coverage_start AS start_date,
    time_coverage_end AS end_date,
    round((date_part('days', (time_coverage_end - time_coverage_start)) + date_part('hours', (time_coverage_end - time_coverage_start))/24)::numeric, 1) AS coverage_duration,
-   CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' ELSE site_code END AS platform_code,
+   CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' WHEN site_code = 'Darwin NRS Buoy' THEN 'NRSDAR' ELSE site_code END AS platform_code,
    CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
         ELSE instrument_nominal_depth::numeric END AS sensor_depth
   FROM dw_anmn_realtime.anmn_mv
+  WHERE time_coverage_start > '2000-01-01'
    ORDER BY site_name, channel_id, start_date;
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
@@ -941,11 +1224,13 @@ grant all on table anmn_nrs_realtime_all_deployments_view to public;
 CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
   SELECT v.site_name AS site_name,
 	COUNT(DISTINCT(channel_id)) AS nb_channels,
-	sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data, 
+	sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data,
+	sum(CASE WHEN v.qaqc_data = false THEN 1 ELSE 0 END) AS no_non_qc_data, 
 	COALESCE(min(v.sensor_depth) || '-' || max(v.sensor_depth)) AS depth_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	min(v.sensor_depth) AS min_depth, 
 	max(v.sensor_depth) AS max_depth 
   FROM anmn_nrs_realtime_all_deployments_view v
@@ -1267,6 +1552,7 @@ b AS ( SELECT data_type,
 	round(min(min_depth)::numeric,1) AS min_depth,
 	round(max(max_depth)::numeric,1) AS max_depth
   FROM b
+    WHERE station_name != 'Port Hacking 4' -- Get rid of erroneous metadata from Port Hacking 4
 	GROUP BY station_name, sample_date
 	ORDER BY station_name, sample_date;
 
@@ -1397,12 +1683,12 @@ UNION ALL
 grant all on anmn_nrs_bgc_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR Argo; Now using what's in the argo schema so don't need the dw_argo schema anymore.
+-- VIEW FOR Argo; The dw_argo schema is not being used for reporting anymore.
 -------------------------------
 -- All deployments view
 CREATE TABLE argo_all_deployments_view AS
 WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.profile_download GROUP BY platform_number)
-  SELECT m.data_centre AS organisation, 
+  SELECT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
 	m.platform_number AS platform_code,
@@ -1420,6 +1706,7 @@ WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, 
 	m.pi_name
     FROM argo.argo_float m
     LEFT JOIN a ON m.platform_number = a.platform_number
+    LEFT JOIN argo.profile_summary ps ON m.platform_number = ps.platform_number
     ORDER BY organisation, oxygen_sensor, platform_code;
 
 grant all on table argo_all_deployments_view to public;
@@ -1441,7 +1728,8 @@ CREATE or replace VIEW argo_data_summary_view AS
 	COALESCE(min(v.min_lon) || '/' || max(v.max_lon)) AS lon_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days -- Range in number of data days
   FROM argo_all_deployments_view v
 	GROUP BY v.organisation 
 	ORDER BY organisation;
@@ -1449,7 +1737,7 @@ CREATE or replace VIEW argo_data_summary_view AS
 grant all on table argo_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR AUV; Now using what's in the auv and auv_viewer_track schema. So don't need the legacy_auv schema anymore, nor the report.auv_manual table.
+-- VIEW FOR AUV; The legacy_auv schema and report.auv_manual table are not being used for reporting anymore.
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW auv_all_deployments_view AS
@@ -1465,7 +1753,7 @@ CREATE or replace VIEW auv_all_deployments_view AS
 	round(ST_X(ST_CENTROID(v.geom))::numeric, 1) AS lon_min, 
 	v.time_start AS start_date,
 	v.time_end AS end_date,
-	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric, 1) AS coverage_duration,
+	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric/60, 1) AS coverage_duration,
 	a.no_images
   FROM auv.deployments d
   LEFT JOIN auv.auv_trajectory_map v ON v.file_id = d.file_id
@@ -1485,7 +1773,7 @@ CREATE or replace VIEW auv_data_summary_view AS
 	COALESCE(min(v.lon_min) || '/' || max(v.lon_min)) AS lon_range, 
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	round((sum((v.coverage_duration)::numeric) / 60), 1) AS data_duration, 
+	round((sum((v.coverage_duration)::numeric)), 1) AS data_duration, 
 	min(v.lat_min) AS lat_min, 
 	min(v.lon_min) AS lon_min, 
 	max(v.lat_min) AS lat_max, 
@@ -1514,26 +1802,35 @@ CREATE OR REPLACE VIEW facility_summary_view AS
 grant all on table facility_summary_view to public;
 
 
+
 -------------------------------
--- VIEW FOR FAIMMS; Now using what's in the faimms schema so don't need the legacy_faimms schema anymore, nor the report.faimms_manual table.
+-- VIEWS FOR FAIMMS; The legacy_faimms schema and report.faimms_manual table are not being used anymore.
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW faimms_all_deployments_view AS
+CREATE TABLE faimms_all_deployments_view AS
+(WITH d_1 AS (SELECT channel_id, "VALUES_quality_control", COUNT(*) AS no_measurements FROM faimms.faimms_timeseries_data GROUP BY channel_id, "VALUES_quality_control"),
+d_2 AS (SELECT channel_id,
+SUM(CASE WHEN "VALUES_quality_control" != '0' THEN no_measurements ELSE 0 END) qaqc,
+SUM(CASE WHEN "VALUES_quality_control" = '0' THEN no_measurements ELSE 0 END) no_qaqc
+FROM d_1 GROUP BY channel_id)
   SELECT DISTINCT m.platform_code AS site_name, 
 	m.site_code AS platform_code, 
 	COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
 	(m."DEPTH")::numeric AS sensor_depth, 
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
-	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric, 1) AS coverage_duration, 
+	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric/365.25, 1) AS coverage_duration, 
 	f.instrument AS sensor_name, 
 	m."VARNAME" AS parameter, 
 	m.channel_id AS channel_id,
 	round(ST_X(geom)::numeric, 1) AS lon,
-	round(ST_Y(geom)::numeric, 1) AS lat
+	round(ST_Y(geom)::numeric, 1) AS lat,
+	d_2.qaqc,
+	d_2.no_qaqc
   FROM faimms.faimms_timeseries_map m
   LEFT JOIN faimms.global_attributes_file f ON f.aims_channel_id = m.channel_id
-	ORDER BY site_name, platform_code, sensor_code;
+  LEFT JOIN d_2 ON d_2.channel_id = m.channel_id
+	ORDER BY site_name, platform_code, sensor_code);
 
 grant all on table faimms_all_deployments_view to public;
 
@@ -1549,8 +1846,11 @@ CREATE or replace VIEW faimms_data_summary_view AS
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
 	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
-	min(v.sensor_depth) AS min_depth, 
-	max(v.sensor_depth) AS max_depth
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
+	CASE WHEN min(v.sensor_depth) >0 THEN min(v.sensor_depth) ELSE 0 END AS min_depth, -- To fix up negative depths
+	max(v.sensor_depth) AS max_depth,
+	SUM(CASE WHEN v.qaqc = 0 THEN 0 ELSE 1 END) AS qaqc_data,
+	SUM(v.qaqc + v.no_qaqc) AS no_measurements
   FROM faimms_all_deployments_view v
 	GROUP BY site_name 
 	ORDER BY site_name;
@@ -1558,7 +1858,7 @@ CREATE or replace VIEW faimms_data_summary_view AS
 grant all on table faimms_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR SOOP-CPR; Waiting for the new so_cpr harvester...
+-- VIEW FOR SOOP-CPR
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW soop_cpr_all_deployments_view AS
@@ -1658,7 +1958,7 @@ UNION ALL
 grant all on table soop_cpr_all_deployments_view to public;
 
 -------------------------------
--- VIEW FOR SOOP; Now using what's in the soop schema so don't need the dw_soop schema anymore, nor any report.manual tables.
+-- VIEW FOR SOOP; The dw_soop schema and report.manual tables are not being used for reporting anymore.
 ------------------------------- 
 -- All deployments view
 CREATE or replace VIEW soop_all_deployments_view AS
@@ -1863,7 +2163,7 @@ UNION ALL
 UNION ALL 
 
   SELECT 'XBT Near real-time' AS subfacility,
-  COALESCE("XBT_line" || ' | ' || vessel_name) AS vessel_name,
+  COALESCE("XBT_line" || ' | ' || CASE WHEN vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE vessel_name END) AS vessel_name,
   NULL AS deployment_id,
   date_part('year',"TIME") AS year,
   COUNT(profile_id) AS no_files_profiles,
@@ -1950,14 +2250,283 @@ UNION ALL
 grant all on table soop_data_summary_view to public;
 
 -------------------------------
--- VIEW FOR SRS; Now using what's in the srs_altimetry, srs_oc_bodbaw, and srs_oc_soop_rad schema so don't need the dw_srs and srs schema anymore. Also don't need report.srs_altimetry_manual & report.srs_bio_optical_db_manual tables
+-- VIEW FOR SRS; The dw_srs and srs schema, along with the report.srs_altimetry_manual & report.srs_bio_optical_db_manual tables are not being used anymore.
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW srs_all_deployments_view AS
+WITH alt AS (SELECT site_name, instrument, COUNT(*) AS no_measurements FROM srs_altimetry.srs_altimetry_timeseries_data GROUP BY site_name, instrument),
+bobdaw AS (SELECT file_id, COUNT(*) AS no_measurements FROM srs_oc_bodbaw.measurements GROUP BY file_id),
+gridded AS (
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3C' AS deployment_code,
+	'1 day composite - NOAA-19 - day time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3c_1d_day_n19_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3C' AS deployment_code,
+	'1 day composite - NOAA-19 - night time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3c_1d_ngt_n19_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'1 day composite - day time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_1d_day_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'1 day composite - day and night' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_1d_dn_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'1 day composite - night time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_1d_ngt_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'3 day composite - day time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_3d_day_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'3 day composite - day and night' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_3d_dn_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3S' AS deployment_code,
+	'3 day composite - night time' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3s_3d_ngt_gridded_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'L3U' AS deployment_code,
+	'NOAA-19' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_sst.srs_sst_l3u_n19_gridded_url
+--OC
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - GSM' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_chl_gsm_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - OC3' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_chl_oc3_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Nanoplankton (NPP - OC3) - Brewin et al 2010' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_nanop_brewin2010at_pft_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Nanoplankton (NPP - OC3) - Brewin et al 2012' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_nanop_brewin2012in_pft_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Eppley-VGPM (NPP - GSM)' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_npp_vgpm_epp_gsm_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Eppley-VGPM (NPP - OC3)' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_npp_vgpm_epp_oc3_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Picoplankton (NPP - OC3) - Brewin et al 2010' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_picop_brewin2010at_pft_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite - Picoplankton (NPP - OC3) - Brewin et al 2012' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_picop_brewin2012in_pft_1d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'8 day composite' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_so_johnson_chl_8d_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'SeaWIFS' AS deployment_code,
+	'8 day composite' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_so_johnson_chl_8d_seawifs_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'Monthly composite' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_so_johnson_chl_mo_aqua_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'Chlorophyll a' AS parameter_site,
+	'SeaWIFS' AS deployment_code,
+	'Monthly composite' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_so_johnson_chl_mo_seawifs_url
+UNION ALL
+  SELECT 'SRS - Gridded Products' AS subfacility, 
+	'SST' AS parameter_site,
+	'Aqua' AS deployment_code,
+	'1 day composite' AS sensor_name,
+	COUNT(*) AS no_measurements,
+	min(date("time")) AS start_date, 
+	max(date("time")) AS end_date, 
+	round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+	NULL::numeric AS lat, 
+	NULL::numeric AS lon 
+  FROM srs_oc.srs_oc_sst_1d_aqua_url),
+oc AS (SELECT file_id, COUNT(*) AS no_measurements FROM srs_oc_soop_rad.measurements GROUP BY file_id)
   SELECT 'SRS - Altimetry' AS subfacility, 
 	m.site_name AS parameter_site, 
-	COALESCE(d.site_code || '-' || "substring"((d.instrument), '([^_]+)-')) AS deployment_code, 
+	COALESCE(d.site_code || '-' || "substring"((m.instrument), '([^_]+)-')) AS deployment_code, 
 	m.instrument AS sensor_name,
+	alt.no_measurements,
 	min(date(m.time_start)) AS start_date, 
 	max(date(m.time_end)) AS end_date, 
 	round((date_part('days', (max(m.time_end) - min(m.time_start))) + date_part('hours', (max(m.time_end) - min(m.time_start)))/24)::numeric, 1) AS coverage_duration, 
@@ -1965,55 +2534,51 @@ CREATE or replace VIEW srs_all_deployments_view AS
 	round(ST_X(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lon
   FROM srs_altimetry.srs_altimetry_timeseries_map m 
   LEFT JOIN srs_altimetry.deployments d ON d.file_id = m.file_id
-	GROUP BY m.site_name, d.site_code, d.instrument, m.instrument
-
-UNION ALL 
-
+  LEFT JOIN alt ON alt.site_name = m.site_name AND alt.instrument = m.instrument
+	GROUP BY m.site_name, d.site_code, m.instrument,alt.no_measurements
+UNION ALL
   SELECT 'SRS - BioOptical database' AS subfacility, 
 	m.data_type AS parameter_site, 
 	m.cruise_id AS deployment_code, 
-	m.vessel_name AS sensor_name, 
+	m.vessel_name AS sensor_name,
+	b.no_measurements,
 	min(date(m.time_start)) AS start_date, 
 	max(date(m.time_end)) AS end_date, 
 	round((date_part('days', (max(m.time_end) - min(m.time_start))) + date_part('hours', (max(m.time_end) - min(m.time_start)))/24)::numeric, 1) AS coverage_duration, 
 	round(ST_Y(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lat, 
 	round(ST_X(ST_CENTROID(ST_COLLECT(m.geom)))::numeric, 1) AS lon 
   FROM srs_oc_bodbaw.srs_oc_bodbaw_trajectory_profile_map m
-	GROUP BY m.data_type, m.cruise_id, m.vessel_name
-
-UNION ALL 
-
-  SELECT 'SRS - Gridded Products' AS subfacility, 
-	CASE WHEN ((srs_gridded_products_manual.product_name) = 'MODIS Aqua OC3 Chlorophyll-a') THEN 'Chlorophyll-a' 
-	WHEN ((srs_gridded_products_manual.product_name) = 'SST L3C') THEN 'SST' 
-	WHEN ((srs_gridded_products_manual.product_name) = 'SST L3P - 14 days mosaic') THEN 'SST' 
-	ELSE NULL END AS parameter_site, 
-	CASE WHEN ((srs_gridded_products_manual.product_name) = 'MODIS Aqua OC3 Chlorophyll-a') THEN 'MODIS Aqua OC3' 
-	WHEN ((srs_gridded_products_manual.product_name) = 'SST L3C') THEN 'L3C' 
-	WHEN ((srs_gridded_products_manual.product_name) = 'SST L3P - 14 days mosaic') THEN 'L3P - 14 days mosaic' 
-	ELSE NULL END AS deployment_code, 
-	NULL::character varying AS sensor_name, 
-	date(srs_gridded_products_manual.deployment_start) AS start_date, 
-	CASE WHEN date(srs_gridded_products_manual.deployment_end) IS NULL THEN date(now()) END AS end_date, 
-	round((date_part('days', CASE WHEN srs_gridded_products_manual.deployment_end IS NULL THEN now() END - srs_gridded_products_manual.deployment_start) + 
-	date_part('hours', CASE WHEN srs_gridded_products_manual.deployment_end IS NULL THEN now() END - srs_gridded_products_manual.deployment_start)/24)::numeric, 1) AS coverage_duration, 
-	NULL::numeric AS lat, 
-	NULL::numeric AS lon 
-  FROM report.srs_gridded_products_manual 
-
-UNION ALL 
-
+  LEFT JOIN bobdaw b ON b.file_id = m.file_id
+	GROUP BY m.data_type, m.cruise_id, m.vessel_name,b.no_measurements
+UNION ALL
+  SELECT * FROM gridded
+UNION ALL
   SELECT 'SRS - Ocean Colour' AS subfacility, 
 	m.vessel_name AS parameter_site, 
 	m.voyage_id AS deployment_code, 
-	NULL::character varying AS sensor_name, 
+	NULL::character varying AS sensor_name,
+	SUM(o.no_measurements) AS no_measurements,
 	min(date(m.time_start)) AS start_date,
 	max(date(m.time_end)) AS end_date, 
 	round((date_part('days',max(m.time_end) - min(m.time_start)) + date_part('hours',max(m.time_end) - min(m.time_start))/24)::numeric, 1) AS coverage_duration, 
 	round(AVG(ST_Y(ST_CENTROID(m.geom)))::numeric, 1) AS lat, 
 	round(AVG(ST_X(ST_CENTROID(m.geom)))::numeric, 1) AS lon 
   FROM srs_oc_soop_rad.visualisation_wms m
-	GROUP BY parameter_site, voyage_id 
+  LEFT JOIN oc o ON o.file_id = m.file_id
+	GROUP BY parameter_site, voyage_id
+UNION ALL
+  SELECT 'SRS - Ocean Colour' AS subfacility, 
+	'Lucinda Jetty Coastal Observatory' AS parameter_site, 
+	file_id::text AS deployment_code, 
+	NULL::character varying AS sensor_name,
+	COUNT(DISTINCT measurement) AS no_measurements,
+	min(date(m."TIME")) AS start_date,
+	max(date(m."TIME")) AS end_date, 
+	round((date_part('days',max(m."TIME") - min(m."TIME")) + date_part('hours',max(m."TIME") - min(m."TIME"))/24)::numeric, 1) AS coverage_duration, 
+	round(latitude::numeric, 1) AS lat, 
+	round(longitude::numeric, 1) AS lon 
+  FROM srs_oc_ljco_aeronet.srs_oc_ljco_aeronet_map m
+	GROUP BY file_id,latitude,longitude
 	ORDER BY subfacility, parameter_site, deployment_code, sensor_name, start_date, end_date;
 
 grant all on table srs_all_deployments_view to public;
@@ -2025,10 +2590,12 @@ CREATE or replace VIEW srs_data_summary_view AS
 		WHEN (v.parameter_site = 'pigment') THEN 'Pigment' 
 		ELSE v.parameter_site END AS parameter_site, 
 	count(v.deployment_code) AS no_deployments, 
-	count(DISTINCT v.sensor_name) AS no_sensors, 
+	CASE WHEN subfacility = 'SRS - Gridded Products' THEN 0 ELSE count(DISTINCT v.sensor_name) END AS no_sensors,
+	SUM(no_measurements) AS no_measurements,
 	min(v.start_date) AS earliest_date, 
 	max(v.end_date) AS latest_date, 
-	round(avg(v.coverage_duration), 1) AS mean_coverage_duration, 
+	round(avg(v.coverage_duration), 1) AS mean_coverage_duration,
+	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	min(v.lon) AS min_lon, 
 	max(v.lon) AS max_lon, 
 	min(v.lat) AS min_lat, 
@@ -2043,8 +2610,10 @@ grant all on table srs_data_summary_view to public;
 -- TOTALS VIEW
 -------------------------------
 CREATE TABLE totals_view AS
-  WITH interm_table AS (
-  SELECT COUNT(DISTINCT(parameter)) AS no_parameters
+WITH i AS (
+  SELECT COUNT(DISTINCT(parameter)) AS no_parameters, 
+	SUM(qaqc) AS qaqc, 
+	SUM(no_qaqc) AS no_qaqc
   FROM faimms_all_deployments_view),
   bgc_chemistry AS (
   SELECT SUM(ntrip_total)::numeric AS no_chemistry_trips
@@ -2074,6 +2643,14 @@ CREATE TABLE totals_view AS
   SELECT SUM(ntrip_total)::numeric AS no_suspended_matter_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Suspended matter'),
+	total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected'),
+  total_public AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique registered tag ids'),
+  total_embargo AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected that aatams knows about'),
+  detections_total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'tags detected by species'),
+  detections_public AS (SELECT embargo_1 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+  detections_embargo AS (SELECT embargo_2 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+  other_1 AS (SELECT embargo_3 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+  other_2 AS (SELECT embargo_3_more AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
     bgc_stats AS (
   SELECT to_char(min(first_sample),'DD/MM/YYYY') AS first_sample,
 	to_char(max(last_sample),'DD/MM/YYYY') AS last_sample,
@@ -2107,20 +2684,20 @@ UNION ALL
 
   SELECT 'AATAMS' AS facility,
 	'Acoustic tagging - Species' AS subfacility,
-	type AS type,
-	total::bigint AS no_projects,
-	total_public::numeric AS no_platforms,
-	total_embargo::numeric AS no_instruments,
-	detections_total::numeric AS no_deployments,
-	detections_public::numeric AS no_data,
-	detections_embargo::numeric AS no_data2,
-	other_1::numeric AS no_data3,
-	other_2::numeric AS no_data4,
+	'Other stats' AS type,
+	total.t AS no_projects,
+	total_public.t AS no_platforms,
+	total_embargo.t AS no_instruments,
+	detections_total.t AS no_deployments,
+	detections_public.t AS no_data,
+	detections_embargo.t AS no_data2,
+	other_1.t AS no_data3,
+	other_2.t AS no_data4,
 	NULL AS temporal_range,
 	NULL AS lat_range,
 	NULL AS lon_range,
 	NULL AS depth_range
-  FROM aatams_acoustic_species_totals_view
+  FROM total, total_public, total_embargo, detections_total, detections_public, detections_embargo, other_1, other_2
   
 -- AATAMS - Satellite tagging
 UNION ALL  
@@ -2131,7 +2708,7 @@ UNION ALL
 	COUNT(DISTINCT(sattag_program)) AS no_projects,
 	COUNT(DISTINCT(species_name)) AS no_platforms,
 	COUNT(DISTINCT(tag_type)) AS no_instruments,
-	SUM(no_tags) AS no_deployments,
+	SUM(no_animals) AS no_deployments,
 	SUM(total_nb_profiles) AS no_data,
 	SUM(total_nb_measurements) AS no_data2,
 	NULL::numeric AS no_data3,
@@ -2172,7 +2749,7 @@ UNION ALL
 	nb_animals AS no_platforms,
 	NULL AS no_instruments,
 	NULL AS no_deployments,
-	total_nb_measurements AS no_data,
+	total_nb_locations AS no_data,
 	NULL AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
@@ -2305,16 +2882,16 @@ UNION ALL
 -- ANFOG
 UNION ALL
 
-  SELECT 'ANFOG' AS facility,
+SELECT 'ANFOG' AS facility,
 	NULL AS subfacility,
 	data_type AS type,
 	NULL::bigint AS no_projects,
 	SUM(no_platforms) AS no_platforms,
 	NULL::bigint AS no_instruments,
 	SUM(no_deployments) AS no_deployments,
-	NULL AS no_data,
-	NULL AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(no_measurements) AS no_data,
+	SUM(no_slocum_deployments) AS no_data2,
+	SUM(no_seaglider_deployments) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
@@ -2325,16 +2902,36 @@ UNION ALL
 
 UNION ALL
 
+SELECT 'ANFOG' AS facility,
+	NULL AS subfacility,
+	deployment_state AS type,
+	NULL::bigint AS no_projects,
+	COUNT(DISTINCT deployment_location) AS no_platforms,
+	NULL::bigint AS no_instruments,
+	SUM(no_deployments) AS no_deployments,
+	SUM(no_measurements) AS no_data,
+	SUM(no_slocum_deployments) AS no_data2,
+	SUM(no_seaglider_deployments) AS no_data3,
+	NULL::numeric AS no_data4,
+	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
+	COALESCE(min(min_lon)||' - '||max(max_lon)) AS lon_range,
+	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
+  FROM anfog_data_summary_view
+	GROUP BY deployment_state
+
+UNION ALL
+
   SELECT 'ANFOG' AS facility,
 	NULL AS subfacility,
 	'TOTAL' AS type,
 	NULL::bigint AS no_projects,
 	COUNT(DISTINCT(platform)) AS no_platforms,
 	NULL::bigint AS no_instruments,
-	COUNT(DISTINCT(deployment_id)) AS no_deployments,
-	NULL AS no_data,
-	NULL AS no_data2,
-	NULL::numeric AS no_data3,
+	count(DISTINCT COALESCE (platform || '-' || deployment_id)) AS no_deployments,
+	SUM(no_measurements) AS no_data,
+	SUM(CASE WHEN glider_type = 'slocum glider' THEN 1 ELSE 0 END) AS no_data2,
+	SUM(CASE WHEN glider_type = 'seaglider' THEN 1 ELSE 0 END) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
@@ -2413,7 +3010,7 @@ UNION ALL
 	SUM(nb_channels) AS no_instruments,
 	NULL AS no_deployments,
 	SUM(no_qc_data) AS no_data,
-	NULL AS no_data2,
+	SUM(no_non_qc_data) AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
@@ -2485,22 +3082,23 @@ UNION ALL
 -- FAIMMS
 UNION ALL
 
-  SELECT 'FAIMMS' AS facility,
+SELECT 'FAIMMS' AS facility,
 	NULL AS subfacility,
 	'TOTAL' AS type,
-	COUNT(*) AS no_projects,
-	SUM(no_platforms) AS no_platforms,
-	SUM(no_sensors) AS no_instruments,
-	ROUND(AVG(interm_table.no_parameters),0) AS no_deployments,
-	NULL AS no_data,
-	NULL AS no_data2,
-	NULL::numeric AS no_data3,
-	NULL::numeric AS no_data4,
-	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
-	COALESCE(min(lat)||' - '||max(lat)) AS lat_range,
-	COALESCE(min(lon)||' - '||max(lon)) AS lon_range,
-	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM faimms_data_summary_view, interm_table
+	COUNT(s.*) AS no_projects,
+	SUM(s.no_platforms) AS no_platforms,
+	ROUND(AVG(i.no_parameters),0) AS no_deployments,
+	SUM(s.no_sensors) AS no_instruments,
+	SUM(s.qaqc_data) AS no_data, -- Calculate number of quality controlled datasets
+	SUM(s.no_measurements) AS no_data2, -- Calculate total number of measurements
+	i.qaqc AS no_data3, -- Calculate number of QAQC measurements
+	i.no_qaqc AS no_data4, -- Calculate number of non QAQC measurements
+	COALESCE(to_char(min(s.earliest_date),'DD/MM/YYYY')||' - '||to_char(max(s.latest_date),'DD/MM/YYYY')) AS temporal_range,
+	COALESCE(min(s.lat)||' - '||max(s.lat)) AS lat_range,
+	COALESCE(min(s.lon)||' - '||max(s.lon)) AS lon_range,
+	COALESCE(min(s.min_depth)||' - '||max(s.max_depth)) AS depth_range
+  FROM faimms_data_summary_view s, i
+  GROUP BY i.qaqc, i.no_qaqc
 
 -- SOOP
 UNION ALL
@@ -2514,7 +3112,7 @@ UNION ALL
 	SUM(no_deployments) AS no_deployments,
 	SUM(no_files_profiles) AS no_data,
 	SUM(total_no_measurements) AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(coverage_duration) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
@@ -2534,7 +3132,7 @@ UNION ALL
 	count(CASE WHEN deployment_id IS NULL THEN '1'::character varying ELSE deployment_id END) AS no_deployments,
 	sum(CASE WHEN no_files_profiles IS NULL THEN (1)::bigint ELSE no_files_profiles END) AS no_data,
 	SUM(no_measurements) AS no_data2,
-	NULL::numeric AS no_data3,
+	SUM(coverage_duration) AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(start_date),'DD/MM/YYYY')||' - '||to_char(max(end_date),'DD/MM/YYYY')) AS temporal_range,
 	COALESCE(min(min_lat)||' - '||max(max_lat)) AS lat_range,
@@ -2552,8 +3150,8 @@ UNION ALL
 	COUNT(DISTINCT(parameter_site))  AS no_platforms,
 	SUM(no_sensors) AS no_instruments,
 	SUM(no_deployments) AS no_deployments,
-	NULL AS no_data,
-	NULL AS no_data2,
+	CASE WHEN subfacility = 'SRS - Gridded Products' THEN 0 ELSE SUM(no_measurements) END AS no_data,
+	CASE WHEN subfacility != 'SRS - Gridded Products' THEN 0 ELSE SUM(no_measurements) END AS no_data2,
 	NULL::numeric AS no_data3,
 	NULL::numeric AS no_data4,
 	COALESCE(to_char(min(earliest_date),'DD/MM/YYYY')||' - '||to_char(max(latest_date),'DD/MM/YYYY')) AS temporal_range,
@@ -2634,5 +3232,465 @@ SELECT now()::timestamp without time zone,
 	substring(lon_range,' - (.*)')::numeric AS max_lon,
 	substring(depth_range,'(.*) - ')::numeric AS min_depth,
 	substring(depth_range,' - (.*)')::numeric AS max_depth
-  FROM totals_view
--- WHERE NOT EXISTS (SELECT month FROM monthly_snapshot WHERE month = to_char(to_timestamp (date_part('month',now())::text, 'MM'), 'Month')
+  FROM totals_view;
+
+-------------------------------
+-- Run R script in Terminal for embargo plots
+------------------------------- 
+-- Rscript /Users/xavierhoenner/Work/AATAMS_AcousticTagging/Outcomes/Embargo_plots/AATAMS_embargo_alldata.R
+
+-------------------------------
+-- Generate new asset map
+------------------------------- 
+SET SEARCH_PATH = report_test, public;
+
+DROP TABLE IF EXISTS asset_map;
+
+CREATE TABLE asset_map AS
+WITH soop_cpr AS (
+  SELECT vessel_name AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
+    WHERE vessel_name != 'RV Cape Ferguson' AND vessel_name != 'RV Solander'
+	GROUP BY vessel_name, substring(trip_code,'[A-Z]*')),
+  aatams_sattag AS (
+  SELECT 'Seals and sea lions'::text AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM aatams_sattag_dm.aatams_sattag_dm_profile_map
+	GROUP BY device_id 
+	ORDER BY random()
+	LIMIT 75
+	),
+  aatams_penguins AS(
+  SELECT ST_CENTROID(geom) AS geom
+  FROM aatams_biologging_penguin.aatams_biologging_penguin_map
+  	ORDER BY random()
+	LIMIT 25
+	),
+  aatams_shearwaters AS(
+  SELECT ST_CENTROID(geom) AS geom
+  FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map
+  	ORDER BY random()
+	LIMIT 25
+	)
+---- Argo
+  SELECT 'Argo'::text AS facility,
+	NULL::text AS subfacility,
+	platform_number::text AS platform_code,
+	ST_SETSRID(last_location,4326) AS geom,
+	'Point'::text AS gtype,
+	'#85BF1F' AS colour
+  FROM argo.argo_float
+	WHERE data_centre_code = 'CS'
+---- SOOP-XBT
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'IX12' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(52.0 11.6,115.0 -32.0)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'IX1' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(115.0 -32.0,105.0 -7.0)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'PX2' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(115.4 -5.66, 121 -7.58, 125.41 -8.04, 127.5 -8.24, 129.44 -8.81, 134 -9.36)'),4326) AS geom, 
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'IX22-PX11' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(118.4 -18.3, 124 -8.2, 125.8 -3, 126.7 -1.7, 131.5 20.5)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'PX30-31' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(153.4 -26.6, 167.8 -23.2, 177.45 -18.4)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'PX34' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING(173.2 -40, 151.5 -33.9)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'XBT' AS subfacility,
+	'IX28' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (147.4 -43.5, 140 -66.2)'),4326) AS geom,
+	'Line' AS gtype,
+	'#591FBF' AS colour
+
+---- SOOP-TMV
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'TMV' AS subfacility,
+	'Spirit of Tasmania' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(145.60 -39.84)'),4326) AS geom,
+	'Point' AS gtype,
+	'#591FBF' AS colour
+
+---- SOOP-BA
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Indian Ocean' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 70 -49.1)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Mauritius - WA' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 90.3 -25.1, 115.18 -34.5)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Mauritius - South Madagascar' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (57.4 -20.2, 48.9 -35.7)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Tasman Sea' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (147.5 -43.1, 172.7 -40.5)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'BA' AS subfacility,
+	'Hobart - Fiji' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (147.5 -43.1, 177.4 -18.2)'),4326) AS geom,
+	'Line' AS gtype,
+	'#069917' AS colour
+
+---- SOOP-CO2 and SOOP-ASF
+UNION ALL
+SELECT DISTINCT 'SOOP' AS facility,
+	'CO2 and ASF' AS subfacility,
+	vessel_name AS platform_code,
+	CASE WHEN vessel_name = 'RV Tangaroa' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (177.4 -35.85, 167.9 -32.3, 174.77 -48.1, 170.2 -52.7, 170.7 -46.4, 147.3 -65.6, 140.1 -65, 140 -60.5, 159.5 -56.6, 178.5 -38.7)'),4326)
+		WHEN vessel_name = 'Aurora Australis' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (147.7 -43.6, 131.2 -64.5, 59.5 -66.1, 115.18 -32.3, 114.8 -61.5)'),4326)
+		WHEN vessel_name = 'L''Astrolabe' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (147.3 -43.4, 137.3 -64.1, 155.8 -64.9, 147.3 -43.4)'),4326)
+		WHEN vessel_name = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('MULTILINESTRING((141.9 -46.9, 148.8 -43.1, 154.2 -26.9, 143.8 -10, 129.9 -10.7, 112.7 -21.6, 113.2 -31.3, 100 -25, 100 -29, 116.75 -35.3,
+		131.4 -33.75, 148.75 -40.6, 180 -20),(-180 -20, -172.6 -13, -171.17 -49, -180 -45), (180 -45, 174.1 -41.1))'),4326) END AS geom,
+	'Line' AS gtype,
+	'#ED3B8B' AS colour
+  FROM soop_co2.soop_co2_trajectory_map
+  GROUP BY vessel_name
+  
+---- SOOP-CPR
+UNION ALL
+  SELECT DISTINCT 'SOOP' AS facility,
+	'CPR' AS subfacility,
+	CASE WHEN platform_code = 'Aurora Australia' THEN 'Aurora Australis' ELSE platform_code END AS platform_code,
+	CASE WHEN platform_code = 'ANL Windarra' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (138.1 -35.7, 140.7 -38.8, 149.6 -39.2, 154.2 -28.7, 153.4 -26.7)'),4326)
+		WHEN platform_code = 'Aurora Australia' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.2 -44.3, 89.7 -62.5)'),4326)
+		WHEN platform_code = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.4 -43.9, 114.9 -35.1, 112.5 -22.5, 119.5 -18.9)'),4326)
+		WHEN platform_code = 'Rehua' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.9 -40.8, 173.1 -40.6)'),4326)
+		WHEN platform_code = 'ANL Whyalla' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (118.4 -35.1, 138.3 -35.5)'),4326)
+		WHEN platform_code = 'Hespérides' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (115.2 -35.07, 142.4 -40.6)'),4326)
+		WHEN platform_code = 'Island Chief' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (151.5 -34.6, 154.5 -27.4, 152.9 -20.5)'),4326)
+		WHEN platform_code = 'RV Investigator' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.2 -43.4, 151.4 -33.75)'),4326)
+		WHEN platform_code = 'Kweichow' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (150.95 -22.2, 145.94 -16.8)'),4326) END AS geom,
+	'Line' AS gtype,
+	'#F7722A' AS colour
+  FROM soop_cpr
+	GROUP BY platform_code
+	
+---- SOOP-TRV
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'TRV' AS subfacility,
+	'Solander' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (113.9 -28.8, 112.86 -26, 113.76 -21.9, 122.1 -18, 121.8 -17.2, 124 -15.72, 125.7 -13.6, 130.6 -12.3, 127.4 -8.5, 116 -20.5)'),4326) AS geom,
+	'Point' AS gtype,
+	'#E69777' AS colour
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'TRV' AS subfacility,
+	'Cape Ferguson' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('LINESTRING (151.76 -23.5, 148.8 -20.06, 146.7 -18.7, 146 -16.8, 145.4 -14.7, 143.3 -11.4)'),4326) AS geom,
+	'Point' AS gtype,
+	'#E69777' AS colour
+
+---- SOOP-SST
+UNION ALL
+  SELECT 'SOOP' AS facility,
+	'SST' AS subfacility,
+	vessel_name AS platform_code,
+	CASE WHEN vessel_name = 'Highland Chief' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(144.9 -38.3, 146.8 -39.5, 150.2 -37.9, 154.6 -26.7, 159.7 -9.1, 172.8 1.25, 139.5 34.8)'),4326) 
+		WHEN vessel_name = 'Iron Yandi' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(118.7 38.7, 123.46 37.5, 126.6 26.56, 127.4 4.4, 118.4 -20.2)'),4326)
+		WHEN vessel_name = 'Pacific Celebes' THEN ST_SetSRID(ST_GeomFromText('MULTILINESTRING((152.1 -33.4, 180 5),(-180 5, -125.26 48, -124.9 40.3, -118.76 32.4, -149.3 -17.6, -79.7 7.4, -79.56 12.32, -89.7 29.7, -79.4 23.4, -73.93 38.5, -66.4 42.7,
+		-6.26 36.06, 8.67 38.34, 32.23 31.48, 33.28 28.32, 43.66 12.1, 71.8 18.65, 76.35 8.28, 80.57 5.5, 96.0 6.2, 110.6 -4.4, 20.6 -35.8, -73.93 38.5))'),4326)
+		WHEN vessel_name = 'OOCL Panama' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(143.4 -38.95, 117.2 -35.6, 114.9 -34.56, 105.05 -6.7, 107.95 -4.3, 104.4 1.38)'),4326)
+		WHEN vessel_name = 'Pacific Sun' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(151.5 -33.9, 169.65 -20.3, 167.36 -15.58, 153.4 -27, 153.3 -21.7, 150.4 -16.28, 145.8 -16.5, 144.4 -10.5, 132 -10.8, 131.1 -12.2)'),4326)
+		WHEN vessel_name = 'Portland' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(119.55 34.7, 123 34.6, 124.6 30.9, 119.5 15.97, 121.4 10.4, 118.3 -3.4, 112.25 -25.1, 115.6 -32.25)'),4326)
+		WHEN vessel_name = 'Stadacona' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(125.1 29.8, 145.6 -4.5, 151.2 -8.3, 153.6 -20.6, 151.2 -23.5)'),4326)
+		WHEN vessel_name = 'WAKMATHA' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(141.6 -12.7, 141.5 -11.3, 142.75 -10.7, 145.4 -14.7, 146.5 -18.5, 149.1 -20, 151.5 -23.7)'),4326)
+		WHEN vessel_name = 'L''Astrolabe' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(147.4 -43.1, 159.03 -54.5, 141.5 -66.4, 147.4 -43.1)'),4326)
+		WHEN vessel_name = 'Wana Bhum' THEN ST_SetSRID(ST_GeomFromText('LINESTRING(103.9 1.1, 105.1 1.2, 117.3 -8.1, 125.8 -8, 142.58 -10.54, 145.4 -14.7, 153.5 -24.56, 153.17 -27.33)'),4326) END AS geom,
+	'Line' AS gtype,
+	'#F0A732' AS colour
+  FROM soop_sst.soop_sst_nrt_trajectory_map
+  WHERE vessel_name NOT IN ('Fantasea Wonder', 'Xutra Bhum', 'Spirit of Tasmania 2', 'RV Cape Ferguson', 'Linnaeus', 'SeaFlyte')
+  GROUP BY vessel_name
+  
+-- UNION ALL
+--   SELECT 'SOOP' AS facility,
+-- 	'SST' AS subfacility,
+-- 	vessel_name AS platform_code,
+-- 	geom,
+-- 	'Line' AS gtype,
+-- 	'#F0A732' AS colour
+--   FROM soop_sst.soop_sst_nrt_trajectory_map
+--   WHERE vessel_name = 'Pacific Celebes' AND time_end < '2010-01-11'
+
+---- SRS-Ocean Colour Radiometer
+UNION ALL
+  SELECT 'SRS' AS facility,
+	'Radiometer' AS subfacility,
+	'Southern Surveyor' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(166.2 -27.1)'),4326)AS geom,
+	'Point' AS gtype,
+	'#4D4A49' AS colour
+  
+---- AATAMS-Biologging
+UNION ALL
+  SELECT 'AATAMS' AS facility,
+	'Biologging' AS subfacility,
+	'Emperor Penguins' AS platform_code,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_penguins
+UNION ALL
+  SELECT 'AATAMS' AS facility,
+	'Biologging' AS subfacility,
+	'Shearwaters' AS platform_code,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_shearwaters
+UNION ALL
+	 SELECT 'AATAMS' AS facility,
+	'Biologging' AS subfacility,
+	platform_code,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_sattag
+	WHERE st_x(geom) > 0
+
+---- ABOS-TS
+UNION ALL
+  SELECT DISTINCT 'ABOS' AS facility,
+	'Temperature, Salinity, Currents' AS subfacility,
+	CASE WHEN m.platform_code = '' THEN ma.platform_code ELSE m.platform_code END AS platform_code,
+	CASE WHEN m.geom IS NULL THEN ma.geom ELSE m.geom END AS platform_code,
+	'Point' AS gtype,
+	'#CC4712' AS colour
+  FROM abos_ts.abos_ts_timeseries_map m
+  FULL JOIN abos_currents.abos_currents_map ma ON m.platform_code = ma.platform_code
+
+---- ABOS SOFS AND SOTS
+UNION ALL
+  SELECT DISTINCT 'ABOS' AS facility,
+	'SOFS and SOTS' AS subfacility,
+	deployment_number AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#CC4712' AS colour
+  FROM abos_sofs_fl.abos_sofs_surfaceflux_rt_map
+	WHERE deployment_number != ''                
+
+---- ANMN-AM
+UNION ALL
+  SELECT DISTINCT 'ANMN' AS facility,
+	'Acidification' AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_am_dm.anmn_am_dm_map                         
+
+---- ANMN-Burst average
+UNION ALL
+  SELECT DISTINCT 'ANMN' AS facility,
+	'Burst average' AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_burst_avg.anmn_burst_avg_timeseries_map
+
+---- ANMN-MHL wave
+UNION ALL
+  SELECT DISTINCT 'ANMN' AS facility,
+	'Manly wave' AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_mhlwave.anmn_mhlwave_map
+
+---- ANMN-NRS
+UNION ALL
+  SELECT DISTINCT 'ANMN' AS facility,
+	'NRS' AS subfacility,
+	"STATION_NAME" AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_nrs_bgc.station_name
+
+---- ANMN-AM
+UNION ALL
+  SELECT DISTINCT 'ANMN' AS facility,
+	'Temperature and Salinity' AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#8212CC' AS colour
+  FROM anmn_ts.anmn_ts_timeseries_map  
+  
+---- ANFOG
+UNION ALL
+  SELECT DISTINCT 'ANFOG' AS facility,
+	platform_type AS subfacility,
+	substring(deployment_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM anfog_dm.anfog_dm_trajectory_map
+  GROUP BY platform_type, substring(deployment_name,'[A-Za-z]*')
+UNION ALL
+  SELECT DISTINCT 'ANFOG' AS facility,
+	platform_type AS subfacility,
+	substring(deployment_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM anfog_rt.anfog_rt_trajectory_map              
+  GROUP BY platform_type, substring(deployment_name,'[A-Za-z]*')
+  
+---- AUV
+UNION ALL
+  SELECT DISTINCT 'AUV' AS facility,
+	NULL AS subfacility,
+	substring(campaign_name,'[A-Za-z]*') AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM auv.auv_trajectory_map
+  GROUP BY substring(campaign_name,'[A-Za-z]*')
+
+---- ACORN
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Turquoise Coast' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(115.0 -30.5)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Rottnest Shelf' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(115.75 -32.05)'),4326) AS geom,
+-- 	ST_SetSRID(ST_GeomFromText('POLYGON((113.95 -31.3, 115.46 -31.34, 115.58 -32.4, 114.08 -32.34, 113.95 -31.3))'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'South Australian Gulf' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(136.87 -35.3)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Bonney Coast' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(140.52 -38.2)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Turquoise Coast' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(115.0 -30.5)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Coffs Harbour' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(153.0 -30.6)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+UNION ALL
+  SELECT DISTINCT 'ACORN' AS facility,
+	NULL AS subfacility,
+	'Capricorn Bunker Group' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(152.7 -24.2)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+
+---- FAIMMS
+UNION ALL
+  SELECT DISTINCT 'FAIMMS' AS facility,
+	NULL AS subfacility,
+	platform_code AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM faimms.faimms_timeseries_map
+
+---- AATAMS Acoustic
+UNION ALL
+  SELECT DISTINCT 'AATAMS' AS facility,
+	'Acoustic' AS subfacility,
+	installation_name AS platform_code,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM dw_aatams_acoustic.installation_summary
+  WHERE st_y(geom) < 0
+	GROUP BY installation_name
+
+---- SRS Altimetry
+UNION ALL
+  SELECT DISTINCT 'SRS' AS facility,
+	'Altimetry' AS subfacility,
+	instrument AS platform_code,
+	geom AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour
+  FROM srs_altimetry.srs_altimetry_timeseries_map
+
+  ---- SRS Lucinda Jetty
+UNION ALL
+  SELECT 'SRS' AS facility,
+	'Ocean colour' AS subfacility,
+	'Lucinda Jetty Coastal Observatory' AS platform_code,
+	ST_SetSRID(ST_GeomFromText('POINT(146.39 -18.52)'),4326) AS geom,
+	'Point' AS gtype,
+	'#FF0000' AS colour;
+
+grant all on asset_map TO public, harvest_read_group;
