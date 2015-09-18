@@ -31,6 +31,7 @@ DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS soop_cpr_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS totals_view CASCADE;
+DROP VIEW IF EXISTS facility_summary_totals_view CASCADE;
 
 -------------------------------
 -- VIEWS FOR AATAMS_ACOUSTIC
@@ -1688,7 +1689,7 @@ grant all on anmn_nrs_bgc_data_summary_view to public;
 -- All deployments view
 CREATE TABLE argo_all_deployments_view AS
 WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.profile_download GROUP BY platform_number)
-  SELECT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
+  SELECT DISTINCT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
 	m.platform_number AS platform_code,
@@ -2643,14 +2644,14 @@ WITH i AS (
   SELECT SUM(ntrip_total)::numeric AS no_suspended_matter_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Suspended matter'),
-	total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected'),
-  total_public AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique registered tag ids'),
-  total_embargo AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected that aatams knows about'),
-  detections_total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'tags detected by species'),
-  detections_public AS (SELECT embargo_1 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
-  detections_embargo AS (SELECT embargo_2 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
-  other_1 AS (SELECT embargo_3 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
-  other_2 AS (SELECT embargo_3_more AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+-- 	total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected'),
+--   total_public AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique registered tag ids'),
+--   total_embargo AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected that aatams knows about'),
+--   detections_total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'tags detected by species'),
+--   detections_public AS (SELECT embargo_1 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+--   detections_embargo AS (SELECT embargo_2 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+--   other_1 AS (SELECT embargo_3 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+--   other_2 AS (SELECT embargo_3_more AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
     bgc_stats AS (
   SELECT to_char(min(first_sample),'DD/MM/YYYY') AS first_sample,
 	to_char(max(last_sample),'DD/MM/YYYY') AS last_sample,
@@ -2661,46 +2662,46 @@ WITH i AS (
 	min(min_depth) AS min_depth,
 	max(max_depth) AS max_depth
   FROM anmn_nrs_bgc_data_summary_view)
-
+-- 
 -- AATAMS - Acoustic
-  SELECT 'AATAMS' AS facility,
-	'Acoustic tagging - Project' AS subfacility,
-	funding_type::text AS type,
-	no_projects::bigint AS no_projects,
-	no_installations::numeric AS no_platforms,
-	no_stations::numeric AS no_instruments,
-	no_deployments::numeric AS no_deployments,
-	no_releases::numeric AS no_data,
-	no_detections::numeric AS no_data2,
-	NULL::numeric AS no_data3,
-	NULL::numeric AS no_data4,
-	NULL AS temporal_range,
-	NULL AS lat_range,
-	NULL AS lon_range,
-	NULL AS depth_range
-  FROM aatams_acoustic_project_totals_view
-    
-UNION ALL
-
-  SELECT 'AATAMS' AS facility,
-	'Acoustic tagging - Species' AS subfacility,
-	'Other stats' AS type,
-	total.t AS no_projects,
-	total_public.t AS no_platforms,
-	total_embargo.t AS no_instruments,
-	detections_total.t AS no_deployments,
-	detections_public.t AS no_data,
-	detections_embargo.t AS no_data2,
-	other_1.t AS no_data3,
-	other_2.t AS no_data4,
-	NULL AS temporal_range,
-	NULL AS lat_range,
-	NULL AS lon_range,
-	NULL AS depth_range
-  FROM total, total_public, total_embargo, detections_total, detections_public, detections_embargo, other_1, other_2
+--   SELECT 'AATAMS' AS facility,
+-- 	'Acoustic tagging - Project' AS subfacility,
+-- 	funding_type::text AS type,
+-- 	no_projects::bigint AS no_projects,
+-- 	no_installations::numeric AS no_platforms,
+-- 	no_stations::numeric AS no_instruments,
+-- 	no_deployments::numeric AS no_deployments,
+-- 	no_releases::numeric AS no_data,
+-- 	no_detections::numeric AS no_data2,
+-- 	NULL::numeric AS no_data3,
+-- 	NULL::numeric AS no_data4,
+-- 	NULL AS temporal_range,
+-- 	NULL AS lat_range,
+-- 	NULL AS lon_range,
+-- 	NULL AS depth_range
+--   FROM aatams_acoustic_project_totals_view
+--     
+-- UNION ALL
+-- 
+--   SELECT 'AATAMS' AS facility,
+-- 	'Acoustic tagging - Species' AS subfacility,
+-- 	'Other stats' AS type,
+-- 	total.t AS no_projects,
+-- 	total_public.t AS no_platforms,
+-- 	total_embargo.t AS no_instruments,
+-- 	detections_total.t AS no_deployments,
+-- 	detections_public.t AS no_data,
+-- 	detections_embargo.t AS no_data2,
+-- 	other_1.t AS no_data3,
+-- 	other_2.t AS no_data4,
+-- 	NULL AS temporal_range,
+-- 	NULL AS lat_range,
+-- 	NULL AS lon_range,
+-- 	NULL AS depth_range
+--   FROM total, total_public, total_embargo, detections_total, detections_public, detections_embargo, other_1, other_2
   
 -- AATAMS - Satellite tagging
-UNION ALL  
+-- UNION ALL  
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
@@ -3233,6 +3234,50 @@ SELECT now()::timestamp without time zone,
 	substring(depth_range,'(.*) - ')::numeric AS min_depth,
 	substring(depth_range,' - (.*)')::numeric AS max_depth
   FROM totals_view;
+
+-------------------------------
+-- VIEW FOR Summary totals
+-------------------------------
+-- All deployments view
+CREATE OR REPLACE VIEW facility_summary_totals_view AS 
+WITH argo AS (SELECT 'Argo'::text AS facility, 'Number of profiles'::text AS stat_1_attrib, no_data2 AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data3 AS stat_2_value FROM totals_view WHERE facility = 'Argo'),
+soop AS (SELECT 'SOOP'::text AS facility, 'Number of data files'::text AS stat_1_attrib, no_data AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'SOOP'::text AND type = 'TOTAL'),
+abos AS (SELECT 'ABOS'::text AS facility, 'Number of deployments'::text AS stat_1_attrib, no_deployments AS stat_1_value, 'Number of data files'::text AS stat_2_attrib, no_data AS stat_2_value FROM totals_view WHERE facility = 'ABOS'::text AND type = 'TOTAL'),
+anfog AS (SELECT 'ANFOG'::text AS facility, 'Number of deployments'::text AS stat_1_attrib, no_deployments AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data AS stat_2_value FROM totals_view WHERE facility = 'ANFOG'::text AND type = 'TOTAL'),
+auv AS (SELECT 'AUV'::text AS facility, 'Number of deployments'::text AS stat_1_attrib, no_instruments AS stat_1_value, 'Number of images'::text AS stat_2_attrib, no_data AS stat_2_value FROM totals_view WHERE facility = 'AUV'),
+anmn AS (SELECT 'ANMN'::text AS facility, 'Number of deployments'::text AS stat_1_attrib, no_deployments AS stat_1_value, 'Number of data files'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'ANMN'::text AND subfacility = 'NRS, RMA, and AM'),
+ac_1 AS (SELECT no_data FROM totals_view WHERE facility = 'ACORN'::text AND type = 'TOTAL - Hourly vectors'),
+ac_2 AS (SELECT no_data FROM totals_view WHERE facility = 'ACORN'::text AND type = 'TOTAL - Radials'),
+acorn AS (SELECT 'ACORN'::text AS facility, 'Number of vector files'::text AS stat_1_attrib, ac_1.no_data AS stat_1_value, 'Number of radial files'::text AS stat_2_attrib, ac_2.no_data AS stat_2_value FROM ac_1,ac_2),
+-- aatams_acoustic AS (SELECT 'Animal tracking (acoustic)'::text AS facility, 'no_transmitters'::text AS stat_1_attrib, no_deployments AS stat_1_value, 'no_detections'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'Acoustic tagging - Species'::text AND 
+-- type = 'Other stats'),
+aatams_sattag AS (SELECT 'Animal tracking (satellite)'::text AS facility, 'Number of profiles'::text AS stat_1_attrib, no_data AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'AATAMS'::text AND type = 'Delayed mode CTD data'),
+faimms AS (SELECT 'FAIMMS'::text AS facility, 'Number of QC''d datasets'::text AS stat_1_attrib, no_data AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'FAIMMS'),
+srs AS (SELECT 'SRS'::text AS facility, 'Number of measurements'::text AS stat_1_attrib, SUM(no_data) AS stat_1_value, 'Number of gridded images'::text AS stat_2_attrib, SUM(no_data2) AS stat_2_value FROM totals_view WHERE facility = 'SRS')
+  SELECT * FROM argo
+  UNION ALL
+  SELECT * FROM soop
+  UNION ALL
+  SELECT * FROM abos
+  UNION ALL
+  SELECT * FROM anfog
+  UNION ALL
+  SELECT * FROM auv
+  UNION ALL
+  SELECT * FROM anmn
+  UNION ALL
+  SELECT * FROM acorn
+--   UNION ALL
+--   SELECT * FROM aatams_acoustic
+  UNION ALL
+  SELECT * FROM aatams_sattag
+  UNION ALL
+  SELECT * FROM faimms
+  UNION ALL
+  SELECT * FROM srs
+	ORDER BY facility;
+
+grant all on table facility_summary_totals_view to public;
 
 -------------------------------
 -- Run R script in Terminal for embargo plots

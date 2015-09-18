@@ -100,6 +100,35 @@ legend("topleft",legend=c("Number of profiles","Number of measurements"),
 dev.off()
 
 ##############################
+#### Plot totals -- AATAMS Acoustic
+jpeg(paste('Totals_AATAMS_Acoustic_',Sys.Date(),'.jpeg',sep=''), width = 800, height = 600, units = 'px', quality = 100)
+par(mar=c(5, 6.5, 4, 6.5) + 0.1, cex.lab = 1.5)
+
+## Plot first set of data and draw its axis
+plot(aatams_acoustic$timestamp, aatams_acoustic$no_transmitters, pch=16, xlab="", ylab="", 
+   type="b",col="black", main="Animal tracking (acoustic) - Number of transmitters and detections", axes=FALSE)
+axis(2, col="black",las=1)  ## las=1 makes horizontal labels
+mtext("Number of transmitters",side=2,line=5)
+box()
+
+## Plot the second plot and put axis scale on right
+par(new=TRUE)
+plot(aatams_acoustic$timestamp, aatams_acoustic$no_detections, pch=15,  xlab="", ylab="", 
+    axes=FALSE, type="b", col="red", cex.lab = 5)
+## a little farther out (line=4) to make room for labels
+mtext("Number of detections",side=4,col="red",line=5) 
+axis(4, col="red",col.axis="red",las=1, cex = 2)
+
+## Draw the time axis
+axis.POSIXct(1, at = seq(aatams_acoustic$timestamp[1],tail(aatams_acoustic$timestamp,1), by = "month")[seq(1,length(seq(aatams_acoustic$timestamp[1],tail(aatams_acoustic$timestamp,1), by = "month")),2)], format = '%b %Y')
+mtext("Date",side=1,col="black",line=2.5)  
+
+## Add Legend
+legend("topleft",legend=c("Number of transmitters","Number of detections"),
+  text.col=c("black","red"),pch=c(16,15),col=c("black","red"))
+dev.off()
+
+##############################
 #### Plot totals -- Argo
 jpeg(paste('Totals_Argo_',Sys.Date(),'.jpeg',sep=''), width = 800, height = 600, units = 'px', quality = 100)
 par(mar=c(5, 6.5, 4, 6.5) + 0.1, cex.lab = 1.5)
