@@ -974,7 +974,7 @@ dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_d
 	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(mrt.deployment_name, '[aA-zZ]+') END AS deployment_location,
-	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'TAS'
+	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'SEA IMOS'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
@@ -1005,7 +1005,7 @@ UNION ALL
 	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
 		WHEN substring(m.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(m.deployment_name, '[aA-zZ]+') END AS deployment_location,
-	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'TAS'
+	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'SEA IMOS'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
