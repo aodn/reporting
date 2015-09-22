@@ -1,7 +1,9 @@
-﻿SET SEARCH_PATH = report_test, public;
-
+SET SEARCH_PATH = report_test, public;
 DROP TABLE IF EXISTS asset_map;
 
+-------------------------------
+-- Generate new asset map
+------------------------------- 
 CREATE TABLE asset_map AS
 WITH soop_cpr AS (
   SELECT vessel_name AS platform_code,
