@@ -50,3 +50,6 @@ SELECT now()::timestamp without time zone,
 	substring(depth_range,'(.*) - ')::numeric AS min_depth,
 	substring(depth_range,' - (.*)')::numeric AS max_depth
   FROM totals_view;
+
+GRANT select on all tables in schema reporting to "backup";
+GRANT select on all sequences in schema reporting to "backup";
