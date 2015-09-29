@@ -7,5 +7,5 @@ The 'MS Word reporting templates' folder contains Word files detailing how the d
 
 
 To do: 
-* Incorporate all AATAMS acoustic queries when harvester been deployed to prod: aatams_acoustic.sql, totals.sql, summary_totals.sql, reporting_script.sh, R script to generate embargo plots, R script to generate figures for the totals.
-* Put back in 'New Data' reports in all Word templates.
+* Change all search_path to reporting instead of report.
+* Finalise figures for the totals with Seb.
