@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+﻿SET search_path = report_test, public;
 DROP VIEW IF EXISTS facility_summary_totals_view CASCADE;
 
 -------------------------------
@@ -15,8 +15,8 @@ anmn AS (SELECT 'ANMN'::text AS facility, 'Number of deployments'::text AS stat_
 ac_1 AS (SELECT no_data FROM totals_view WHERE facility = 'ACORN'::text AND type = 'TOTAL - Hourly vectors'),
 ac_2 AS (SELECT no_data FROM totals_view WHERE facility = 'ACORN'::text AND type = 'TOTAL - Radials'),
 acorn AS (SELECT 'ACORN'::text AS facility, 'Number of vector files'::text AS stat_1_attrib, ac_1.no_data AS stat_1_value, 'Number of radial files'::text AS stat_2_attrib, ac_2.no_data AS stat_2_value FROM ac_1,ac_2),
--- aatams_acoustic AS (SELECT 'Animal tracking (acoustic)'::text AS facility, 'no_transmitters'::text AS stat_1_attrib, no_deployments AS stat_1_value, 'no_detections'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'Acoustic tagging - Species'::text AND 
--- type = 'Other stats'),
+aatams_acoustic AS (SELECT 'Animal tracking (acoustic)'::text AS facility, 'no_transmitters'::text AS stat_1_attrib, no_transmitters AS stat_1_value, 'no_detections'::text AS stat_2_attrib, no_detections AS stat_2_value 
+FROM aatams_acoustic_registered_totals_view WHERE no_times_detected = 'Total'),
 aatams_sattag AS (SELECT 'Animal tracking (satellite)'::text AS facility, 'Number of profiles'::text AS stat_1_attrib, no_data AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'AATAMS'::text AND type = 'Delayed mode CTD data'),
 faimms AS (SELECT 'FAIMMS'::text AS facility, 'Number of QC''d datasets'::text AS stat_1_attrib, no_data AS stat_1_value, 'Number of measurements'::text AS stat_2_attrib, no_data2 AS stat_2_value FROM totals_view WHERE facility = 'FAIMMS'),
 srs AS (SELECT 'SRS'::text AS facility, 'Number of measurements'::text AS stat_1_attrib, SUM(no_data) AS stat_1_value, 'Number of gridded images'::text AS stat_2_attrib, SUM(no_data2) AS stat_2_value FROM totals_view WHERE facility = 'SRS')
@@ -33,8 +33,8 @@ srs AS (SELECT 'SRS'::text AS facility, 'Number of measurements'::text AS stat_1
   SELECT * FROM anmn
   UNION ALL
   SELECT * FROM acorn
---   UNION ALL
---   SELECT * FROM aatams_acoustic
+  UNION ALL
+  SELECT * FROM aatams_acoustic
   UNION ALL
   SELECT * FROM aatams_sattag
   UNION ALL

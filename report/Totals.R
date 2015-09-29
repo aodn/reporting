@@ -52,16 +52,22 @@ colnames(acorn) <- c('timestamp','no_vector_files','no_radial_files')
 aatams_sattag <- data.frame(data$timestamp[which(data$facility == 'AATAMS' & data$data_type == 'Delayed mode CTD data')], data$no_data[which(data$facility == 'AATAMS' & data$data_type == 'Delayed mode CTD data')], data$no_data2[which(data$facility == 'AATAMS' & data$data_type == 'Delayed mode CTD data')])
 colnames(aatams_sattag) <- c('timestamp','no_profiles','no_measurements')
 
-# aatams_acoustic <- data.frame(data$timestamp[which(data$subfacility == 'Acoustic tagging - Species' & data$data_type == 'Other stats')], data$no_deployments[which(data$subfacility == 'Acoustic tagging - Species' & data$data_type == 'Other stats')], data$no_data2[which(data$subfacility == 'Acoustic tagging - Species' & data$data_type == 'Other stats')])
-# colnames(aatams_acoustic) <- c('timestamp','no_transmitters','no_detections')
+aatams <- data.frame(data[which(data$subfacility == 'Acoustic tagging - Species' | data$subfacility == 'Acoustic tagging - Project'),])
+t <- unique(aatams$timestamp)
+aatams_acoustic <- data.frame(matrix(ncol=2,nrow=length(t)))
+for (i in 1:length(t)){
+	a <- aatams[which(aatams$timestamp == t[i]),]
+	aatams_acoustic[i,1:2] <- unique(data.frame(a$no_projects[which(a$data_type == 'Other stats')],a$no_data2[which(a$data_type== 'TOTAL')]))
+}
+aatams_acoustic <- cbind(t,aatams_acoustic)
+rm(aatams); rm(a); rm(t);
+colnames(aatams_acoustic) <- c('timestamp','no_transmitters','no_detections')
 
 faimms <- data.frame(data$timestamp[which(data$facility == 'FAIMMS')], data$no_data[which(data$facility == 'FAIMMS')], data$no_data2[which(data$facility == 'FAIMMS')])
 colnames(faimms) <- c('timestamp','no_qc_datasets','no_measurements')
 
 srs <- data.frame(data$timestamp[which(data$facility == 'SRS')], data$no_data[which(data$facility == 'SRS')], data$no_data2[which(data$facility == 'SRS')])
 colnames(srs) <- c('timestamp','no_measurements','no_gridded_images')
-
-
 
 
 ##########################################################################################
