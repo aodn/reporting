@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
 -------------------------------
 -- VIEWS FOR AATAMS_BIOLOGGING_PENGUIN AND AATAMS_BIOLOGGING_SHEARWATERS
@@ -18,6 +18,22 @@ CREATE OR REPLACE VIEW aatams_biologging_all_deployments_view AS
 	round(ST_XMIN(geom)::numeric, 1) AS min_lon,
 	round(ST_XMAX(geom)::numeric, 1) AS max_lon
   FROM aatams_biologging_penguin.aatams_biologging_penguin_map pm
+
+UNION ALL
+
+  SELECT 'Snow petrels' AS tagged_animals,
+	animal_id,
+	no_observations AS nb_locations,
+	start_date AS start_date,
+	end_date AS end_date,
+	round(date_part('days', end_date - start_date)::numeric + (date_part('hours', end_date - start_date)::numeric)/24, 1) AS coverage_duration,
+	COALESCE(round(ST_YMIN(geom)::numeric, 1) || '/' || round(ST_YMAX(geom)::numeric, 1)) AS lat_range,
+	COALESCE(round(ST_XMIN(geom)::numeric, 1) || '/' || round(ST_XMAX(geom)::numeric, 1)) AS lon_range,
+	round(ST_YMIN(geom)::numeric, 1) AS min_lat,
+	round(ST_YMAX(geom)::numeric, 1) AS max_lat,
+	round(ST_XMIN(geom)::numeric, 1) AS min_lon,
+	round(ST_XMAX(geom)::numeric, 1) AS max_lon
+  FROM aatams_biologging_snowpetrel.aatams_biologging_snowpetrel_map pm
 
 UNION ALL
 

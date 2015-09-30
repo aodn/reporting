@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 DROP TABLE IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
 DROP TABLE IF EXISTS aatams_acoustic_embargo_totals_view CASCADE;
@@ -537,20 +537,20 @@ DROP VIEW IF EXISTS aatams_acoustic_project_totals_view CASCADE;
 -- 	WHERE date_part('days',now() - latest_deployment_date) < 365.25;
 
 -- Create all views in reporting schema
-CREATE OR REPLACE VIEW aatams_acoustic_species_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;
-CREATE OR REPLACE VIEW aatams_acoustic_species_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_data_summary_view;
-CREATE OR REPLACE VIEW aatams_acoustic_embargo_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_embargo_totals_view;
-CREATE OR REPLACE VIEW aatams_acoustic_registered_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_registered_totals_view;
-CREATE OR REPLACE VIEW aatams_acoustic_stats_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_stats_view;
-CREATE OR REPLACE VIEW aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
-CREATE OR REPLACE VIEW aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
-CREATE OR REPLACE VIEW aatams_acoustic_project_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_species_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_species_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_data_summary_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_embargo_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_embargo_totals_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_registered_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_registered_totals_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_stats_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_stats_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
+CREATE OR REPLACE VIEW reporting.aatams_acoustic_project_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view;
 
-grant all on table aatams_acoustic_species_all_deployments_view to public;
-grant all on table aatams_acoustic_species_data_summary_view to public;
-grant all on table aatams_acoustic_embargo_totals_view to public;
-grant all on table aatams_acoustic_registered_totals_view to public;
-grant all on table aatams_acoustic_stats_view to public;
-grant all on table aatams_acoustic_project_all_deployments_view to public;
-grant all on table aatams_acoustic_project_data_summary_view to public;
-grant all on table aatams_acoustic_project_totals_view to public;
+grant all on table reporting.aatams_acoustic_species_all_deployments_view to public;
+grant all on table reporting.aatams_acoustic_species_data_summary_view to public;
+grant all on table reporting.aatams_acoustic_embargo_totals_view to public;
+grant all on table reporting.aatams_acoustic_registered_totals_view to public;
+grant all on table reporting.aatams_acoustic_stats_view to public;
+grant all on table reporting.aatams_acoustic_project_all_deployments_view to public;
+grant all on table reporting.aatams_acoustic_project_data_summary_view to public;
+grant all on table reporting.aatams_acoustic_project_totals_view to public;

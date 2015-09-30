@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+SET search_path = reporting, public;
 DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
 
 -------------------------------

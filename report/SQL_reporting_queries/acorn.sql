@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+SET search_path = reporting, public;
 DROP TABLE IF EXISTS acorn_hourly_vectors_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_hourly_vectors_data_summary_view CASCADE;

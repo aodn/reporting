@@ -1,4 +1,6 @@
 export PGPASSWORD='MicroCuts2001!';
+echo @@@@@@@@ Reporting view - AATAMS Acoustic @@@@@@@@
+psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/aatams_acoustic.sql;
 echo @@@@@@@@ Reporting view - AATAMS Biologging @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/aatams_biologging.sql;
 echo @@@@@@@@ Reporting view - AATAMS Satellite tagging @@@@@@@@

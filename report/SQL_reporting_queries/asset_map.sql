@@ -452,3 +452,5 @@ UNION ALL
 	'#FF0000' AS colour;
 
 grant all on asset_map TO public, harvest_read_group;
+GRANT select on all tables in schema report_test to "backup";
+GRANT select on all sequences in schema report_test to "backup";

@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 DROP TABLE IF EXISTS totals_view CASCADE;
 
 -------------------------------
@@ -38,14 +38,14 @@ WITH i AS (
   SELECT SUM(ntrip_total)::numeric AS no_suspended_matter_trips
   FROM anmn_nrs_bgc_data_summary_view
 	WHERE product = 'Suspended matter'),
--- 	total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected'),
---   total_public AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique registered tag ids'),
---   total_embargo AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected that aatams knows about'),
---   detections_total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'tags detected by species'),
---   detections_public AS (SELECT embargo_1 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
---   detections_embargo AS (SELECT embargo_2 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
---   other_1 AS (SELECT embargo_3 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
---   other_2 AS (SELECT embargo_3_more AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+    total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected'),
+    total_public AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique registered tag ids'),
+    total_embargo AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'no unique tag ids detected that aatams knows about'),
+    detections_total AS (SELECT t FROM aatams_acoustic_stats_view WHERE statistics_type = 'tags detected by species'),
+    detections_public AS (SELECT embargo_1 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+    detections_embargo AS (SELECT embargo_2 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+    other_1 AS (SELECT embargo_3 AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
+    other_2 AS (SELECT embargo_3_more AS t FROM aatams_acoustic_embargo_totals_view WHERE type ='Tags'),
     bgc_stats AS (
   SELECT to_char(min(first_sample),'DD/MM/YYYY') AS first_sample,
 	to_char(max(last_sample),'DD/MM/YYYY') AS last_sample,
@@ -56,46 +56,46 @@ WITH i AS (
 	min(min_depth) AS min_depth,
 	max(max_depth) AS max_depth
   FROM anmn_nrs_bgc_data_summary_view)
--- 
+
 -- AATAMS - Acoustic
---   SELECT 'AATAMS' AS facility,
--- 	'Acoustic tagging - Project' AS subfacility,
--- 	funding_type::text AS type,
--- 	no_projects::bigint AS no_projects,
--- 	no_installations::numeric AS no_platforms,
--- 	no_stations::numeric AS no_instruments,
--- 	no_deployments::numeric AS no_deployments,
--- 	no_releases::numeric AS no_data,
--- 	no_detections::numeric AS no_data2,
--- 	NULL::numeric AS no_data3,
--- 	NULL::numeric AS no_data4,
--- 	NULL AS temporal_range,
--- 	NULL AS lat_range,
--- 	NULL AS lon_range,
--- 	NULL AS depth_range
---   FROM aatams_acoustic_project_totals_view
---     
--- UNION ALL
--- 
---   SELECT 'AATAMS' AS facility,
--- 	'Acoustic tagging - Species' AS subfacility,
--- 	'Other stats' AS type,
--- 	total.t AS no_projects,
--- 	total_public.t AS no_platforms,
--- 	total_embargo.t AS no_instruments,
--- 	detections_total.t AS no_deployments,
--- 	detections_public.t AS no_data,
--- 	detections_embargo.t AS no_data2,
--- 	other_1.t AS no_data3,
--- 	other_2.t AS no_data4,
--- 	NULL AS temporal_range,
--- 	NULL AS lat_range,
--- 	NULL AS lon_range,
--- 	NULL AS depth_range
---   FROM total, total_public, total_embargo, detections_total, detections_public, detections_embargo, other_1, other_2
+  SELECT 'AATAMS' AS facility,
+	'Acoustic tagging - Project' AS subfacility,
+	funding_type::text AS type,
+	no_projects::bigint AS no_projects,
+	no_installations::numeric AS no_platforms,
+	no_stations::numeric AS no_instruments,
+	no_deployments::numeric AS no_deployments,
+	no_releases::numeric AS no_data,
+	no_detections::numeric AS no_data2,
+	NULL::numeric AS no_data3,
+	NULL::numeric AS no_data4,
+	NULL AS temporal_range,
+	NULL AS lat_range,
+	NULL AS lon_range,
+	NULL AS depth_range
+  FROM aatams_acoustic_project_totals_view
+    
+UNION ALL
+
+  SELECT 'AATAMS' AS facility,
+	'Acoustic tagging - Species' AS subfacility,
+	'Other stats' AS type,
+	total.t AS no_projects,
+	total_public.t AS no_platforms,
+	total_embargo.t AS no_instruments,
+	detections_total.t AS no_deployments,
+	detections_public.t AS no_data,
+	detections_embargo.t AS no_data2,
+	other_1.t AS no_data3,
+	other_2.t AS no_data4,
+	NULL AS temporal_range,
+	NULL AS lat_range,
+	NULL AS lon_range,
+	NULL AS depth_range
+  FROM total, total_public, total_embargo, detections_total, detections_public, detections_embargo, other_1, other_2
   
 -- AATAMS - Satellite tagging
--- UNION ALL  
+UNION ALL  
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
