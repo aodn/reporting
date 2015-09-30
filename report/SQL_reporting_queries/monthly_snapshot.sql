@@ -1,4 +1,4 @@
-SET search_path = report_test, public;
+SET search_path = reporting, public;
 
 -------------------------------
 -- Monthly snapshot

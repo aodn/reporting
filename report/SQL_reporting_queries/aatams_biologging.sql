@@ -1,4 +1,4 @@
-﻿SET search_path = report_test, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS aatams_biologging_all_deployments_view CASCADE;
 -------------------------------
 -- VIEWS FOR AATAMS_BIOLOGGING_PENGUIN AND AATAMS_BIOLOGGING_SHEARWATERS
