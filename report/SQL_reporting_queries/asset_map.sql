@@ -13,7 +13,7 @@ WITH soop_cpr AS (
   FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
     WHERE vessel_name != 'RV Cape Ferguson' AND vessel_name != 'RV Solander'
 	GROUP BY vessel_name),
-  aatams_sattag AS (
+  aatams_sattag_dm AS (
   SELECT device_id,
 	min(timestamp) AS date_start,
 	max(timestamp) AS date_end,
@@ -21,7 +21,16 @@ WITH soop_cpr AS (
   FROM aatams_sattag_dm.aatams_sattag_dm_profile_map
 	GROUP BY device_id 
 	ORDER BY random()
-	LIMIT 75),
+	LIMIT 35),
+  aatams_sattag_nrt AS (
+  SELECT device_id,
+	min(timestamp) AS date_start,
+	max(timestamp) AS date_end,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM aatams_sattag_nrt.aatams_sattag_nrt_profile_map
+	GROUP BY device_id 
+	ORDER BY random()
+	LIMIT 35),
   aatams_penguins AS(
   SELECT pttid, 
 	min(observation_start_date) AS date_start,
@@ -694,9 +703,9 @@ UNION ALL
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
-	'Emperor Penguins' AS product,
+	NULL AS product,
 	pttid AS platform_code,
-	'Satellite tag' AS platform_type,
+	'Emperor Penguins' AS platform_type,
 	date_start,
 	date_end,
 	FALSE AS w_temp_b,
@@ -723,9 +732,9 @@ UNION ALL
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
-	'Shearwaters' AS product,
+	NULL AS product,
 	animal_id AS platform_code,
-	'GLS tag' AS platform_type,
+	'Shearwaters' AS platform_type,
 	date_start,
 	date_end,
 	FALSE AS w_temp_b,
@@ -752,9 +761,9 @@ UNION ALL
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
-	'Snow petrels' AS product,
+	NULL AS product,
 	animal_id AS platform_code,
-	'GLS tag' AS platform_type,
+	'Snow petrels' AS platform_type,
 	date_start,
 	date_end,
 	FALSE AS w_temp_b,
@@ -781,9 +790,9 @@ UNION ALL
 
   SELECT 'AATAMS' AS facility,
 	'Biologging' AS subfacility,
-	'Seals and sea lions' AS product,
-	'Satellite tag' AS platform_type,
+	'delayed-mode' AS product,
 	device_id AS platform_code,
+	'Seals and sea lions' AS platform_type,
 	date_start,
 	date_end,
 	TRUE AS w_temp_b,
@@ -804,9 +813,39 @@ UNION ALL
 	geom,
 	'Point' AS gtype,
 	'#15D659' AS colour
-  FROM aatams_sattag
+  FROM aatams_sattag_dm
 	WHERE st_x(geom) > 0
 
+UNION ALL
+
+  SELECT 'AATAMS' AS facility,
+	'Biologging' AS subfacility,
+	'real-time' AS product,
+	device_id AS platform_code,
+	'Seals and sea lions' AS platform_type,
+	date_start,
+	date_end,
+	TRUE AS w_temp_b,
+	TRUE AS w_psal_b,
+	FALSE AS w_oxygen_b,
+	FALSE AS w_co2_b,
+	FALSE AS w_chlorophyll_b,
+	FALSE AS turb_b,
+	FALSE AS w_current_b,
+	FALSE AS wave_b,
+	FALSE AS air_temperature_b,
+	FALSE AS air_pressure_b,
+	FALSE AS air_co2_b,
+	FALSE AS wind_b,
+	FALSE AS plankton_b,
+	FALSE AS optical_properties_b,
+	TRUE AS animal_location_b,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_sattag_nrt
+	WHERE st_x(geom) > 0
+	
 ---- ABOS-TS
 UNION ALL
 
@@ -1060,7 +1099,7 @@ UNION ALL
 
   SELECT DISTINCT 'ANMN' AS facility,
 	'NRS' AS subfacility,
-	'real-time bio' AS product,
+	'real-time' AS product,
 	site_code AS platform_code,
 	'Mooring' AS platform_type,
 	min(time_coverage_start) AS date_start,
@@ -1090,7 +1129,7 @@ UNION ALL
 
   SELECT DISTINCT 'ANMN' AS facility,
 	'NRS' AS subfacility,
-	'real-time Darwin Yongala' AS product,
+	'real-time' AS product,
 	platform_code,
 	'Mooring' AS platform_type,
 	min(time_start) AS date_start,
@@ -1120,7 +1159,7 @@ UNION ALL
 
   SELECT DISTINCT 'ANMN' AS facility,
 	'NRS' AS subfacility,
-	'real-time meteo' AS product,
+	'real-time' AS product,
 	site_code AS platform_code,
 	'Mooring' AS platform_type,
 	min(time_coverage_start) AS date_start,
@@ -1150,7 +1189,7 @@ UNION ALL
 
   SELECT DISTINCT 'ANMN' AS facility,
 	'NRS' AS subfacility,
-	'real-time wave' AS product,
+	'real-time' AS product,
 	site_code AS platform_code,
 	'Mooring' AS platform_type,
 	min(time_coverage_start) AS date_start,
