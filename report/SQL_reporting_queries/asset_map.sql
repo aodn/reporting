@@ -1286,7 +1286,7 @@ UNION ALL
 	CASE WHEN substring(deployment_name,'[A-Za-z]*') = 'Tworocks' THEN 'TwoRocks' 
 		WHEN substring(deployment_name,'[A-Za-z]*') = 'Lizard' THEN 'LizardIsland' 
 		ELSE substring(deployment_name,'[A-Za-z]*') END AS platform_code,
-	platform_type,
+	CASE WHEN platform_type = 'seaglider' THEN 'Seaglider' WHEN platform_type = 'slocum glider' THEN 'Slocum glider' END AS platform_type,
 	min(time_coverage_start) AS date_start,
 	max(time_coverage_end) AS date_end,
 	TRUE AS w_temp_b,
@@ -1318,7 +1318,7 @@ UNION ALL
 	CASE WHEN substring(deployment_name,'[A-Za-z]*') = 'Tworocks' THEN 'TwoRocks' 
 		WHEN substring(deployment_name,'[A-Za-z]*') = 'Lizard' THEN 'LizardIsland' 
 		ELSE substring(deployment_name,'[A-Za-z]*') END AS platform_code,
-	platform_type,
+	CASE WHEN platform_type = 'seaglider' THEN 'Seaglider' WHEN platform_type = 'slocum glider' THEN 'Slocum glider' END AS platform_type,
 	min(time_coverage_start)::timestamp AS date_start,
 	max(time_coverage_end)::timestamp AS date_end,
 	TRUE AS w_temp_b,
@@ -1616,6 +1616,7 @@ UNION ALL
 	'Point' AS gtype,
 	'#FF0000' AS colour
   FROM dw_aatams_acoustic.aatams_acoustic_detections_map
+	WHERE installation_name != 'Obi Obi Creek'
 	GROUP BY installation_name
 	HAVING st_y(ST_CENTROID(ST_COLLECT(geom))) < 0
 

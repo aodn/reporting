@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS srs_all_deployments_view CASCADE;
 
 -------------------------------
@@ -289,7 +289,7 @@ oc AS (SELECT file_id, COUNT(*) AS no_measurements FROM srs_oc_soop_rad.measurem
   LEFT JOIN alt ON alt.site_name = m.site_name AND alt.instrument = m.instrument
 	GROUP BY m.site_name, d.site_code, m.instrument,alt.no_measurements
 UNION ALL
-  SELECT 'SRS - BioOptical database' AS subfacility, 
+  SELECT 'SRS - Bio-optical Database' AS subfacility, 
 	m.data_type AS parameter_site, 
 	m.cruise_id AS deployment_code, 
 	m.vessel_name AS sensor_name,
@@ -339,7 +339,9 @@ grant all on table srs_all_deployments_view to public;
 CREATE or replace VIEW srs_data_summary_view AS
  SELECT v.subfacility, 
 	CASE WHEN (v.parameter_site = 'absorption') THEN 'Absorption' 
-		WHEN (v.parameter_site = 'pigment') THEN 'Pigment' 
+		WHEN (v.parameter_site = 'pigment') THEN 'Pigment'
+		WHEN (v.parameter_site = 'backscattering') THEN 'Backscattering' 
+		WHEN (v.parameter_site = 'suspended matter') THEN 'Suspended matter' 
 		ELSE v.parameter_site END AS parameter_site, 
 	count(v.deployment_code) AS no_deployments, 
 	CASE WHEN subfacility = 'SRS - Gridded Products' THEN 0 ELSE count(DISTINCT v.sensor_name) END AS no_sensors,
