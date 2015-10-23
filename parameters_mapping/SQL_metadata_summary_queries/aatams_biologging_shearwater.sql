@@ -1,5 +1,5 @@
 ﻿SET SEARCH_PATH = parameters_mapping, contr_vocab_db, public; 
-DROP VIEW IF EXISTS aatams_biologging_shearwater_metadata_summarys;
+DROP VIEW IF EXISTS aatams_biologging_shearwater_metadata_summary;
 
 -- AATAMS Biologging shearwater
 CREATE OR REPLACE VIEW aatams_biologging_shearwater_metadata_summary AS
@@ -10,11 +10,11 @@ WITH p AS (
   LEFT JOIN parameters p ON p.unique_id = pm.parameter_id
 	WHERE facility = 'AATAMS' AND subfacility = 'biologging' AND product = 'shearwater'
 	ORDER BY variable_name || ',' || cf_standard_name || ',' || imos_vocabulary_name || ',' || uv.name || ',' || uv.short_name || ',' || uv.definition),
- a AS (SELECT DISTINCT animal_id,substring(animal_id,'(.*)-')::text AS id FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map ORDER BY substring(animal_id,'(.*)-')),
+ a AS (SELECT DISTINCT animal_id,substring(animal_id,'(.*)-')::text AS id, release_date FROM aatams_biologging_shearwater.aatams_biologging_shearwater_map ORDER BY substring(animal_id,'(.*)-')),
  b AS (SELECT '# ' || a.animal_id || ',' || tag_type || ',' || tag_code || ',' || tag_id || ',' || round(release_longitude::numeric,3) || ',' || round(release_latitude::numeric,3) || ',' || 
 COALESCE(mass_at_release::text,'') || ',' || COALESCE(round(culman_length::numeric,1)::text,'') || ',' || COALESCE(round(culman_height::numeric,1)::text,'')
 FROM a
-JOIN aatams_biologging_shearwater.aatams_biologging_shearwater_metadata m ON m.tag_id::text = a.id
+JOIN aatams_biologging_shearwater.aatams_biologging_shearwater_metadata m ON m.tag_id::text = a.id AND m.release_date = a.release_date
 ORDER BY a.animal_id)
   SELECT '# data_column_name' || ',' || 'cf_standard_name' || ',' || 'imos_vocabulary_name' || ',' || 'unit_name' || ',' || 'unit_short_name' || ',' || 'uv.definition'
 UNION ALL

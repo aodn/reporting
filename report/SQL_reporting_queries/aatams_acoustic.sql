@@ -1,11 +1,11 @@
 ﻿SET search_path = report_test, public;
-DROP TABLE IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_embargo_totals_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_registered_totals_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_stats_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_project_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_project_data_summary_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_embargo_totals_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_registered_totals_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_stats_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
 DROP TABLE IF EXISTS aatams_acoustic_species_totals_view CASCADE; -- Delete that row once script has run once on report_test schema
 DROP VIEW IF EXISTS aatams_acoustic_project_totals_view CASCADE;
 
@@ -550,7 +550,7 @@ no_transmitters, no_releases, no_releases_with_location, no_embargo, no_protecte
 CREATE OR REPLACE VIEW report_test.aatams_acoustic_embargo_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_embargo_totals_view;
 CREATE OR REPLACE VIEW report_test.aatams_acoustic_registered_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_registered_totals_view;
 CREATE OR REPLACE VIEW report_test.aatams_acoustic_stats_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_stats_view;
-CREATE OR REPLACE VIEW report_test.aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view;
+CREATE OR REPLACE VIEW report_test.aatams_acoustic_project_all_deployments_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_all_deployments_view ORDER BY project_name, installation_name, station_name;
 CREATE OR REPLACE VIEW report_test.aatams_acoustic_project_data_summary_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_data_summary_view;
 CREATE OR REPLACE VIEW report_test.aatams_acoustic_project_totals_view AS SELECT * FROM dw_aatams_acoustic.aatams_acoustic_project_totals_view;
 

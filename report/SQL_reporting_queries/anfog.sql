@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
 DROP TABLE IF EXISTS anfog_all_deployments_view CASCADE;
 
@@ -16,10 +16,10 @@ dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_d
 	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(mrt.deployment_name, '[aA-zZ]+') END AS deployment_location,
-	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'SEA IMOS'
+	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay','Portland') THEN 'SEA IMOS'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
-		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','SpencerGulf') THEN 'SA'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo') THEN 'WA' END AS deployment_state,
 	 rt.no_measurements,
 	 min(date(mrt.time_coverage_start)) AS start_date, 
@@ -47,10 +47,10 @@ UNION ALL
 	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') = 'PortStephens_' THEN 'PortStephens' 
 		WHEN substring(m.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(m.deployment_name, '[aA-zZ]+') END AS deployment_location,
-	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay') THEN 'SEA IMOS'
+	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay','Portland') THEN 'SEA IMOS'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland') THEN 'QLD'
-		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','Portland','SpencerGulf') THEN 'SA'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','SpencerGulf') THEN 'SA'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo') THEN 'WA' END AS deployment_state,
 	 dm.no_measurements,
 	 date(m.time_coverage_start) AS start_date, 

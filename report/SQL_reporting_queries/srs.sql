@@ -305,7 +305,7 @@ UNION ALL
 UNION ALL
   SELECT * FROM gridded
 UNION ALL
-  SELECT 'SRS - Ocean Colour' AS subfacility, 
+  SELECT 'SRS - Ocean Colour Calibration' AS subfacility, 
 	m.vessel_name AS parameter_site, 
 	m.voyage_id AS deployment_code, 
 	NULL::character varying AS sensor_name,
@@ -319,7 +319,7 @@ UNION ALL
   LEFT JOIN oc o ON o.file_id = m.file_id
 	GROUP BY parameter_site, voyage_id
 UNION ALL
-  SELECT 'SRS - Ocean Colour' AS subfacility, 
+  SELECT 'SRS - Ocean Colour Calibration' AS subfacility, 
 	'Lucinda Jetty Coastal Observatory' AS parameter_site, 
 	file_id::text AS deployment_code, 
 	NULL::character varying AS sensor_name,

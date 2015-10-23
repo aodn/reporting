@@ -23,7 +23,7 @@ UNION ALL
 UNION ALL
   SELECT '#'
 UNION ALL
-  SELECT '# device_id' || ',' || 'device_wmo_ref' || ',' || 'tag_type' || ',' || 'common_name' || ',' || 'release_site' || ',' || 'release_lon' || ',' ||
+  SELECT '# device_id' || ',' || 'tag_type' || ',' || 'common_name' || ',' || 'release_site' || ',' || 'release_lon' || ',' ||
 	'release_lat' || ',' || 'state_country' || ',' || 'release_date' || ',' || 'age_class' || ',' || 'sex' || ',' ||
 	'curved_carapace_length_cm' || ',' || 'curved_carapace_width_cm' || ',' || 'mass_kg' || ',' || 'sample' || ',' || 'comment' || ',' || 'principal investigator' || ',' || 'institution'
 UNION ALL
