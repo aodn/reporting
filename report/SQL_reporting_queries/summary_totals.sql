@@ -19,8 +19,8 @@ WITH argo AS (
 
   soop AS (
   SELECT COALESCE('SOOP'::text||'-'||subfacility||' '||type) AS facility, 
-	'# cruises'::text AS stat_1_attrib, 
-	no_deployments AS stat_1_value, 
+	CASE WHEN subfacility IN ('SST', 'TMV') THEN NULL ELSE '# cruises'::text END AS stat_1_attrib, 
+	CASE WHEN subfacility IN ('SST', 'TMV') THEN NULL ELSE no_deployments END AS stat_1_value, 
 	CASE WHEN subfacility = 'XBT' THEN '# profiles'::text WHEN subfacility = 'CPR' THEN '# samples' ELSE '# data files'::text END AS stat_2_attrib, 
 	no_data AS stat_2_value,
 	CASE WHEN subfacility = 'CPR' THEN '# days of data'::text ELSE '# measurements'::text END AS stat_3_attrib, 
@@ -51,13 +51,13 @@ WITH argo AS (
 	WHERE facility = 'ANFOG'::text AND type = 'TOTAL'),
   
   auv AS (
-  SELECT 'AUV'::text AS facility, 
-	'# deployments'::text AS stat_1_attrib, 
-	no_instruments AS stat_1_value, 
-	'# images'::text AS stat_2_attrib, 
-	no_data AS stat_2_value,
-	'# days of data'::text AS stat_3_attrib, 
-	no_data2 AS stat_3_value	
+  SELECT 'AUV'::text AS facility,
+	'# deployment campaigns'::text AS stat_1_attrib, 
+	no_platforms AS stat_1_value,
+	'# deployments'::text AS stat_2_attrib, 
+	no_instruments AS stat_2_value, 
+	'# images'::text AS stat_3_attrib, 
+	no_data AS stat_3_value	
   FROM totals_view 
 	WHERE facility = 'AUV'),
 	

@@ -22,7 +22,7 @@ psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/a
 echo @@@@@@@@ Metadata summary views - ANMN AM DM @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_am_dm.sql;
 echo @@@@@@@@ Metadata summary views - ANMN AM NRT @@@@@@@@
-psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_am_nrt.sql;
+psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_acidification_nrt.sql;
 echo @@@@@@@@ Metadata summary views - ANMN BURST AVG @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_burst_avg.sql;
 echo @@@@@@@@ Metadata summary views - ANMN MHL WAVE @@@@@@@@
@@ -30,7 +30,7 @@ psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/a
 echo @@@@@@@@ Metadata summary views - ANMN NRS BGC @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_nrs_bgc.sql;
 echo @@@@@@@@ Metadata summary views - ANMN NRS CTD @@@@@@@@
-psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_nrs_ctd.sql;
+psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_nrs_ctd_profiles.sql;
 echo @@@@@@@@ Metadata summary views - ANMN NRS DAR YON @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/anmn_nrs_dar_yon.sql;
 echo @@@@@@@@ Metadata summary views - ANMN RT BIO @@@@@@@@
