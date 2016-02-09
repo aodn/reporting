@@ -54,7 +54,7 @@ psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/a
 echo @@@@@@@@ Metadata summary views - NOAA Drifters @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/noaa_drifters.sql;
 echo @@@@@@@@ Metadata summary views - SOOP ASF MFT @@@@@@@@
-psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/soop_asf_mft.sql;
+psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/soop_asf_fmt.sql;
 echo @@@@@@@@ Metadata summary views - SOOP ASF MT @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_metadata_summary_queries/soop_asf_mt.sql;
 echo @@@@@@@@ Metadata summary views - SOOP CO2 @@@@@@@@

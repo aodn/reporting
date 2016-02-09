@@ -1,5 +1,4 @@
-SET search_path = reporting, public;
-DROP VIEW IF EXISTS faimms_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
+﻿SET search_path = reporting, public;
 DROP TABLE IF EXISTS faimms_all_deployments_view CASCADE;
 
 -------------------------------
@@ -15,7 +14,7 @@ FROM d_1 GROUP BY channel_id)
   SELECT DISTINCT m.platform_code AS site_name, 
 	m.site_code AS platform_code, 
 	COALESCE(m.channel_id || ' - ' || (m."VARNAME")) AS sensor_code, 
-	(m."DEPTH")::numeric AS sensor_depth, 
+	(m."NOMINAL_DEPTH")::numeric AS sensor_depth, 
 	date(m.time_start) AS start_date, 
 	date(m.time_end) AS end_date, 
 	round((date_part('days', (m.time_end - m.time_start)) + date_part('hours', (m.time_end - m.time_start))/24)::numeric/365.25, 1) AS coverage_duration, 

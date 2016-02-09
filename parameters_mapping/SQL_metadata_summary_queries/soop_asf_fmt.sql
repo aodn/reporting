@@ -1,8 +1,8 @@
 ﻿SET SEARCH_PATH = parameters_mapping, contr_vocab_db, public; 
-DROP VIEW IF EXISTS soop_asf_mft_metadata_summary;
+DROP VIEW IF EXISTS soop_asf_fmt_metadata_summary;
 
 -- SOOP ASF MFT
-CREATE OR REPLACE VIEW soop_asf_mft_metadata_summary AS
+CREATE OR REPLACE VIEW soop_asf_fmt_metadata_summary AS
 WITH p AS (
   SELECT '# ' || variable_name || ',' || cf_standard_name || ',' || imos_vocabulary_name || ',' || uv.name || ',' || uv.short_name || ',' || uv.definition
   FROM parameters_mapping pm
@@ -27,4 +27,4 @@ UNION ALL
 UNION ALL
   SELECT * FROM q;
 
-GRANT SELECT ON soop_asf_mft_metadata_summary TO harvest_read_group, public;
+GRANT SELECT ON soop_asf_fmt_metadata_summary TO harvest_read_group, public;

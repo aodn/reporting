@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 
 -------------------------------
@@ -6,7 +6,7 @@ DROP VIEW IF EXISTS soop_all_deployments_view CASCADE;
 ------------------------------- 
 -- All deployments view
 CREATE or replace VIEW soop_all_deployments_view AS
-WITH a AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mft.soop_asf_mft_trajectory_data GROUP BY file_id),
+WITH a AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_fmt.soop_asf_fmt_trajectory_data GROUP BY file_id),
 b AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_asf_mt.soop_asf_mt_trajectory_data GROUP BY file_id),
 c AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_ba.measurements GROUP BY file_id),
 e AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_co2.soop_co2_trajectory_data GROUP BY file_id),
@@ -30,7 +30,7 @@ j AS (SELECT trip_id, COUNT(measurement) AS nb_measurements FROM soop_trv.measur
   round(max(ST_YMAX(m.geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(m.geom))::numeric, 1) AS min_lon, 
   round(max(ST_XMAX(m.geom))::numeric, 1) AS max_lon
-  FROM soop_asf_mft.soop_asf_mft_trajectory_map m
+  FROM soop_asf_fmt.soop_asf_fmt_trajectory_map m
   JOIN a ON a.file_id = m.file_id
     GROUP BY subfacility, m.vessel_name, m.cruise_id
     
@@ -207,22 +207,25 @@ UNION ALL
 UNION ALL 
 
   SELECT 'XBT Near real-time' AS subfacility,
-  COALESCE("XBT_line" || ' | ' || CASE WHEN vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE vessel_name END) AS vessel_name,
-  NULL AS deployment_id,
-  date_part('year',"TIME") AS year,
-  COUNT(profile_id) AS no_files_profiles,
-  SUM(nb_measurements) AS no_measurements,
-  COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
-  COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
-  date(min("TIME")) AS start_date, 
-  date(max("TIME")) AS end_date,
-  round((date_part('days',max("TIME") - min("TIME")) + date_part('hours',max("TIME") - min("TIME"))/24)::numeric, 1) AS coverage_duration,
-  round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
-  round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
-  round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
-  round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_xbt_nrt.soop_xbt_nrt_profiles_map
-    GROUP BY subfacility, "XBT_line",vessel_name, year
+	CASE WHEN COALESCE(line_name || ' | ' || CASE WHEN m.vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE m.vessel_name END) IS NULL THEN 
+		(CASE WHEN m.vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE m.vessel_name END) ELSE 
+		COALESCE(line_name || ' | ' || CASE WHEN m.vessel_name = 'ANL-Benalla' THEN 'ANL Benalla' ELSE m.vessel_name END) END AS vessel_name,
+	NULL AS deployment_id,
+	date_part('year',"TIME") AS year,
+	COUNT(profile_id) AS no_files_profiles,
+	SUM(nb_measurements) AS no_measurements,
+	COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
+	COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
+	date(min("TIME")) AS start_date, 
+	date(max("TIME")) AS end_date,
+	round((date_part('days',max("TIME") - min("TIME")) + date_part('hours',max("TIME") - min("TIME"))/24)::numeric, 1) AS coverage_duration,
+	round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
+	round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
+	round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
+	round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
+  FROM soop_xbt_nrt.soop_xbt_nrt_profiles_map m
+  LEFT JOIN report.soop_xbt_realtime_manual ON soop_xbt_realtime_manual.callsign = m."Callsign" AND "TIME" > start_date AND "TIME" < end_date
+    GROUP BY subfacility, line_name, m.vessel_name, year
 
 UNION ALL 
 

@@ -1,5 +1,4 @@
 ﻿SET search_path = reporting, public;
-DROP VIEW IF EXISTS anfog_all_deployments_view CASCADE; -- Delete that row once script has run once on reporting schema
 DROP TABLE IF EXISTS anfog_all_deployments_view CASCADE;
 
 -------------------------------

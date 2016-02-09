@@ -6,7 +6,6 @@ DROP VIEW IF EXISTS aatams_acoustic_registered_totals_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_stats_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_species_all_deployments_view CASCADE;
 DROP VIEW IF EXISTS aatams_acoustic_species_data_summary_view CASCADE;
-DROP TABLE IF EXISTS aatams_acoustic_species_totals_view CASCADE; -- Delete that row once script has run once on reporting schema
 DROP VIEW IF EXISTS aatams_acoustic_project_totals_view CASCADE;
 
 -------------------------------
