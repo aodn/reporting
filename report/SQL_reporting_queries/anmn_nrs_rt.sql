@@ -2,27 +2,37 @@ SET search_path = reporting, public;
 DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
 
 -------------------------------
--- VIEW FOR ANMN NRS real-time; The legacy_anmn schema and report.nrs_aims_manual table are not being used for reporting anymore.
+-- VIEW FOR ANMN NRS real-time;
+-- The legacy_anmn schema and report.nrs_aims_manual table are not being used for reporting anymore.
+-- Using the anmn_platforms_manual table from the report schema
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
-  SELECT DISTINCT CASE WHEN site_code = 'NRSMAI' THEN 'Maria Island'
-        WHEN site_code = 'NRSYON' OR site_code = 'YongalaNRS' THEN 'Yongala'
-        WHEN site_code = 'NRSDAR' OR site_code = 'Darwin NRS Buoy' THEN 'Darwin'
-        WHEN site_code = 'NRSNSI' THEN 'North Stradbroke Island' END as site_name,
-   CASE WHEN source = instrument THEN source
-        ELSE COALESCE(source || '-' || instrument) END AS channel_id,
-   CASE WHEN substring(file_version,'[0-9]+') = '1' THEN true
-        ELSE false END AS qaqc_data,
-   time_coverage_start AS start_date,
-   time_coverage_end AS end_date,
-   round((date_part('days', (time_coverage_end - time_coverage_start)) + date_part('hours', (time_coverage_end - time_coverage_start))/24)::numeric, 1) AS coverage_duration,
-   CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON' WHEN site_code = 'Darwin NRS Buoy' THEN 'NRSDAR' ELSE site_code END AS platform_code,
-   CASE WHEN instrument_nominal_depth IS NULL THEN geospatial_vertical_max::numeric 
-        ELSE instrument_nominal_depth::numeric END AS sensor_depth
-  FROM dw_anmn_realtime.anmn_mv
-  WHERE time_coverage_start > '2000-01-01'
-   ORDER BY site_name, channel_id, start_date;
+  WITH site_view AS (
+    SELECT DISTINCT
+      site_code,
+      replace(site_name, 'National Reference Station', 'NRS') AS site_name
+    FROM report.anmn_platforms_manual
+  )
+  SELECT DISTINCT
+    CASE WHEN site_code = 'YongalaNRS' THEN 'Yongala NRS'
+         WHEN site_code = 'Darwin NRS Buoy' THEN 'Darwin NRS'
+         WHEN site_code = 'NRSBEA' THEN 'Beagle Gulf'
+         ELSE site_name
+    END as site_name,
+    COALESCE(data_category||' - '||instrument, data_category, instrument) AS channel_id,
+    file_version = '1' AS qaqc_data,
+    time_coverage_start AS start_date,
+    time_coverage_end AS end_date,
+    round((date_part('days', (time_coverage_end - time_coverage_start)) + date_part('hours', (time_coverage_end - time_coverage_start))/24)::numeric, 1) AS coverage_duration,
+    CASE WHEN site_code = 'YongalaNRS' THEN 'NRSYON'
+         WHEN site_code = 'Darwin NRS Buoy' THEN 'NRSDAR'
+         ELSE site_code
+    END AS platform_code,
+    COALESCE(instrument_nominal_depth::numeric, geospatial_vertical_max::numeric) AS sensor_depth
+  FROM anmn_metadata.file_metadata m LEFT JOIN site_view s USING (site_code)
+  WHERE realtime AND NOT deleted AND time_coverage_start > '2000-01-01'
+  ORDER BY site_name, channel_id, start_date;
 
 grant all on table anmn_nrs_realtime_all_deployments_view to public;
 

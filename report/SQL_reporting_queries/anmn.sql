@@ -6,6 +6,7 @@ DROP VIEW IF EXISTS anmn_all_deployments_view CASCADE;
 -------------------------------
 -- All deployments view
 CREATE or replace VIEW anmn_all_deployments_view AS
+
   WITH site_view AS (
   SELECT m.site_code, 
 	m.site_name, 
@@ -14,29 +15,30 @@ CREATE or replace VIEW anmn_all_deployments_view AS
   FROM report.anmn_platforms_manual m
 	GROUP BY m.site_code, m.site_name 
 	ORDER BY m.site_code), 
+
     file_view AS (
-  SELECT 
-	DISTINCT "substring"((v.url), 'IMOS/ANMN/([A-Z]+)/') AS subfacility, 
-	v.site_code, 
-	v.platform_code, 
-	v.deployment_code, 
-	"substring"((v.url), '([^_]+)_END') AS deployment_product, 
-	v.status, 
-	"substring"(v.file_version, 'Level ([012]+)') AS file_version, 
-	"substring"((v.url), '(Temperature|CTD_timeseries|CTD_profiles|Biogeochem_timeseries|Biogeochem_profiles|Velocity|Wave|CO2|Meteorology)') AS data_category, 
-	NULLIF(v.geospatial_vertical_min, '-Infinity')::double precision AS geospatial_vertical_min, 
-	NULLIF(v.geospatial_vertical_max, 'Infinity')::double precision AS geospatial_vertical_max, 
-	CASE WHEN timezone('UTC', v.time_deployment_start) IS NULL THEN v.time_coverage_start 
-		ELSE (timezone('UTC', v.time_deployment_start))::timestamp with time zone END AS time_deployment_start, 
-	CASE WHEN timezone('UTC', v.time_deployment_end) IS NULL THEN v.time_coverage_end 
-		ELSE (timezone('UTC', v.time_deployment_end))::timestamp with time zone END AS time_deployment_end, 
-	timezone('UTC', GREATEST(v.time_deployment_start, v.time_coverage_start)) AS good_data_start, 
-	timezone('UTC', LEAST(v.time_deployment_end, v.time_coverage_end)) AS good_data_end, 
-	(v.time_coverage_end - v.time_coverage_start) AS coverage_duration, 
-	(v.time_deployment_end - v.time_deployment_start) AS deployment_duration, 
-	GREATEST('00:00:00'::interval, (LEAST(v.time_deployment_end, v.time_coverage_end) - GREATEST(v.time_deployment_start, v.time_coverage_start))) AS good_data_duration
-  FROM dw_anmn.anmn_mv v 
-	ORDER BY subfacility, deployment_code, data_category)
+      SELECT DISTINCT
+        substring(i.url, 'IMOS/ANMN/([A-Z]+)/') AS subfacility,
+	m.site_code,
+	m.platform_code,
+	m.deployment_code,
+	substring(i.url, '([^_]+)_END') AS deployment_product,
+	m.deleted,
+	m.file_version,
+	m.data_category,
+	NULLIF(m.geospatial_vertical_min, '-Infinity')::double precision AS geospatial_vertical_min,
+	NULLIF(m.geospatial_vertical_max, 'Infinity')::double precision AS geospatial_vertical_max,
+        COALESCE(timezone('UTC', m.time_deployment_start), timezone('UTC', m.time_coverage_start)) AS time_deployment_start,
+        COALESCE(timezone('UTC', m.time_deployment_end), timezone('UTC', m.time_coverage_end)) AS time_deployment_end,
+	timezone('UTC', GREATEST(m.time_deployment_start, m.time_coverage_start)) AS good_data_start,
+	timezone('UTC', LEAST(m.time_deployment_end, m.time_coverage_end)) AS good_data_end,
+	(m.time_coverage_end - m.time_coverage_start) AS coverage_duration,
+	(m.time_deployment_end - m.time_deployment_start) AS deployment_duration,
+	GREATEST('00:00:00'::interval, (LEAST(m.time_deployment_end, m.time_coverage_end) - GREATEST(m.time_deployment_start, m.time_coverage_start))) AS good_data_duration
+      FROM anmn_metadata.indexed_file i JOIN anmn_metadata.file_metadata m ON m.file_id = i.id
+      WHERE NOT m.realtime AND NOT m.deleted
+    )
+
   SELECT 
 	f.subfacility, 
 	CASE WHEN s.site_name IS NULL THEN f.site_code ELSE s.site_name END AS site_name_code, 
@@ -62,11 +64,13 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	f.site_code 
   FROM file_view f 
   LEFT JOIN site_view s ON f.site_code = s.site_code
-	WHERE f.status IS NULL 
+	WHERE NOT f.deleted
 	GROUP BY f.subfacility, f.site_code, s.site_name, f.data_category, f.deployment_code 
 	ORDER BY f.subfacility, f.site_code, f.data_category, f.deployment_code;
 
 grant all on table anmn_all_deployments_view to public;
+
+
 
 -- Data summary view
 CREATE OR REPLACE VIEW anmn_data_summary_view AS
