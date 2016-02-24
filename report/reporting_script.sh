@@ -14,7 +14,7 @@ psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anfog.sq
 echo @@@@@@@@ Reporting views - ANMN NRS BGC @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn_nrs_bgc.sql;
 echo @@@@@@@@ Reporting views - ANMN NRS RT @@@@@@@@
-psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn_nrs_rt.sql;
+psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn_rt.sql;
 echo @@@@@@@@ Reporting views - ANMN PA @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn_pa.sql;
 echo @@@@@@@@ Reporting views - ANMN @@@@@@@@
