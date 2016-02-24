@@ -1152,7 +1152,7 @@ UNION ALL
 	ST_CENTROID(ST_COLLECT(geom)) AS geom,
 	'Point' AS gtype,
 	'#8212CC' AS colour
-  FROM anmn_nrs_dar_yon.anmn_nrs_yon_dar_timeseries_map
+  FROM anmn_nrs_dar_yon.anmn_nrs_dar_yon_timeseries_map
 	GROUP BY platform_code
 	
 UNION ALL
