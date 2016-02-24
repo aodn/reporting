@@ -394,7 +394,7 @@ UNION ALL
 	NULL AS depth_range
   FROM anmn_acoustics_data_summary_view
   
--- ANMN - NRS Real-Time
+-- ANMN - Real-Time
 UNION ALL
 
   SELECT 'ANMN' AS facility,
@@ -412,7 +412,7 @@ UNION ALL
 	NULL AS lat_range,
 	NULL AS lon_range,
 	COALESCE(min(min_depth)||' - '||max(max_depth)) AS depth_range
-  FROM anmn_nrs_realtime_data_summary_view
+  FROM anmn_rt_data_summary_view
 
 -- ANMN - NRS BGC
 UNION ALL

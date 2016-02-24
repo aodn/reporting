@@ -1,5 +1,6 @@
 SET search_path = reporting, public;
 DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS anmn_rt_all_deployments_view CASCADE;
 
 -------------------------------
 -- VIEW FOR ANMN NRS real-time;
@@ -7,7 +8,7 @@ DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
 -- Using the anmn_platforms_manual table from the report schema
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
+CREATE or replace VIEW anmn_rt_all_deployments_view AS
   WITH site_view AS (
     SELECT DISTINCT
       site_code,
@@ -34,10 +35,10 @@ CREATE or replace VIEW anmn_nrs_realtime_all_deployments_view AS
   WHERE realtime AND NOT deleted AND time_coverage_start > '2000-01-01'
   ORDER BY site_name, channel_id, start_date;
 
-grant all on table anmn_nrs_realtime_all_deployments_view to public;
+grant all on table anmn_rt_all_deployments_view to public;
 
 -- Data summary view
-CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
+CREATE or replace VIEW anmn_rt_data_summary_view AS
   SELECT v.site_name AS site_name,
 	COUNT(DISTINCT(channel_id)) AS nb_channels,
 	sum(CASE WHEN v.qaqc_data = true THEN 1 ELSE 0 END) AS no_qc_data,
@@ -49,8 +50,8 @@ CREATE or replace VIEW anmn_nrs_realtime_data_summary_view AS
 	round(min(v.coverage_duration), 1) || ' - ' || round(max(v.coverage_duration), 1) AS no_data_days, -- Range in number of data days
 	min(v.sensor_depth) AS min_depth, 
 	max(v.sensor_depth) AS max_depth 
-  FROM anmn_nrs_realtime_all_deployments_view v
+  FROM anmn_rt_all_deployments_view v
 	GROUP BY v.site_name  
 	ORDER BY site_name;
 
-grant all on table anmn_nrs_realtime_data_summary_view to public;
+grant all on table anmn_rt_data_summary_view to public;
