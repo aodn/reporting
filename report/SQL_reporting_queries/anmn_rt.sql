@@ -1,5 +1,4 @@
-SET search_path = reporting, public;
-DROP VIEW IF EXISTS anmn_nrs_realtime_all_deployments_view CASCADE;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS anmn_rt_all_deployments_view CASCADE;
 
 -------------------------------
