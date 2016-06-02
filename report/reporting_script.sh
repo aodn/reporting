@@ -1,3 +1,4 @@
+## After having run this script, the reporting schema should have 10 tables and 34 views.
 export PGPASSWORD='MicroCuts2001!';
 echo @@@@@@@@ Reporting view - AATAMS Acoustic @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/aatams_acoustic.sql;
