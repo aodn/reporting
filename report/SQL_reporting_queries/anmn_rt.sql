@@ -30,8 +30,9 @@ CREATE or replace VIEW anmn_rt_all_deployments_view AS
          ELSE site_code
     END AS platform_code,
     COALESCE(instrument_nominal_depth::numeric, geospatial_vertical_max::numeric) AS sensor_depth
-  FROM anmn_metadata.file_metadata m LEFT JOIN site_view s USING (site_code)
-  WHERE realtime AND NOT deleted AND time_coverage_start > '2000-01-01'
+  FROM anmn_metadata.indexed_file i JOIN anmn_metadata.file_metadata m ON m.file_id = i.id
+                                    LEFT JOIN site_view s USING (site_code)
+  WHERE i.url LIKE 'IMOS/ANMN%' AND m.realtime AND NOT m.deleted AND m.time_coverage_start > '2000-01-01'
   ORDER BY site_name, channel_id, start_date;
 
 grant all on table anmn_rt_all_deployments_view to public;

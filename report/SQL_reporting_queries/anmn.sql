@@ -36,7 +36,7 @@ CREATE or replace VIEW anmn_all_deployments_view AS
 	(m.time_deployment_end - m.time_deployment_start) AS deployment_duration,
 	GREATEST('00:00:00'::interval, (LEAST(m.time_deployment_end, m.time_coverage_end) - GREATEST(m.time_deployment_start, m.time_coverage_start))) AS good_data_duration
       FROM anmn_metadata.indexed_file i JOIN anmn_metadata.file_metadata m ON m.file_id = i.id
-      WHERE NOT m.realtime AND NOT m.deleted
+      WHERE i.url LIKE 'IMOS/ANMN%' AND NOT m.realtime AND NOT m.deleted
     )
 
   SELECT 
