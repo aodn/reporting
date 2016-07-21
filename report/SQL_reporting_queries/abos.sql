@@ -8,31 +8,30 @@ DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
 CREATE or replace VIEW abos_all_deployments_view AS
     WITH table_a AS (
     SELECT 
-    substring(url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility, 
-    CASE WHEN platform_code = 'PULSE' THEN 'Pulse' 
-	ELSE platform_code END AS platform_code, 
-    CASE WHEN deployment_code IS NULL THEN COALESCE(platform_code || '-' || CASE WHEN (deployment_number IS NULL) THEN '' 
-	ELSE deployment_number END) || '-' || btrim(to_char(time_coverage_start, 'YYYY')) ELSE deployment_code END AS deployment_code,
-    substring(url, '[^/]+nc') AS file_name,
-    (substring(url, 'FV0([12]+)'))::integer AS file_version,
-    CASE WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Pulse' 
-	OR substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'SAZ' THEN 'Biogeochemistry'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'CTD_Timeseries' THEN 'CTD timeseries'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_currents' THEN 'Sub-surface currents'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Sub-surface_temperature_pressure_conductivity' THEN 'Sub-surface CTD'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_fluxes' THEN 'Surface fluxes'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_properties' THEN 'Surface properties'
-	WHEN substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') = 'Surface_waves' THEN 'Surface waves'
-	ELSE substring(url, '(Surface_waves|Surface_properties|Surface_fluxes|Sub-surface_temperature_pressure_conductivity|Pulse|SAZ|Sub-surface_currents|Velocity|Temperature|CTD_timeseries|CTD_Timeseries)') END AS data_category,
-    COALESCE(substring(url, 'Real-time'), 'Delayed-mode') AS data_type, 
-    COALESCE(substring(url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency, 
-    timezone('UTC'::text, time_coverage_start) AS coverage_start, 
-    timezone('UTC'::text, time_coverage_end) AS coverage_end, 
-    round(((date_part('day', (time_coverage_end - time_coverage_start)) + (date_part('hours'::text, (time_coverage_end - time_coverage_start)) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
-    deployment_number
-    FROM dw_abos.abos_file
-    WHERE status IS DISTINCT FROM 'DELETED'
-    ORDER BY sub_facility, platform_code, data_category)
+    substring(i.url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility,
+    CASE WHEN m.platform_code = 'PULSE' THEN 'Pulse'
+	ELSE m.platform_code END AS platform_code,
+    COALESCE(m.deployment_code,
+             m.platform_code || '-' || COALESCE(m.deployment_number, '') || '-' || btrim(to_char(m.time_coverage_start, 'YYYY'))
+    )  AS deployment_code,
+    substring(i.url, '[^/]+nc$') AS file_name,
+    m.file_version::integer AS file_version,
+    regexp_replace(replace(replace(m.data_category, '_', ' '),
+                           'temperature pressure conductivity',
+                           'CTD'
+                          ),
+                   'Biogeochem.*|^Pulse',
+                   'Biogeochemistry'
+    ) AS data_category,
+    CASE WHEN m.realtime THEN 'Real-time' ELSE 'Delayed-mode' END AS data_type,
+    COALESCE(substring(i.url, '[0-9]{4}_daily'), 'Whole deployment') AS year_frequency,
+    timezone('UTC'::text, m.time_coverage_start) AS coverage_start,
+    timezone('UTC'::text, m.time_coverage_end) AS coverage_end,
+    round(((date_part('day', (m.time_coverage_end - m.time_coverage_start)) + (date_part('hours'::text, (m.time_coverage_end - m.time_coverage_start)) / (24)::double precision)))::numeric, 1) AS coverage_duration,
+    m.deployment_number
+    FROM anmn_metadata.indexed_file i JOIN anmn_metadata.file_metadata m ON m.file_id = i.id
+    WHERE i.url LIKE 'IMOS/ABOS%' AND NOT m.deleted
+    )
   SELECT CASE WHEN a.year_frequency = 'Whole deployment' THEN 'Aggregated files' 
 	ELSE 'Daily files' END AS file_type, 
 	COALESCE(a.sub_facility || '-' || a.platform_code || ' - ' || a.data_type) AS headers, 
