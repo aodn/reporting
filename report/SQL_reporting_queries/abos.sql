@@ -29,9 +29,7 @@ CREATE or replace VIEW abos_all_deployments_view AS
     timezone('UTC'::text, time_coverage_start) AS coverage_start, 
     timezone('UTC'::text, time_coverage_end) AS coverage_end, 
     round(((date_part('day', (time_coverage_end - time_coverage_start)) + (date_part('hours'::text, (time_coverage_end - time_coverage_start)) / (24)::double precision)))::numeric, 1) AS coverage_duration, 
-    (date_part('day', (last_modified - date_created)))::integer AS days_to_process_and_upload, 
-    (date_part('day', (last_indexed - last_modified)))::integer AS days_to_make_public, 
-    deployment_number, author, principal_investigator 
+    deployment_number
     FROM dw_abos.abos_file
     WHERE status IS DISTINCT FROM 'DELETED'
     ORDER BY sub_facility, platform_code, data_category)
@@ -49,14 +47,11 @@ CREATE or replace VIEW abos_all_deployments_view AS
 	max(a.coverage_end) AS time_coverage_end, 
 	CASE WHEN a.data_type = 'Delayed-mode' AND a.year_frequency = 'Whole deployment' THEN max(a.coverage_duration) 
 		ELSE (date(max(a.coverage_end)) - date(min(a.coverage_start)))::numeric END AS coverage_duration, 
-	round(avg(a.days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
-	round(avg(a.days_to_make_public), 1) AS mean_days_to_make_public, 
-	a.deployment_number, a.author, 
-	a.principal_investigator, 
+	a.deployment_number,
 	a.platform_code, 
 	a.sub_facility 
   FROM table_a a
-	GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.author, a.principal_investigator, a.platform_code, a.sub_facility 
+	GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.platform_code, a.sub_facility
 	ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
 
 grant all on table abos_all_deployments_view to public;
@@ -81,8 +76,6 @@ CREATE or replace VIEW abos_data_summary_view AS
 	WHEN (sum(v.coverage_duration))::integer > ceil(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric)
 	THEN (((round(((date_part('day', (max(v.time_coverage_end) - min(v.time_coverage_start))) + (date_part('hours', (max(v.time_coverage_end) - min(v.time_coverage_start))) / (24)::double precision)))::numeric, 1) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer
 	ELSE (((sum(v.coverage_duration) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer END AS percent_coverage, 
-    round(avg(v.mean_days_to_process_and_upload), 1) AS mean_days_to_process_and_upload, 
-    round(avg(v.mean_days_to_make_public), 1) AS mean_days_to_make_public, 
     v.platform_code, 
     v.sub_facility 
     FROM abos_all_deployments_view v
