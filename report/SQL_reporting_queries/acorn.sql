@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP TABLE IF EXISTS acorn_hourly_vectors_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_radials_all_deployments_view CASCADE;
 DROP TABLE IF EXISTS acorn_hourly_vectors_data_summary_view CASCADE;
@@ -123,7 +123,7 @@ CREATE TABLE acorn_hourly_vectors_data_summary_view AS
 	min(time_start) AS time_start,
 	max(time_end) AS time_end,
 	round(((max(time_end)-min(time_start))::numeric)/365.25, 1) AS coverage_duration,
-	round(SUM(no_files) / (round((max(time_end)-min(time_start))::numeric, 0) * 24) * 100, 1) AS percentage_coverage
+	CASE WHEN (round((max(time_end)-min(time_start))::numeric, 0) * 24) = 0 THEN 100 ELSE round(SUM(no_files) / (round((max(time_end)-min(time_start))::numeric, 0) * 24) * 100, 1) END AS percentage_coverage
   FROM acorn_hourly_vectors_all_deployments_view
 	GROUP BY data_type, site
 	ORDER BY data_type, site;
