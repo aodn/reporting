@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS auv_all_deployments_view CASCADE;
 
 -------------------------------
@@ -16,9 +16,9 @@ CREATE or replace VIEW auv_all_deployments_view AS
 	v.dive_name AS site,
 	round(ST_Y(ST_CENTROID(v.geom))::numeric, 1) AS lat_min, 
 	round(ST_X(ST_CENTROID(v.geom))::numeric, 1) AS lon_min, 
-	v.time_start AS start_date,
-	v.time_end AS end_date,
-	round((date_part('hours', (v.time_end - v.time_start)) * 60 + (date_part('minutes', (v.time_end - v.time_start))) + (date_part('seconds', (v.time_end - v.time_start)))/60)::numeric/60, 1) AS coverage_duration,
+	v.time_coverage_start AS start_date,
+	v.time_coverage_end AS end_date,
+	round((date_part('hours', (v.time_coverage_end - v.time_coverage_start)) * 60 + (date_part('minutes', (v.time_coverage_end - v.time_coverage_start))) + (date_part('seconds', (v.time_coverage_end - v.time_coverage_start)))/60)::numeric/60, 1) AS coverage_duration,
 	a.no_images
   FROM auv.deployments d
   LEFT JOIN auv.auv_trajectory_map v ON v.file_id = d.file_id
