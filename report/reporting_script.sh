@@ -20,8 +20,9 @@ echo @@@@@@@@ Reporting views - ANMN PA @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn_pa.sql;
 echo @@@@@@@@ Reporting views - ANMN @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/anmn.sql;
-echo @@@@@@@@ Reporting views - Argo @@@@@@@@
-psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/argo.sql;
+## Argo commented out due to harvester not currently working
+## echo @@@@@@@@ Reporting views - Argo @@@@@@@@
+## psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/argo.sql;
 echo @@@@@@@@ Reporting views - AUV @@@@@@@@
 psql -h dbprod.emii.org.au -U xavier -d harvest < SQL_reporting_queries/auv.sql;
 echo @@@@@@@@ Reporting views - Facility summary @@@@@@@@
