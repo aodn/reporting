@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS argo_all_deployments_view CASCADE;
 -------------------------------
 -- All deployments view
 CREATE TABLE argo_all_deployments_view AS
-WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.profile_download GROUP BY platform_number)
+WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.argo_profile_data GROUP BY platform_number)
   SELECT DISTINCT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 

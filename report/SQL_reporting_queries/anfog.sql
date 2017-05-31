@@ -30,8 +30,8 @@ dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_d
  	COALESCE(min(round((ST_YMIN(geom))::numeric, 1)) || '/' || max(round((ST_YMAX(geom))::numeric, 1))) AS lat_range,
  	COALESCE(min(round((ST_XMIN(geom))::numeric, 1)) || '/' || max(round((ST_XMAX(geom))::numeric, 1))) AS lon_range,
  	round(max(drt.geospatial_vertical_max)::numeric, 1) AS max_depth, 
- 	round((date_part('days', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ'))) + 
- 	date_part('hours', max(to_timestamp(mrt.time_coverage_end,'YYYY-MM-DDTHH:MI:SSZ')) - min(to_timestamp(mrt.time_coverage_start,'YYYY-MM-DDTHH:MI:SSZ')))/24)::numeric, 1) AS coverage_duration
+ 	round((date_part('days', max(mrt.time_coverage_end) - min(mrt.time_coverage_start)) + 
+ 	date_part('hours', max(mrt.time_coverage_end) - min(mrt.time_coverage_start))/24)::numeric, 1) AS coverage_duration
   FROM anfog_rt.anfog_rt_trajectory_map mrt
   RIGHT JOIN anfog_rt.deployments drt ON mrt.file_id = drt.file_id
   LEFT JOIN rt ON rt.deployment_name = mrt.deployment_name
