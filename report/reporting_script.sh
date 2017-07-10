@@ -34,8 +34,8 @@ echo @@@@@@@@ Reporting views - FAIMMS @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/faimms.sql;
 echo @@@@@@@@ Reporting views - SOOP CPR @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/soop_cpr.sql;
-echo @@@@@@@@ Reporting views - SOOP @@@@@@@@
-psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/soop.sql;
+# echo @@@@@@@@ Reporting views - SOOP @@@@@@@@
+# psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/soop.sql;
 echo @@@@@@@@ Reporting views - SRS @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/srs.sql;
 echo @@@@@@@@ Reporting views - Totals @@@@@@@@
