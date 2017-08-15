@@ -15,3 +15,4 @@ To address:
 * ACORN: null station code for radials.
 * SOOP XBT NRT: Problem with time range.
 * FAIMMS: MYRWS site name. 
+* ANFOG:  Problem with total numbers of platforms and deployments in the "OceanGliders" summary report
