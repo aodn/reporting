@@ -14,5 +14,5 @@ To address:
 * ANMN: 1/ Summary report too long; 2/ RT: Problem with time range + null site name.
 * ACORN: null station code for radials. Misspelling of Turquoise Coast site code
 * SOOP XBT NRT: Problem with time range.
-* FAIMMS: MYRWS site name. 
+* FAIMMS: Problem with MYRWS site name. Should it be Myrmidon Reef instead? 
 * ANFOG:  Problem with total numbers of platforms and deployments in the "OceanGliders" summary report
