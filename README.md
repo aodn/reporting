@@ -12,7 +12,7 @@ To address:
 * Argo: 1/ No new data since end of June, no active floats; 2/ Query to generate views too slow; 3/ Problem with time range.
 * ABOS: Problem with time range.
 * ANMN: 1/ Summary report too long; 2/ RT: Problem with time range + null site name.
-* ACORN: null station code for radials.
+* ACORN: null station code for radials. Misspelling of Turquoise Coast site code
 * SOOP XBT NRT: Problem with time range.
 * FAIMMS: MYRWS site name. 
 * ANFOG:  Problem with total numbers of platforms and deployments in the "OceanGliders" summary report
