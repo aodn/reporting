@@ -1,4 +1,4 @@
-SET search_path = reporting, public;
+﻿SET search_path = reporting, public;
 DROP VIEW IF EXISTS aatams_sattag_all_deployments_view CASCADE;
 
 -------------------------------
@@ -71,7 +71,7 @@ SELECT 'Delayed-mode QCd CTD data' AS data_type,
 	CASE WHEN release_location IN ('Kerguelen', 'Dumont d''Urville') THEN 'French Overseas Territory' 
     	WHEN release_location IN ('Campbell', 'Campbell Island') THEN 'New Zealand' ELSE 'Australia Antarctic Territory' END AS state_country,
 	'SMRU CTD tag' AS tag_type, 
-	species_name, 
+	CASE WHEN species_name = 'Weddel seal' THEN 'Weddell seal' WHEN species_name = 'Southern ellie' THEN 'Southern Elephant Seal' ELSE species_name END AS species_name, 
 	qc_m.smru_platform_code AS tag_code, 
 	COUNT(profile_no) AS nb_profiles,
 	qc.nb_measurements AS nb_measurements,
