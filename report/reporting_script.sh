@@ -24,8 +24,8 @@ echo @@@@@@@@ Reporting views - ANMN PA @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/anmn_pa.sql;
 echo @@@@@@@@ Reporting views - ANMN @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/anmn.sql;
-echo @@@@@@@@ Reporting views - Argo @@@@@@@@
-psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/argo.sql;
+# echo @@@@@@@@ Reporting views - Argo @@@@@@@@
+# psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/argo.sql;
 echo @@@@@@@@ Reporting views - AUV @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/auv.sql;
 echo @@@@@@@@ Reporting views - Facility summary @@@@@@@@

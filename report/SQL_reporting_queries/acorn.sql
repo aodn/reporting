@@ -72,8 +72,8 @@ WITH c AS (
   SELECT 'Radials - QC' AS data_type, 
 	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
 	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
-	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
-	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'TURQ' THEN 'Turquoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australian Gulf'
 	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
 	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
 	u.platform_code,
@@ -94,8 +94,8 @@ UNION ALL
   SELECT 'Radials - non QC' AS data_type, 
 	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
 	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
-	     WHEN u.site_code = 'TURQ' THEN 'Turqoise Coast'
-	     WHEN u.site_code = 'SAG' THEN 'South Australia Gulf'
+	     WHEN u.site_code = 'TURQ' THEN 'Turquoise Coast'
+	     WHEN u.site_code = 'SAG' THEN 'South Australian Gulf'
 	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
 	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
 	u.platform_code,
