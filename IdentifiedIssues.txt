@@ -1,0 +1,17 @@
+31/10/2017
+----------
+acoustic_species_summary:
+	1/ # releases with location column can be deleted
+	2/ all reg tags with no species: 38 releases, 744 tags, 20 protected?
+	3/ missing column: # releases with detections
+	4/ weird species: [a horn shark]? Shark spp.?
+
+argo_summary:
+	1/ messages at top
+	2/ null organisations
+	3/ wrong lat/long/date
+
+anmn_bgc_summary: null site name
+anmn_rt: end date 2032
+ACORN radials: null radar site
+SRS altimetry: inconsistency in site name

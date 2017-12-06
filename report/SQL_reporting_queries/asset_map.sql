@@ -90,7 +90,7 @@ WITH soop_cpr AS (
 	FALSE AS plankton_b,
 	FALSE AS optical_properties_b,
 	FALSE AS animal_location_b,
-	ST_SETSRID(last_location,4326) AS geom,
+	CASE WHEN last_location IS NULL THEN ST_SetSRID(ST_MakePoint(launch_long, launch_lat), 4326) ELSE ST_SETSRID(last_location,4326) END AS geom,
 	'Point'::text AS gtype,
 	'#85BF1F' AS colour
   FROM argo.argo_float
@@ -526,6 +526,7 @@ SELECT DISTINCT 'SOOP' AS facility,
 	'Line' AS gtype,
 	'#ED3B8B' AS colour
   FROM soop_co2.soop_co2_trajectory_map
+  where vessel_name NOT IN ('RV Investigator')
   GROUP BY vessel_name
   
 ---- SOOP-CPR
@@ -553,18 +554,19 @@ UNION ALL
 	TRUE AS plankton_b,
 	FALSE AS optical_properties_b,
 	FALSE AS animal_location_b,
-	CASE WHEN platform_code = 'ANL Windarra' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (138.1 -35.7, 140.7 -38.8, 149.6 -39.2, 154.2 -28.7, 153.4 -26.7)'),4326)
-		WHEN platform_code = 'Aurora Australia' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.2 -44.3, 89.7 -62.5)'),4326)
-		WHEN platform_code = 'Southern Surveyor' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.4 -43.9, 114.9 -35.1, 112.5 -22.5, 119.5 -18.9)'),4326)
-		WHEN platform_code = 'Rehua' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.9 -40.8, 173.1 -40.6)'),4326)
-		WHEN platform_code = 'ANL Whyalla' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (118.4 -35.1, 138.3 -35.5)'),4326)
-		WHEN platform_code = 'Hespérides' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (115.2 -35.07, 142.4 -40.6)'),4326)
-		WHEN platform_code = 'Island Chief' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (151.5 -34.6, 154.5 -27.4, 152.9 -20.5)'),4326)
-		WHEN platform_code = 'RV Investigator' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.2 -43.4, 151.4 -33.75)'),4326)
-		WHEN platform_code = 'Kweichow' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (150.95 -22.2, 145.94 -16.8)'),4326) END AS geom,
+	CASE WHEN platform_code = 'ANL Windarra IMO 9324849' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (138.1 -35.7, 140.7 -38.8, 149.6 -39.2, 154.2 -28.7, 153.4 -26.7)'),4326)
+		WHEN platform_code = 'Aurora Australis IMO 8717283' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.2 -44.3, 89.7 -62.5)'),4326)
+		WHEN platform_code = 'Southern Surveyor IMO 7113002' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (146.4 -43.9, 114.9 -35.1, 112.5 -22.5, 119.5 -18.9)'),4326)
+		WHEN platform_code = 'Rehua IMO 9147784' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.9 -40.8, 173.1 -40.6)'),4326)
+		WHEN platform_code = 'ANL Whyalla IMO 9295359' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (118.4 -35.1, 138.3 -35.5)'),4326)
+		WHEN platform_code = 'Hespérides IMO 8803563' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (115.2 -35.07, 142.4 -40.6)'),4326)
+		WHEN platform_code = 'Island Chief IMO 8810449' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (151.5 -34.6, 154.5 -27.4, 152.9 -20.5)'),4326)
+		WHEN platform_code = 'RV Investigator IMO 9616888' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (148.2 -43.4, 151.4 -33.75)'),4326)
+		WHEN platform_code = 'Kweichow IMO 9070694' THEN ST_SetSRID(ST_GeomFromText('LINESTRING (150.95 -22.2, 145.94 -16.8)'),4326) END AS geom,
 	'Line' AS gtype,
 	'#F7722A' AS colour
   FROM soop_cpr
+	WHERE platform_code NOT IN ('ANL Waratah IMO 9326794', 'Philadelphia IMO 9232101', 'Portugal IMO 9147083', 'RV Cape Ferguson IMO 9240861', 'RV Solander IMO 9423463', 'Salome IMO ', 'Tonsberg IMO 9515383')
 	
 ---- SOOP-TRV
 UNION ALL
@@ -664,7 +666,7 @@ UNION ALL
 	'Line' AS gtype,
 	'#F0A732' AS colour
   FROM soop_sst.soop_sst_nrt_trajectory_map
-	WHERE vessel_name NOT IN ('Fantasea Wonder', 'Xutra Bhum', 'Spirit of Tasmania 2', 'RV Cape Ferguson', 'Linnaeus', 'SeaFlyte')
+	WHERE vessel_name NOT IN ('Fantasea Wonder', 'Xutra Bhum', 'Spirit of Tasmania 2', 'RV Cape Ferguson', 'Linnaeus', 'SeaFlyte', 'RV Solander', 'OOCL Houston')
 	GROUP BY vessel_name
 
 ---- SRS-Ocean Colour Radiometer
