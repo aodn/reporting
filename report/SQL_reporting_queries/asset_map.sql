@@ -96,10 +96,10 @@ WITH soop_cpr AS (
   FROM argo.argo_float
 	WHERE data_centre_code = 'CS'
 	
----- SOOP-XBT
+---- Ships of Opportunity-XBT
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -130,7 +130,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -161,7 +161,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -192,7 +192,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -222,7 +222,7 @@ UNION ALL
 	GROUP BY "XBT_line"
 	
 UNION ALL
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -253,7 +253,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -284,7 +284,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'XBT' AS subfacility,
 	NULL AS product,
 	"XBT_line" AS platform_code,
@@ -313,10 +313,10 @@ UNION ALL
 	WHERE "XBT_line" = 'IX28'
 	GROUP BY "XBT_line"
 	
----- SOOP-TMV
+---- Ships of Opportunity-TMV
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'TMV' AS subfacility,
 	NULL AS product,
 	'Spirit of Tasmania' AS platform_code,
@@ -343,9 +343,9 @@ UNION ALL
 	'#591FBF' AS colour
 FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_map
 
----- SOOP-BA
+---- Ships of Opportunity-BA
 UNION ALL
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'BA' AS subfacility,
 	NULL AS product,
 	'Indian Ocean' AS platform_code,
@@ -375,7 +375,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'BA' AS subfacility,
 	NULL AS product,
 	'Mauritius - WA' AS platform_code,
@@ -405,7 +405,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'BA' AS subfacility,
 	NULL AS product,
 	'Mauritius - South Madagascar' AS platform_code,
@@ -435,7 +435,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'BA' AS subfacility,
 	NULL AS product,
 	'Tasman Sea' AS platform_code,
@@ -465,7 +465,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'BA' AS subfacility,
 	NULL AS product,
 	'Hobart - Fiji' AS platform_code,
@@ -493,10 +493,10 @@ UNION ALL
   FROM soop_ba.visualisation_wms
 	WHERE vessel_name IN ('Southern Surveyor')
 
----- SOOP-CO2 and SOOP-ASF
+---- Ships of Opportunity-CO2 and Ships of Opportunity-ASF
 UNION ALL
 
-SELECT DISTINCT 'SOOP' AS facility,
+SELECT DISTINCT 'Ships of Opportunity' AS facility,
 	'CO2 and ASF' AS subfacility,
 	NULL AS product,
 	vessel_name AS platform_code,
@@ -529,10 +529,10 @@ SELECT DISTINCT 'SOOP' AS facility,
   where vessel_name NOT IN ('RV Investigator')
   GROUP BY vessel_name
   
----- SOOP-CPR
+---- Ships of Opportunity-CPR
 UNION ALL
 
-  SELECT DISTINCT 'SOOP' AS facility,
+  SELECT DISTINCT 'Ships of Opportunity' AS facility,
 	'CPR' AS subfacility,
 	NULL AS product,
 	CASE WHEN platform_code = 'Aurora Australia' THEN 'Aurora Australis' ELSE platform_code END AS platform_code,
@@ -568,9 +568,9 @@ UNION ALL
   FROM soop_cpr
 	WHERE platform_code NOT IN ('ANL Waratah IMO 9326794', 'Philadelphia IMO 9232101', 'Portugal IMO 9147083', 'RV Cape Ferguson IMO 9240861', 'RV Solander IMO 9423463', 'Salome IMO ', 'Tonsberg IMO 9515383')
 	
----- SOOP-TRV
+---- Ships of Opportunity-TRV
 UNION ALL
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'TRV' AS subfacility,
 	NULL AS product,
 	'Solander' AS platform_code,
@@ -600,7 +600,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'TRV' AS subfacility,
 	NULL AS product,
 	'Cape Ferguson' AS platform_code,
@@ -628,9 +628,9 @@ UNION ALL
   FROM soop_trv.soop_trv_trajectory_map
 	WHERE vessel_name = 'Cape Ferguson'
 
----- SOOP-SST
+---- Ships of Opportunity-SST
 UNION ALL
-  SELECT 'SOOP' AS facility,
+  SELECT 'Ships of Opportunity' AS facility,
 	'SST' AS subfacility,
 	NULL AS product,
 	vessel_name AS platform_code,
@@ -669,10 +669,10 @@ UNION ALL
 	WHERE vessel_name NOT IN ('Fantasea Wonder', 'Xutra Bhum', 'Spirit of Tasmania 2', 'RV Cape Ferguson', 'Linnaeus', 'SeaFlyte', 'RV Solander', 'OOCL Houston')
 	GROUP BY vessel_name
 
----- SRS-Ocean Colour Radiometer
+---- Satellite Remote Sensing-Ocean Colour Radiometer
 UNION ALL
 
-  SELECT 'SRS' AS facility,
+  SELECT 'Satellite Remote Sensing' AS facility,
 	NULL AS subfacility,
 	'Radiometer' AS product,
 	'Southern Surveyor' AS platform_code,
@@ -700,10 +700,10 @@ UNION ALL
   FROM srs_oc_soop_rad.srs_oc_soop_rad_trajectory_map
 	WHERE vessel_name = 'Southern Surveyor'
   
----- AATAMS-Biologging
+---- Animal Tracking-Biologging
 UNION ALL
 
-  SELECT 'AATAMS' AS facility,
+  SELECT 'Animal Tracking' AS facility,
 	'Biologging' AS subfacility,
 	NULL AS product,
 	pttid AS platform_code,
@@ -732,7 +732,7 @@ UNION ALL
   
 UNION ALL
 
-  SELECT 'AATAMS' AS facility,
+  SELECT 'Animal Tracking' AS facility,
 	'Biologging' AS subfacility,
 	NULL AS product,
 	animal_id AS platform_code,
@@ -761,7 +761,7 @@ UNION ALL
   
 UNION ALL
 
-  SELECT 'AATAMS' AS facility,
+  SELECT 'Animal Tracking' AS facility,
 	'Biologging' AS subfacility,
 	NULL AS product,
 	animal_id AS platform_code,
@@ -790,7 +790,7 @@ UNION ALL
   
 UNION ALL
 
-  SELECT 'AATAMS' AS facility,
+  SELECT 'Animal Tracking' AS facility,
 	'Biologging' AS subfacility,
 	'delayed-mode' AS product,
 	device_id AS platform_code,
@@ -820,7 +820,7 @@ UNION ALL
 
 UNION ALL
 
-  SELECT 'AATAMS' AS facility,
+  SELECT 'Animal Tracking' AS facility,
 	'Biologging' AS subfacility,
 	'real-time' AS product,
 	device_id AS platform_code,
@@ -848,10 +848,10 @@ UNION ALL
   FROM aatams_sattag_nrt
 	WHERE st_x(geom) > 0
 	
----- ABOS-TS
+---- Deep Water Moorings-TS
 UNION ALL
 
-  SELECT DISTINCT 'ABOS' AS facility,
+  SELECT DISTINCT 'Deep Water Moorings' AS facility,
 	NULL AS subfacility,
 	'timeseries' AS product,
 	CASE WHEN m.platform_code = '' THEN ma.platform_code ELSE m.platform_code END AS platform_code,
@@ -880,10 +880,10 @@ UNION ALL
   FULL JOIN abos_currents.abos_currents_map ma ON m.platform_code = ma.platform_code
 	GROUP BY m.platform_code, ma.platform_code,m.geom,ma.geom
 
----- ABOS SOFS
+---- Deep Water Moorings SOFS
 UNION ALL
 
-  SELECT DISTINCT 'ABOS' AS facility,
+  SELECT DISTINCT 'Deep Water Moorings' AS facility,
 	'SOFS' AS subfacility,
 	NULL AS product,
 	deployment_number AS platform_code,
@@ -912,10 +912,10 @@ UNION ALL
 	WHERE deployment_number != '' 
 	GROUP BY deployment_number, geom      
 
----- ANMN-AM
+---- National Mooring Network-AM
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'Acidification' AS subfacility,
 	'delayed-mode' AS product,
 	site_code AS platform_code,
@@ -945,7 +945,7 @@ UNION ALL
 
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'Acidification' AS subfacility,
 	'real-time' AS product,
 	site_code AS platform_code,
@@ -973,9 +973,9 @@ UNION ALL
   FROM anmn_acidification_nrt.anmn_am_nrt_map                         
 	GROUP BY site_code
 	
----- ANMN-Burst average
+---- National Mooring Network-Burst average
 UNION ALL
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	NULL AS subfacility,
 	'Burst averaged' AS product,
 	platform_code AS platform_code,
@@ -1003,10 +1003,10 @@ UNION ALL
   FROM anmn_burst_avg.anmn_burst_avg_timeseries_map
 	GROUP BY platform_code
 
----- ANMN-MHL wave
+---- National Mooring Network-MHL wave
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	NULL AS subfacility,
 	'Manly wave' AS product,
 	platform_code AS platform_code,
@@ -1034,10 +1034,10 @@ UNION ALL
   FROM anmn_mhlwave.anmn_mhlwave_map
 	GROUP BY platform_code, geom
 
----- ANMN-NRS-BGC
+---- National Mooring Network-NRS-BGC
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'BGC' AS product,
 	s."STATION_NAME" AS platform_code,
@@ -1065,10 +1065,10 @@ UNION ALL
   FROM anmn_nrs_bgc.station_name s
 	LEFT JOIN h ON h."STATION_NAME" = s."STATION_NAME"
 
----- ANMN-NRS-CTD
+---- National Mooring Network-NRS-CTD
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'CTD profiles' AS product,
 	site_code AS platform_code,
@@ -1096,10 +1096,10 @@ UNION ALL
   FROM anmn_nrs_ctd_profiles.anmn_nrs_ctd_profiles_map
 	GROUP BY site_code
 
----- ANMN-NRS-Realtime
+---- National Mooring Network-NRS-Realtime
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'real-time' AS product,
 	site_code AS platform_code,
@@ -1129,7 +1129,7 @@ UNION ALL
 
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'real-time' AS product,
 	platform_code,
@@ -1159,7 +1159,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'real-time' AS product,
 	site_code AS platform_code,
@@ -1189,7 +1189,7 @@ UNION ALL
 
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	'NRS' AS subfacility,
 	'real-time' AS product,
 	site_code AS platform_code,
@@ -1217,10 +1217,10 @@ UNION ALL
   FROM anmn_nrs_rt_wave.anmn_nrs_rt_wave_timeseries_map
 	GROUP BY site_code
 	
----- ANMN timeseries
+---- National Mooring Network timeseries
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	NULL AS subfacility,
 	'timeseries' AS product,
 	substring(site_code,'[A-Z]+') AS platform_code,
@@ -1248,10 +1248,10 @@ UNION ALL
   FROM anmn_ts.anmn_ts_timeseries_map
 	GROUP BY substring(site_code,'[A-Z]+')
 
----- ANMN temperature gridded
+---- National Mooring Network temperature gridded
 UNION ALL
 
-  SELECT DISTINCT 'ANMN' AS facility,
+  SELECT DISTINCT 'National Mooring Network' AS facility,
 	NULL AS subfacility,
 	'temperature gridded' AS product,
 	substring(site_code,'[A-Z]+') AS platform_code,
@@ -1279,10 +1279,10 @@ UNION ALL
   FROM anmn_t_regridded.anmn_regridded_temperature_map
 	GROUP BY substring(site_code,'[A-Z]+')
 	
----- ANFOG
+---- Ocean Gliders
 UNION ALL
 
-  SELECT DISTINCT 'ANFOG' AS facility,
+  SELECT DISTINCT 'Ocean Gliders' AS facility,
 	NULL AS subfacility,
 	'delayed-mode' AS product,
 	CASE WHEN substring(deployment_name,'[A-Za-z]*') = 'Tworocks' THEN 'TwoRocks' 
@@ -1314,7 +1314,7 @@ UNION ALL
   
 UNION ALL
 
-  SELECT DISTINCT 'ANFOG' AS facility,
+  SELECT DISTINCT 'Ocean Gliders' AS facility,
 	NULL AS subfacility,
 	'real-time' AS product,
 	CASE WHEN substring(deployment_name,'[A-Za-z]*') = 'Tworocks' THEN 'TwoRocks' 
@@ -1344,10 +1344,10 @@ UNION ALL
   FROM anfog_rt.anfog_rt_trajectory_map              
 	GROUP BY platform_type, CASE WHEN substring(deployment_name,'[A-Za-z]*') = 'Tworocks' THEN 'TwoRocks' WHEN substring(deployment_name,'[A-Za-z]*') = 'Lizard' THEN 'LizardIsland' ELSE substring(deployment_name,'[A-Za-z]*') END
   
----- AUV
+---- Autonomous Underwater Vehicles
 UNION ALL
 
-  SELECT DISTINCT 'AUV' AS facility,
+  SELECT DISTINCT 'Autonomous Underwater Vehicles' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	substring(campaign_name,'[A-Za-z]*') AS platform_code,
@@ -1375,10 +1375,10 @@ UNION ALL
   FROM auv.auv_trajectory_map
 	GROUP BY substring(campaign_name,'[A-Za-z]*')
 
----- ACORN
+---- Ocean Radar
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'Turquoise Coast' AS platform_code,
@@ -1409,7 +1409,7 @@ UNION ALL
    
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'Rottnest Shelf' AS platform_code,
@@ -1440,7 +1440,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'South Australian Gulf' AS platform_code,
@@ -1470,7 +1470,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'Bonney Coast' AS platform_code,
@@ -1500,7 +1500,7 @@ UNION ALL
 	
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'Coffs Harbour' AS platform_code,
@@ -1530,7 +1530,7 @@ UNION ALL
 
 UNION ALL
 
-  SELECT DISTINCT 'ACORN' AS facility,
+  SELECT DISTINCT 'Ocean Radar' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	'Capricorn Bunker Group' AS platform_code,
@@ -1558,10 +1558,10 @@ UNION ALL
   FROM reporting.acorn_radials_all_deployments_view
 	WHERE site = 'Capricorn Bunker Group'
 
----- FAIMMS
+---- Wireless Sensor Networks
 UNION ALL
 
-  SELECT DISTINCT 'FAIMMS' AS facility,
+  SELECT DISTINCT 'Wireless Sensor Networks' AS facility,
 	NULL AS subfacility,
 	NULL AS product,
 	platform_code AS platform_code,
@@ -1589,10 +1589,10 @@ UNION ALL
   FROM faimms.faimms_timeseries_map
 	GROUP BY platform_code
 
----- AATAMS Acoustic
+---- Animal Tracking Acoustic
 UNION ALL
 
-  SELECT DISTINCT 'AATAMS' AS facility,
+  SELECT DISTINCT 'Animal Tracking' AS facility,
 	'Acoustic tagging' AS subfacility,
 	NULL AS product,
 	installation_name AS platform_code,
@@ -1622,10 +1622,10 @@ UNION ALL
 	GROUP BY installation_name
 	HAVING st_y(ST_CENTROID(ST_COLLECT(geom))) < 0
 
----- SRS Altimetry
+---- Satellite Remote Sensing Altimetry
 UNION ALL
 
-  SELECT DISTINCT 'SRS' AS facility,
+  SELECT DISTINCT 'Satellite Remote Sensing' AS facility,
 	NULL AS subfacility,
 	'Altimetry' AS product,
 	site_name AS platform_code,
@@ -1653,10 +1653,10 @@ UNION ALL
   FROM srs_altimetry.srs_altimetry_timeseries_map
 	GROUP BY site_name
 
-  ---- SRS Lucinda Jetty
+  ---- Satellite Remote Sensing Lucinda Jetty
 UNION ALL
 
-  SELECT 'SRS' AS facility,
+  SELECT 'Satellite Remote Sensing' AS facility,
 	'Ocean colour' AS subfacility,
 	'Lucinda Jetty Coastal Observatory' AS product,
 	NULL AS platform_code,

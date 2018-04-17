@@ -16,7 +16,7 @@ dm AS (SELECT deployment_name, COUNT(*) AS no_measurements FROM anfog_dm.anfog_d
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(mrt.deployment_name, '[aA-zZ]+') END AS deployment_location,
 	 CASE WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay','Portland','BassStrait') THEN 'SEA IMOS'
-		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
+		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba','Forster') THEN 'NSW'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland','AIMS','Cairns','CharlotteBay','Cooktown','GBR') THEN 'QLD'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','SpencerGulf') THEN 'SA'
 		WHEN substring(mrt.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo','Challenger') THEN 'WA' END AS deployment_state,
@@ -47,7 +47,7 @@ UNION ALL
 		WHEN substring(m.deployment_name, '[aA-zZ]+') = 'Tworocks' THEN 'TwoRocks'
 		ELSE substring(m.deployment_name, '[aA-zZ]+') END AS deployment_location,
 	 CASE WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Bicheno','MariaIsland','SOTS','StormBay','Portland','BassStrait') THEN 'SEA IMOS'
-		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba') THEN 'NSW'
+		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('Coffs','CrowdyHead','Harrington','NSW','PortStephens','PortStephens_','Sydney','Yamba','Forster') THEN 'NSW'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('CoralSea','Heron','Lizard','LizardIsland','AIMS','Cairns','CharlotteBay','Cooktown','GBR') THEN 'QLD'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('GAB','MarionBay','SpencerGulf') THEN 'SA'
 		WHEN substring(m.deployment_name, '[aA-zZ]+') IN ('TwoRocks','Tworocks', 'Kalbarri', 'Kimberley', 'Pilbara', 'Perth','PerthCanyon','Perth Canyon', 'Bremer','Leeuwin','Ningaloo','Challenger') THEN 'WA' END AS deployment_state,
