@@ -1,3 +1,5 @@
 report/TotalPlots/
 parameters_mapping/Audit/
 report/config.conf
+*.Rapp.history
+report/ChangeOwnershipReportingSchema*
