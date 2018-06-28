@@ -6,13 +6,13 @@ DROP TABLE IF EXISTS argo_all_deployments_view CASCADE;
 -------------------------------
 -- All deployments view
 CREATE TABLE argo_all_deployments_view AS
-WITH a AS (SELECT platform_number, COUNT(DISTINCT cycle_number) AS no_profiles, COUNT(*) AS no_measurements FROM argo.argo_profile_data GROUP BY platform_number)
+WITH a AS (SELECT platform_number, COUNT(*) AS no_profiles  FROM argo.argo_profile_map GROUP BY platform_number)
   SELECT DISTINCT CASE WHEN m.data_centre IS NULL THEN ps.project_name ELSE m.data_centre END AS organisation, --
 	CASE WHEN m.oxygen_sensor = false THEN 'No oxygen sensor' 
 		ELSE 'Oxygen sensor' END AS oxygen_sensor, 
 	m.platform_number AS platform_code,
 	a.no_profiles,
-	a.no_measurements,
+	NULL::numeric AS no_measurements,
 	round((m.min_lat)::numeric, 1) AS min_lat, 
 	round((m.max_lat)::numeric, 1) AS max_lat, 
 	round((m.min_long)::numeric, 1) AS min_lon, 
@@ -38,7 +38,7 @@ CREATE or replace VIEW argo_data_summary_view AS
 	count(CASE WHEN v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_oxygen_platforms, 
 	count(CASE WHEN date_part('day', (now() - (v.end_date)::timestamp with time zone)) < 31 AND v.oxygen_sensor = 'Oxygen sensor' THEN 1 ELSE NULL::integer END) AS no_active_oxygen_platforms,
 	SUM(no_profiles) AS total_no_profiles,
-	SUM(no_measurements) AS total_no_measurements,
+	NULL::numeric AS total_no_measurements,
 	min(v.min_lat) AS min_lat, 
 	max(v.max_lat) AS max_lat, 
 	min(v.min_lon) AS min_lon, 

@@ -11,9 +11,9 @@ WITH argo AS (
 	'# Australian floats'::text AS stat_1_attrib, 
 	no_data4 AS stat_1_value, 
 	'# profiles'::text AS stat_2_attrib,
-	no_data2 AS stat_2_value, 
-	'# measurements'::text AS stat_3_attrib, 
-	no_data3 AS stat_3_value 
+	no_data2 AS stat_2_value,
+	NULL::text as stat_3_attrib,
+	Null::numeric as stat_3_value
   FROM totals_view 
 	WHERE facility = 'Argo'),
 
