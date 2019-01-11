@@ -48,3 +48,6 @@ CREATE or replace VIEW auv_data_summary_view AS
 	ORDER BY location;
 
 grant all on table auv_data_summary_view to public;
+
+-- ALTER TABLE auv_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW auv_data_summary_view OWNER TO harvest_reporting_write_group;

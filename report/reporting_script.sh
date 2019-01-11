@@ -4,6 +4,8 @@
 source config.conf
 
 export PGPASSWORD=$PASS;
+open smb://xhoenner@utas.ad.internal/research/IMOS/emiiSheryl
+
 echo @@@@@@@@ Reporting view - AATAMS Acoustic @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/aatams_acoustic.sql;
 echo @@@@@@@@ Reporting view - AATAMS Biologging @@@@@@@@
@@ -46,5 +48,7 @@ echo @@@@@@@@ Reporting views - Monthly snapshot @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/monthly_snapshot.sql;
 echo @@@@@@@@ Reporting views - Asset map @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/asset_map.sql;
+# echo @@@@@@@@ Modify privileges @@@@@@@@
+# psql -h $HOST -U $USER -d harvest < ChangeOwnershipReportingSchema.sql;
 echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
 Rscript $RPATH/AATAMS_embargo_alldata.R;

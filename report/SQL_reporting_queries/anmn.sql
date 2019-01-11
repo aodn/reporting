@@ -103,3 +103,6 @@ CREATE OR REPLACE VIEW anmn_data_summary_view AS
 	ORDER BY v.subfacility, v.site_code, v.data_category;
 
 grant all on table anmn_data_summary_view to public;
+
+-- ALTER VIEW anmn_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW anmn_data_summary_view OWNER TO harvest_reporting_write_group;

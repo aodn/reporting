@@ -60,14 +60,14 @@ UNION ALL
   SELECT 'BA' AS subfacility,
   m.vessel_name,
   d.voyage_id AS deployment_id,
-  date_part('year',min(time_start)) AS year,
+  date_part('year',min(m.time_coverage_start)) AS year,
   COUNT(m.file_id) AS no_files_profiles,
   SUM(nb_measurements) AS no_measurements,
   COALESCE(round(min(ST_YMIN(geom))::numeric, 1) || '/' || round(max(ST_YMAX(geom))::numeric, 1)) AS lat_range, 
   COALESCE(round(min(ST_XMIN(geom))::numeric, 1) || '/' || round(max(ST_XMAX(geom))::numeric, 1)) AS lon_range,
-  date(min(time_start)) AS start_date, 
-  date(max(time_end)) AS end_date,
-  round((date_part('days',max(time_end) - min(time_start)) + date_part('hours',max(time_end) - min(time_start))/24)::numeric, 1) AS coverage_duration,
+  date(min(m.time_coverage_start)) AS start_date, 
+  date(max(m.time_coverage_end)) AS end_date,
+  round((date_part('days',max(m.time_coverage_end) - min(m.time_coverage_start)) + date_part('hours',max(m.time_coverage_end) - min(m.time_coverage_end))/24)::numeric, 1) AS coverage_duration,
   round(min(ST_YMIN(geom))::numeric, 1) AS min_lat, 
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
@@ -295,3 +295,6 @@ UNION ALL
 	ORDER BY subfacility, data_type, vessel_name;
 
 grant all on table soop_data_summary_view to public;
+
+-- ALTER VIEW soop_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW soop_data_summary_view OWNER TO harvest_reporting_write_group;

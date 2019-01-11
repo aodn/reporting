@@ -38,3 +38,6 @@ CREATE or replace VIEW anmn_acoustics_data_summary_view AS
   ORDER BY site_name, deployment_year;
 
 grant all on table anmn_acoustics_data_summary_view to public;
+
+-- ALTER VIEW anmn_acoustics_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW anmn_acoustics_data_summary_view OWNER TO harvest_reporting_write_group;

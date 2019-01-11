@@ -83,3 +83,6 @@ CREATE or replace VIEW abos_data_summary_view AS
     ORDER BY v.file_type, v.headers, v.data_type, v.data_category;
 
 grant all on table abos_data_summary_view to public;
+
+-- ALTER VIEW abos_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW abos_data_summary_view OWNER TO harvest_reporting_write_group;

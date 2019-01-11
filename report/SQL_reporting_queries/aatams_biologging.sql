@@ -75,3 +75,6 @@ CREATE OR REPLACE VIEW aatams_biologging_data_summary_view AS
 	ORDER BY tagged_animals;
 
 grant all on table aatams_biologging_data_summary_view to public;
+
+-- ALTER VIEW aatams_biologging_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW aatams_biologging_data_summary_view OWNER TO harvest_reporting_write_group;

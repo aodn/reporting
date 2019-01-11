@@ -577,3 +577,5 @@ UNION ALL
 	ORDER BY facility,subfacility,type;
 
 grant all on table totals_view to public;
+
+-- ALTER TABLE totals_view OWNER TO harvest_reporting_write_group;

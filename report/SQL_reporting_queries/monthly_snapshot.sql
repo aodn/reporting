@@ -53,3 +53,5 @@ SELECT now()::timestamp without time zone,
 
 GRANT select on all tables in schema reporting to "backup";
 GRANT select on all sequences in schema reporting to "backup";
+
+-- ALTER TABLE monthly_snapshot OWNER TO harvest_reporting_write_group;

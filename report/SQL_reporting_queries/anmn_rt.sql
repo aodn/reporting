@@ -55,3 +55,6 @@ CREATE or replace VIEW anmn_rt_data_summary_view AS
 	ORDER BY site_name;
 
 grant all on table anmn_rt_data_summary_view to public;
+
+-- ALTER VIEW anmn_rt_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW anmn_rt_data_summary_view OWNER TO harvest_reporting_write_group;

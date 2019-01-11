@@ -443,3 +443,6 @@ UNION ALL
   ORDER BY station_name, product;
 
 grant all on anmn_nrs_bgc_data_summary_view to public;
+
+-- ALTER VIEW anmn_nrs_bgc_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW anmn_nrs_bgc_data_summary_view OWNER TO harvest_reporting_write_group;

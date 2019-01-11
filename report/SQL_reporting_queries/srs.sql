@@ -372,3 +372,6 @@ CREATE or replace VIEW srs_data_summary_view AS
   ORDER BY subfacility, parameter_site;
 
 grant all on table srs_data_summary_view to public;
+
+-- ALTER VIEW srs_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW srs_data_summary_view OWNER TO harvest_reporting_write_group;

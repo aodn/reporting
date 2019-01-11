@@ -99,3 +99,6 @@ CREATE or replace VIEW anfog_data_summary_view AS
 	ORDER BY data_type, deployment_state, deployment_location;
 
 grant all on table anfog_data_summary_view to public;
+
+-- ALTER TABLE anfog_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW anfog_data_summary_view OWNER TO harvest_reporting_write_group;

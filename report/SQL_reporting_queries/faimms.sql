@@ -54,3 +54,6 @@ CREATE or replace VIEW faimms_data_summary_view AS
 	ORDER BY site_name;
 
 grant all on table faimms_data_summary_view to public;
+
+-- ALTER TABLE faimms_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW faimms_data_summary_view OWNER TO harvest_reporting_write_group;

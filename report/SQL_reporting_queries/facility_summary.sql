@@ -17,3 +17,5 @@ CREATE OR REPLACE VIEW facility_summary_view AS
 	ORDER BY facility_acronym, reporting_date DESC, issues;
 
 grant all on table facility_summary_view to public;
+
+-- ALTER VIEW facility_summary_view OWNER TO harvest_reporting_write_group;

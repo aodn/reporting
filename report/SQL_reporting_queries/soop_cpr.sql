@@ -100,3 +100,5 @@ UNION ALL
 	ORDER BY subfacility, vessel_name, route, start_date, deployment_id;
 
 grant all on table soop_cpr_all_deployments_view to public;
+
+-- ALTER VIEW soop_cpr_all_deployments_view OWNER TO harvest_reporting_write_group;

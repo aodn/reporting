@@ -145,3 +145,8 @@ CREATE TABLE acorn_radials_data_summary_view AS
 	ORDER BY data_type, site, platform_code;
 
 grant all on table acorn_radials_data_summary_view to public;
+
+-- ALTER TABLE acorn_radials_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER TABLE acorn_hourly_vectors_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER TABLE acorn_hourly_vectors_data_summary_view OWNER TO harvest_reporting_write_group;
+-- ALTER TABLE acorn_radials_data_summary_view OWNER TO harvest_reporting_write_group;

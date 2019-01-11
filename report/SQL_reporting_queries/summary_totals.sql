@@ -179,3 +179,5 @@ WITH argo AS (
 	ORDER BY facility;
 
 grant all on table facility_summary_totals_view to public;
+
+-- ALTER VIEW facility_summary_totals_view OWNER TO harvest_reporting_write_group;
