@@ -51,4 +51,4 @@ psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/asset_map.sql;
 # echo @@@@@@@@ Modify privileges @@@@@@@@
 # psql -h $HOST -U $USER -d harvest < ChangeOwnershipReportingSchema.sql;
 echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
-Rscript $RPATH/AATAMS_embargo_alldata.R;
+Rscript ATF_EmbargoPlots.R;

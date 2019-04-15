@@ -1,16 +1,19 @@
-rm(list=ls())
-setwd('/Users/xavierhoenner/Work/Reports/reporting/report/TotalPlots')
-dir.create(format(Sys.Date(),'%B %Y'))
-setwd(format(Sys.Date(),'%B %Y'))
+## Script developed by Xavier Hoenner, created on 2 Oct 2015
+## Last modified on 16 Apr 2019
 
-library(RPostgreSQL);library(gmt);library(plyr);
+rm(list=ls());
+
+library(RPostgreSQL);library(gmt);library(plyr); library(RPostgres);
 options(warn=2);
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "harvest", host = 'dbprod.emii.org.au', user = 'xavier', port = '5432', password = 'MicroCuts2001!')
 
+setwd('/Users/xhoenner/Work/Reports/reporting/report');
+source('config.conf');
+dir.create('TotalPlots'); setwd('TotalPlots');
+dir.create(format(Sys.Date(),'%B %Y')); setwd(format(Sys.Date(),'%B %Y'));
+
+con <- dbConnect(RPostgres::Postgres(), dbname = "harvest", host = HOST, user = USER, port = '5432', password = PASS)
 dat <- dbGetQuery(con, "SELECT * FROM reporting.monthly_snapshot;")
 dbDisconnect(con);
-dbUnloadDriver(drv);
 
 ## Prepare for plotting
 data <- data.frame(dat$timestamp,dat$facility,dat$subfacility, dat$data_type, dat$no_projects, dat$no_instruments, dat$no_deployments, dat$no_data, dat$no_data2, dat$no_data3, dat$no_data4)
