@@ -1,9 +1,6 @@
 ## Script developed by Xavier Hoenner, created on 9 Sep 2015
 ## Last modified on 16 Apr 2019
 
-rm(list=ls());
-setwd('/Users/xhoenner/Work/Reports/reporting/report')
-
 library(RPostgreSQL);library(gmt);library(plyr); library(RPostgres);
 options(warn=2);
 source('config.conf')
@@ -31,7 +28,7 @@ for (i in 1:length(emb)){
 
 res <- cbind(emb,res)
 
-jpeg(paste('/Volumes/emiiSheryl/eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_',Sys.Date(),'.jpeg',sep=''), width = 800, height = 600, units = 'px', quality = 100)
+jpeg(file.path(SHERYL_PATH, paste('eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_',Sys.Date(),'.jpeg',sep='')), width = 800, height = 600, units = 'px', quality = 100)
 ## add extra space to right margin of plot within frame
 par(mar=c(5, 5, 4, 7.5) + 0.1, cex.lab = 1.5)
 

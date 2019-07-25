@@ -9,3 +9,11 @@ This ad-hoc workflow could be improved by:
  * coming up with a better approach to generate embargo plots on the fly	
 
 The 'report/MS Word reporting templates' folder contains Word files detailing how the data reports should be produced using Jasper iReport.
+
+How to run
+==========
+
+* 1) edit ```report/config.conf```
+  * add db password for reporting username
+  * add utas credentials in order to mount sheryl
+* 2) run ```./report/reporting_script.sh```

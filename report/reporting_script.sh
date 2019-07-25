@@ -1,10 +1,17 @@
-## After having run this script, the reporting schema should have 10 tables and 34 views.
+#!/usr/bin/env bash
+## After having run this script, the reporting schema should have 11 tables and 34 views.
 
 # Load config values
 source config.conf
 
+if [[ ! -e $SHERYL_PATH ]]; then
+    mkdir $SHERYL_PATH
+elif [[ ! -d $SHERYL_PATH ]]; then
+    echo "$SHERYL_PATH already exists but is not a directory" 1>&2
+fi
+
 export PGPASSWORD=$PASS;
-open smb://xhoenner@utas.ad.internal/research/IMOS/emiiSheryl
+sudo mount.cifs -o username="$SHERYL_UTAS_USER",password="$SHERYL_UTAS_PASS",file_mode=0777,dir_mode=0777,nobrl //utas.ad.internal/research/IMOS/emiiSheryl "$SHERYL_PATH"
 
 echo @@@@@@@@ Reporting view - AATAMS Acoustic @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/aatams_acoustic.sql;
@@ -52,3 +59,5 @@ psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/asset_map.sql;
 # psql -h $HOST -U $USER -d harvest < ChangeOwnershipReportingSchema.sql;
 echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
 Rscript ATF_EmbargoPlots.R;
+
+sudo umount $SHERYL_PATH
