@@ -28,7 +28,10 @@ for (i in 1:length(emb)){
 
 res <- cbind(emb,res)
 
-jpeg(file.path(SHERYL_PATH, paste('eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_',Sys.Date(),'.jpeg',sep='')), width = 800, height = 600, units = 'px', quality = 100)
+outfile <- paste(file.path(SHERYL_PATH),'eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_',        Sys.Date(),'.jpeg',sep='')
+jpeg(outfile, width = 800, height = 600, units = 'px', quality = 100)
+
+
 ## add extra space to right margin of plot within frame
 par(mar=c(5, 5, 4, 7.5) + 0.1, cex.lab = 1.5)
 
@@ -60,3 +63,6 @@ legend("topright",legend=c("Number of tags embargoed","Number of detections emba
   text.col=c("black","red"),pch=c(16,15),col=c("black","red"))
 
 dev.off()
+flask_figure <-paste('../figures/eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_',Sys.Date(),'.jpeg',sep='')
+file.copy(outfile,flask_figure)
+
