@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 ## After having run this script, the reporting schema should have 11 tables and 34 views.
 
+set -x
 # Load config values
 source config.conf
 
@@ -11,7 +12,7 @@ elif [[ ! -d $SHERYL_PATH ]]; then
 fi
 
 export PGPASSWORD=$PASS;
-sudo mount.cifs -o username="$SHERYL_UTAS_USER",password="$SHERYL_UTAS_PASS",file_mode=0777,dir_mode=0777,nobrl //utas.ad.internal/research/IMOS/emiiSheryl "$SHERYL_PATH"
+#sudo mount.cifs -o username="$SHERYL_UTAS_USER",password="$SHERYL_UTAS_PASS",file_mode=0777,dir_mode=0777,nobrl //utas.ad.internal/research/IMOS/emiiSheryl "$SHERYL_PATH"
 
 echo @@@@@@@@ Reporting view - AATAMS Acoustic @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/aatams_acoustic.sql;
@@ -60,4 +61,4 @@ psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/asset_map.sql;
 echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
 Rscript ATF_EmbargoPlots.R;
 
-sudo umount $SHERYL_PATH
+#sudo umount $SHERYL_PATH
