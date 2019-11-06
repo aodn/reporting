@@ -1,3 +1,8 @@
 report/TotalPlots/
 *.Rapp.history
 report/ChangeOwnershipReportingSchema*
+checker_logs/*
+checker_statuses/*
+report_logs/*
+report_statuses/*
+figures/*
