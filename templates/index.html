@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+   <body>
+      <h1>Welcome to reporting!</h1>
+      <h1></h1>
+      <p><a href="{{ url_for('last_log') }}">Click here for the Last Log</a><div><a href="{{ url_for('previous_log') }}">Click here for the Previous Log</a></div></p>
+      <table border = 1>
+         <th> Task</th>
+         <th> Status</th>
+         {% for key, value in result.items() %}
+            <tr>
+               <td> {{ key }} </td>
+               <td> {{ value }} </th>
+            </tr>
+         {% endfor %}
+      </table>
+      <p> Current Embargo plot:</p>
+      <img src="/static/images/current_embargo.jpeg">
+   </body>
+</html>
