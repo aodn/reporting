@@ -17,3 +17,52 @@ How to run
   * add db password for reporting username
   * add utas credentials in order to mount sheryl
 * 2) run ```./report/reporting_script.sh```
+
+
+Automatic reporting & notification
+=========
+
+For automatic reporting, the following software are required:
+
+1.sendmail
+2.ssmtp
+
+The conditions required are:
+
+1. Setup a cronjob to call `trigger_reporting_and_email.sh`
+2. Ssmtp is properly configured
+3. You can execute the reporting script.
+4. The Sheryl folder is always mounted.
+5. You edit trigger_reporting_and_email.sh to send email to right persons.
+
+Use The wrapper `trigger_reporting_and_email.sh` will trigger the reporting_script.sh, the checker and a sendmail job.
+
+The email body is templated to include a link to the webserver. This will also need to be changed/verified.
+
+Webserver
+=========
+
+A simple flask webserver can be run to serve a simple table and the Embargo plots.
+
+Software requirements:
+
+python==3.8.0
+flask==1.1.1
+waitress==1.3.1
+
+Configuration:
+
+1. You will need to change the IP address in flask_reporting.py.
+2. You will need to make sure the `trigger_reporting_and_email.sh` run successfully.
+3. You will need to make sure the emIISheryl path is always mounted - see reporting scripts.
+
+
+Further improvements
+========
+
+Send the embargo/logs to an s3 bucket.
+Completely remove the sheryl folder dependency.
+Call the sql query from lambda/batch.
+Enable cronjob like behaviour in AWS to trigger query/reporting.
+Substitute the flask webserver by a static website serving the s3 files.
+Sendemail via AWS easy send instead of using sendmail.
