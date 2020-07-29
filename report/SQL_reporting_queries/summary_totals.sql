@@ -118,7 +118,19 @@ WITH argo AS (
 	t.t AS stat_3_value 
   FROM aatams_acoustic_registered_totals_view,t 
 	WHERE no_times_detected = 'Total'),
-	
+
+-- New SATTAG QC
+  aatams_sattag_qc AS (
+  SELECT 'Animal tracking (satellite) New Quality Control'::text AS facility, 
+	'# animals equipped with satellite tags'::text AS stat_1_attrib, 
+	no_deployments AS stat_1_value,
+	'# profiles'::text AS stat_2_attrib, 
+	no_data AS stat_2_value, 
+	'# measurements'::text AS stat_3_attrib, 
+	no_data2 AS stat_3_value 
+  FROM totals_view 
+	WHERE facility = 'AATAMS'::text AND subfacility = 'Biologging'::text AND type = 'TOTAL'),
+
   aatams_sattag AS (
   SELECT 'Animal tracking (satellite)'::text AS facility, 
 	'# animals equipped with satellite tags'::text AS stat_1_attrib, 
@@ -170,6 +182,8 @@ WITH argo AS (
   SELECT * FROM acorn
   UNION ALL
   SELECT * FROM aatams_acoustic
+  UNION ALL
+  SELECT * FROM aatams_sattag_qc
   UNION ALL
   SELECT * FROM aatams_sattag
   UNION ALL

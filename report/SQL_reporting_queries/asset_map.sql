@@ -13,6 +13,15 @@ WITH soop_cpr AS (
   FROM soop_auscpr.soop_auscpr_pci_trajectory_map 
     WHERE vessel_name != 'RV Cape Ferguson' AND vessel_name != 'RV Solander'
 	GROUP BY vessel_name),
+  aatams_sattag_qc_dm AS (
+  SELECT device_id,
+	min(timestamp) AS date_start,
+	max(timestamp) AS date_end,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM aatams_sattag_qc_dm.aatams_sattag_qc_profile_map
+	GROUP BY device_id 
+	ORDER BY random()
+	LIMIT 35),
   aatams_sattag_dm AS (
   SELECT device_id,
 	min(timestamp) AS date_start,
@@ -20,6 +29,15 @@ WITH soop_cpr AS (
 	ST_CENTROID(ST_COLLECT(geom)) AS geom
   FROM aatams_sattag_dm.aatams_sattag_dm_profile_map
 	GROUP BY device_id 
+	ORDER BY random()
+	LIMIT 35),
+  aatams_sattag_qc_nrt AS (
+  SELECT device_id,
+	min(timestamp) AS date_start,
+	max(timestamp) AS date_end,
+	ST_CENTROID(ST_COLLECT(geom)) AS geom
+  FROM aatams_sattag_qc_nrt.aatams_sattag_qc_profile_map
+	GROUP BY device_id
 	ORDER BY random()
 	LIMIT 35),
   aatams_sattag_nrt AS (
@@ -787,7 +805,38 @@ UNION ALL
 	'Point' AS gtype,
 	'#15D659' AS colour
   FROM aatams_snowpetrel
-  
+ 
+-- New SATTAG QC DM 
+  UNION ALL
+
+  SELECT 'Animal Tracking' AS facility,
+	'Biologging New Quality Control' AS subfacility,
+	'delayed-mode' AS product,
+	device_id AS platform_code,
+	'Seals and sea lions' AS platform_type,
+	date_start,
+	date_end,
+	TRUE AS w_temp_b,
+	TRUE AS w_psal_b,
+	FALSE AS w_oxygen_b,
+	FALSE AS w_co2_b,
+	TRUE AS w_chlorophyll_b,
+	FALSE AS turb_b,
+	FALSE AS w_current_b,
+	FALSE AS wave_b,
+	FALSE AS air_temperature_b,
+	FALSE AS air_pressure_b,
+	FALSE AS air_co2_b,
+	FALSE AS wind_b,
+	FALSE AS plankton_b,
+	FALSE AS optical_properties_b,
+	TRUE AS animal_location_b,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_sattag_qc_dm
+	WHERE st_x(geom) > 0
+ 
 UNION ALL
 
   SELECT 'Animal Tracking' AS facility,
@@ -847,7 +896,38 @@ UNION ALL
 	'#15D659' AS colour
   FROM aatams_sattag_nrt
 	WHERE st_x(geom) > 0
-	
+
+-- New SATTAG QC NRT 
+UNION ALL
+
+  SELECT 'Animal Tracking' AS facility,
+	'Biologging New Quality Control' AS subfacility,
+	'real-time' AS product,
+	device_id AS platform_code,
+	'Seals and sea lions' AS platform_type,
+	date_start,
+	date_end,
+	TRUE AS w_temp_b,
+	TRUE AS w_psal_b,
+	FALSE AS w_oxygen_b,
+	FALSE AS w_co2_b,
+	FALSE AS w_chlorophyll_b,
+	FALSE AS turb_b,
+	FALSE AS w_current_b,
+	FALSE AS wave_b,
+	FALSE AS air_temperature_b,
+	FALSE AS air_pressure_b,
+	FALSE AS air_co2_b,
+	FALSE AS wind_b,
+	FALSE AS plankton_b,
+	FALSE AS optical_properties_b,
+	TRUE AS animal_location_b,
+	geom,
+	'Point' AS gtype,
+	'#15D659' AS colour
+  FROM aatams_sattag_qc_nrt
+	WHERE st_x(geom) > 0
+
 ---- Deep Water Moorings-TS
 UNION ALL
 
