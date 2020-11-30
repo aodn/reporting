@@ -25,8 +25,8 @@ colnames(argo) <- c('timestamp','no_profiles','no_measurements')
 soop <- data.frame(data$timestamp[which(data$facility == 'SOOP' & data$data_type == 'TOTAL')], data$no_data[which(data$facility == 'SOOP' & data$data_type == 'TOTAL')], data$no_data2[which(data$facility == 'SOOP' & data$data_type == 'TOTAL')])
 colnames(soop) <- c('timestamp','no_data_files','no_measurements')
 
-abos <- data.frame(data$timestamp[which(data$facility == 'ABOS' & data$data_type == 'TOTAL')], data$no_deployments[which(data$facility == 'ABOS' & data$data_type == 'TOTAL')], data$no_data[which(data$facility == 'ABOS' & data$data_type == 'TOTAL')])
-colnames(abos) <- c('timestamp','no_deployments','no_data_files')
+dwm <- data.frame(data$timestamp[which(data$facility == 'DWM' & data$data_type == 'TOTAL')], data$no_deployments[which(data$facility == 'DWM' & data$data_type == 'TOTAL')], data$no_data[which(data$facility == 'DWM' & data$data_type == 'TOTAL')])
+colnames(dwm) <- c('timestamp','no_deployments','no_data_files')
 
 anfog <- data.frame(data$timestamp[which(data$facility == 'ANFOG' & data$data_type == 'TOTAL')], data$no_deployments[which(data$facility == 'ANFOG' & data$data_type == 'TOTAL')], data$no_data[which(data$facility == 'ANFOG' & data$data_type == 'TOTAL')])
 colnames(anfog) <- c('timestamp','no_deployments','no_measurements')
@@ -168,27 +168,27 @@ dev.off()
 
 
 ##############################
-#### Plot totals -- ABOS
-jpeg(paste('Totals_ABOS_',Sys.Date(),'.jpeg',sep=''), width = 800, height = 600, units = 'px', quality = 100)
+#### Plot totals -- DWM
+jpeg(paste('Totals_DWM_',Sys.Date(),'.jpeg',sep=''), width = 800, height = 600, units = 'px', quality = 100)
 par(mar=c(5, 6.5, 4, 6.5) + 0.1, cex.lab = 1.5)
 
 ## Plot first set of data and draw its axis
-plot(abos$timestamp, abos$no_deployments, pch=16, xlab="", ylab="", 
-   type="b",col="black", main="ABOS - Number of deployments and QC'd data files", axes=FALSE)
+plot(dwm$timestamp, dwm$no_deployments, pch=16, xlab="", ylab="", 
+   type="b",col="black", main="DWM - Number of deployments and QC'd data files", axes=FALSE)
 axis(2, col="black",las=1)  ## las=1 makes horizontal labels
 mtext("Number of deployments",side=2,line=5)
 box()
 
 ## Plot the second plot and put axis scale on right
 par(new=TRUE)
-plot(abos$timestamp, abos$no_data_files, pch=15,  xlab="", ylab="", 
+plot(dwm$timestamp, dwm$no_data_files, pch=15,  xlab="", ylab="", 
     axes=FALSE, type="b", col="red", cex.lab = 5)
 ## a little farther out (line=4) to make room for labels
 mtext("Number of QC'd data files",side=4,col="red",line=5) 
 axis(4, col="red",col.axis="red",las=1, cex = 2)
 
 ## Draw the time axis
-axis.POSIXct(1, at = seq(abos$timestamp[1],tail(abos$timestamp,1), by = "month")[seq(1,length(seq(abos$timestamp[1],tail(abos$timestamp,1), by = "month")),2)], format = '%b %Y')
+axis.POSIXct(1, at = seq(dwm$timestamp[1],tail(dwm$timestamp,1), by = "month")[seq(1,length(seq(dwm$timestamp[1],tail(dwm$timestamp,1), by = "month")),2)], format = '%b %Y')
 mtext("Date",side=1,col="black",line=2.5)  
 
 ## Add Legend

@@ -876,8 +876,8 @@ UNION ALL
 	CASE WHEN m.geom IS NULL THEN ma.geom ELSE m.geom END AS geom,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_ts.abos_ts_timeseries_map m
-  FULL JOIN abos_currents.abos_currents_map ma ON m.platform_code = ma.platform_code
+  FROM dwm_ts.dwm_ts_timeseries_map m
+  FULL JOIN dwm_currents.dwm_currents_map ma ON m.platform_code = ma.platform_code
 	GROUP BY m.platform_code, ma.platform_code,m.geom,ma.geom
 
 ---- Deep Water Moorings SOFS
@@ -908,7 +908,7 @@ UNION ALL
 	geom AS geom,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_sofs_fl.abos_sofs_surfaceflux_rt_map
+  FROM dwm_sofs_fl.dwm_sofs_surfaceflux_rt_map
 	WHERE deployment_number != '' 
 	GROUP BY deployment_number, geom      
 
