@@ -17,8 +17,9 @@ figures = os.path.join(this_src_path,'figures/eMII_data_report/AATAMS_EmbargoPlo
 def list_folder(folder: str, sort: bool = True) -> List[str]:
     cmd = run(['ls', folder], capture_output=True)
     files = [x.decode() for x in cmd.stdout.split()]
+    print(files)
     if sort:
-        return sorted(files)
+        return sorted(files)[::-1]
     else:
         return files
 
@@ -69,6 +70,7 @@ def create_status_table():
 
 def update_embargo_image():
     folder, image = get_entry('current',figures)
+    print(image)
     ipath = os.path.join(folder,image)
     stdout = run(['cp',ipath,'static/images/current_embargo.jpeg'],capture_output=True)
     pass
