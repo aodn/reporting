@@ -12,6 +12,8 @@ aatams_sattag_all_deployments_view
 aatams_sattag_data_summary_view
 abos_all_deployments_view
 abos_data_summary_view
+dwm_all_deployments_view
+dwm_data_summary_view
 anfog_data_summary_view
 anmn_acoustics_all_deployments_view
 anmn_acoustics_data_summary_view
