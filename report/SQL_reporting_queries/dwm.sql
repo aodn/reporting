@@ -1,14 +1,14 @@
 SET search_path = reporting, public;
-DROP VIEW IF EXISTS abos_all_deployments_view CASCADE;
+DROP VIEW IF EXISTS dwm_all_deployments_view CASCADE;
 
 -------------------------------
--- VIEWS FOR ABOS;
+-- VIEWS FOR DWM;
 -------------------------------
 -- All deployments view
-CREATE or replace VIEW abos_all_deployments_view AS
+CREATE or replace VIEW dwm_all_deployments_view AS
     WITH table_a AS (
     SELECT 
-    substring(i.url, 'IMOS/ABOS/([A-Z]+)/') AS sub_facility,
+    substring(i.url, 'IMOS/DWM/([A-Z]+)/') AS sub_facility,
     CASE WHEN m.platform_code = 'PULSE' THEN 'Pulse'
 	ELSE m.platform_code END AS platform_code,
     COALESCE(m.deployment_code,
@@ -30,7 +30,7 @@ CREATE or replace VIEW abos_all_deployments_view AS
     round(((date_part('day', (m.time_coverage_end - m.time_coverage_start)) + (date_part('hours'::text, (m.time_coverage_end - m.time_coverage_start)) / (24)::double precision)))::numeric, 1) AS coverage_duration,
     m.deployment_number
     FROM anmn_metadata.indexed_file i JOIN anmn_metadata.file_metadata m ON m.file_id = i.id
-    WHERE i.url LIKE 'IMOS/ABOS%' AND NOT m.deleted
+    WHERE i.url LIKE 'IMOS/DWM%' AND NOT m.deleted
     )
   SELECT CASE WHEN a.year_frequency = 'Whole deployment' THEN 'Aggregated files' 
 	ELSE 'Daily files' END AS file_type, 
@@ -53,10 +53,10 @@ CREATE or replace VIEW abos_all_deployments_view AS
 	GROUP BY headers, a.deployment_code, a.data_category, a.data_type, a.year_frequency, a.deployment_number, a.platform_code, a.sub_facility
 	ORDER BY file_type, headers, a.data_type, a.data_category, a.deployment_code;
 
-grant all on table abos_all_deployments_view to public;
+grant all on table dwm_all_deployments_view to public;
 
 -- Data summary view
-CREATE or replace VIEW abos_data_summary_view AS
+CREATE or replace VIEW dwm_data_summary_view AS
     SELECT 
     v.file_type, 
     v.headers, 
@@ -77,12 +77,12 @@ CREATE or replace VIEW abos_data_summary_view AS
 	ELSE (((sum(v.coverage_duration) / ((max(v.coverage_end) - min(v.coverage_start)))::numeric) * (100)::numeric))::integer END AS percent_coverage, 
     v.platform_code, 
     v.sub_facility 
-    FROM abos_all_deployments_view v
+    FROM dwm_all_deployments_view v
     WHERE v.headers IS NOT NULL 
     GROUP BY v.headers, v.data_category, v.data_type, v.file_type, v.platform_code, v.sub_facility 
     ORDER BY v.file_type, v.headers, v.data_type, v.data_category;
 
-grant all on table abos_data_summary_view to public;
+grant all on table dwm_data_summary_view to public;
 
--- ALTER VIEW abos_all_deployments_view OWNER TO harvest_reporting_write_group;
--- ALTER VIEW abos_data_summary_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW dwm_all_deployments_view OWNER TO harvest_reporting_write_group;
+-- ALTER VIEW dwm_data_summary_view OWNER TO harvest_reporting_write_group;
