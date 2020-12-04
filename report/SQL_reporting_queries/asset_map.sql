@@ -876,8 +876,8 @@ UNION ALL
 	CASE WHEN m.geom IS NULL THEN ma.geom ELSE m.geom END AS geom,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_ts.abos_ts_timeseries_map m
-  FULL JOIN abos_currents.abos_currents_map ma ON m.platform_code = ma.platform_code
+  FROM dwm_ts.dwm_ts_timeseries_map m
+  FULL JOIN dwm_currents.dwm_currents_map ma ON m.platform_code = ma.platform_code
 	GROUP BY m.platform_code, ma.platform_code,m.geom,ma.geom
 
 ---- Deep Water Moorings SOFS
@@ -908,7 +908,7 @@ UNION ALL
 	geom AS geom,
 	'Point' AS gtype,
 	'#CC4712' AS colour
-  FROM abos_sofs_fl.abos_sofs_surfaceflux_rt_map
+  FROM dwm_sofs_fl.dwm_sofs_surfaceflux_rt_map
 	WHERE deployment_number != '' 
 	GROUP BY deployment_number, geom      
 
@@ -1248,37 +1248,6 @@ UNION ALL
   FROM anmn_ts.anmn_ts_timeseries_map
 	GROUP BY substring(site_code,'[A-Z]+')
 
----- National Mooring Network temperature gridded
-UNION ALL
-
-  SELECT DISTINCT 'National Mooring Network' AS facility,
-	NULL AS subfacility,
-	'temperature gridded' AS product,
-	substring(site_code,'[A-Z]+') AS platform_code,
-	'Mooring' AS platform_type,
-	min(time_coverage_start) AS date_start,
-	max(time_coverage_end) AS date_end,
-	TRUE AS w_temp_b,
-	FALSE AS w_psal_b,
-	FALSE AS w_oxygen_b,
-	FALSE AS w_co2_b,
-	FALSE AS w_chlorophyll_b,
-	FALSE AS turb_b,
-	FALSE AS w_current_b,
-	FALSE AS wave_b,
-	FALSE AS air_temperature_b,
-	FALSE AS air_pressure_b,
-	FALSE AS air_co2_b,
-	FALSE AS wind_b,
-	FALSE AS plankton_b,
-	FALSE AS optical_properties_b,
-	FALSE AS animal_location_b,
-	ST_CENTROID(ST_COLLECT(geom)) AS geom,
-	'Point' AS gtype,
-	'#8212CC' AS colour
-  FROM anmn_t_regridded.anmn_regridded_temperature_map
-	GROUP BY substring(site_code,'[A-Z]+')
-	
 ---- Ocean Gliders
 UNION ALL
 

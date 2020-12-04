@@ -20,8 +20,8 @@ echo @@@@@@@@ Reporting view - AATAMS Biologging @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/aatams_biologging.sql;
 echo @@@@@@@@ Reporting view - AATAMS Satellite tagging @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/aatams_sattag.sql;
-echo @@@@@@@@ Reporting views - ABOS @@@@@@@@
-psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/abos.sql;
+echo @@@@@@@@ Reporting views - DWM @@@@@@@@
+psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/dwm.sql;
 echo @@@@@@@@ Reporting views - ACORN @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/acorn.sql;
 echo @@@@@@@@ Reporting views - ANFOG @@@@@@@@
