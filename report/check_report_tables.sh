@@ -88,6 +88,7 @@ done
 if [[ "$nviews" = "$expected_nviews" ]];then
     echo -e "All views included."
 else
+    echo ${results[@]}
     msg=$msg"\nError: Incomplete number of reporting views"
     fail=yes
 fi
