@@ -28,8 +28,8 @@ WITH argo AS (
   FROM totals_view 
 	WHERE facility = 'SOOP'::text AND type != 'TOTAL'),
   
-  abos AS (
-  SELECT 'ABOS'::text AS facility, 
+  dwm AS (
+  SELECT 'DWM'::text AS facility, 
 	'# deployments'::text AS stat_1_attrib, 
 	no_deployments AS stat_1_value, 
 	'# QC''d datasets'::text AS stat_2_attrib, 
@@ -37,7 +37,7 @@ WITH argo AS (
 	'# days of data'::text AS stat_3_attrib, 
 	no_data3 AS stat_3_value
   FROM totals_view 
-	WHERE facility = 'ABOS'::text AND type = 'TOTAL'),
+	WHERE facility = 'DWM'::text AND type = 'TOTAL'),
   
   anfog AS (
   SELECT 'ANFOG'::text AS facility, 
@@ -167,7 +167,7 @@ WITH argo AS (
   UNION ALL
   SELECT * FROM soop
   UNION ALL
-  SELECT * FROM abos
+  SELECT * FROM dwm
   UNION ALL
   SELECT * FROM anfog
   UNION ALL

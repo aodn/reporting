@@ -194,10 +194,10 @@ UNION ALL
 	NULL AS depth_range
   FROM aatams_biologging_data_summary_view
     
--- ABOS
+-- DWM
 UNION ALL
 
-  SELECT 'ABOS' AS facility,
+  SELECT 'DWM' AS facility,
 	sub_facility AS subfacility,
 	file_type AS type,
 	NULL AS no_projects,
@@ -212,12 +212,12 @@ UNION ALL
 	NULL AS lat_range,
 	NULL AS lon_range,
 	NULL AS depth_range
-  FROM abos_data_summary_view
+  FROM dwm_data_summary_view
 	GROUP BY sub_facility, file_type
 
 UNION ALL
 
-  SELECT 'ABOS' AS facility,
+  SELECT 'DWM' AS facility,
 	NULL AS subfacility,
 	'TOTAL' AS type,
 	NULL::BIGINT AS no_projects,
@@ -232,7 +232,7 @@ UNION ALL
 	NULL AS lat_range,
 	NULL AS lon_range,
 	NULL AS depth_range
-  FROM abos_data_summary_view
+  FROM dwm_data_summary_view
 
 -- ACORN
 UNION ALL
