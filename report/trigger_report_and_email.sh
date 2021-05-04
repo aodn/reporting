@@ -1,8 +1,9 @@
 #!/usr/bin/env sh
 
+. email_receivers.conf
 
 email_trigger() {
-    ./reporting_email_sender.sh "$cdate" ../report_logs/"$cdate" ../report_statuses/"$cdate" ../figures/eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_"$zdate".jpeg aodnreporting@gmail.com "hugo.oliveira@utas.edu.au" #"jacqui.hope@utas.edu.au"
+    ./reporting_email_sender.sh "$cdate" ../report_logs/"$cdate" ../report_statuses/"$cdate" ../figures/eMII_data_report/AATAMS_EmbargoPlots/EmbargoPlot_"$zdate".jpeg aodnreporting@gmail.com $mail_to
 }
 
 # Drive the report script
