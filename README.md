@@ -89,7 +89,7 @@ The webserver is quite simple and watches the folders used by the email reportin
 6) Run the webserver manually:
     * ```python3 <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
     * The service will watch the required folders above and present a simple html page.
-    * You may want to configure the webserver as a linux service. In openrc this is equivalent to creating a ```/etc/init.d/reporting-server``` file with the content:
+7) You may want to configure the webserver as a linux service. In openrc this is equivalent to creating a ```/etc/init.d/reporting-server``` file with the content:
   ```bash
   #!/sbin/openrc-run
 depend() {       
@@ -103,5 +103,5 @@ start() {
         eend $? "failed to start IMOS Reporting flask service"
 }
 ```
-     * and asking it to run every time the machine is booted: ```rc-update add reporting-server default```
+8) and asking it to run every time the machine is booted: ```rc-update add reporting-server default```
 
