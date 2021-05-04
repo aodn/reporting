@@ -10,15 +10,15 @@ To be able to run the scripts manually, you will need:
 2. ```psql```
 3. ```R``` and the ```RPostgreSQL,RPostgres,gmt,plyr``` libraries
    
-To be able to setup a cronjob that send schedule emails with the status of the summary job, you will need:
+To be able to setup a cronjob that send schedule emails with a job summary, you will need:
    
 4. a ```cron``` service
 5. ```sendmail```
 6. ```ssmtp``` service properly configured (``/etc/ssmtp.conf```)
 
-To be able to serve a website with a status page you will also need:
+To be able to serve a website with a job status page you will also need:
 
-8. python3-8
+8. python3.8
    a. waitress-1.4.4+
    b. Flask-1.1.2+
 
@@ -54,8 +54,8 @@ The ```reporting_improvements``` branch was created to:
 
   * avoid sheryl mount calls (folders are assumed as always mounted).
   * try individual sql queries for 5 times before returning a fail.
-  * may send scheduled emails with attachemnts/logs of the reporting task
-  * may serve a webpage with the reporting status
+  * allow sending scheduled emails with attachemnts/logs of the reporting task.
+  * allow serving a webpage with the reporting status.
   
 How to run
 ==========
@@ -71,20 +71,18 @@ You may want to schedule the report script to be run every month:
 
 How to run the email scheduling (optional)
 ========== 
-This requires you to use the ```reporting_improvements``` branch. Please note that this branch assumes the sheryl folder is always mounted (if not, the email/server still work).
+This requires you to use the ```reporting_improvements``` branch. Please note that this branch assumes the sheryl folder is always mounted so we don't need to provide UTAS permissions or mount anything.
 
-
-3) configure and test the ssmtp.conf and the sendmail functionality, otherwise emails will fail.
-4) setup destination addresses in email_receivers.conf:
+3) configure and test the `/etc/ssmtp.conf` and the `sendmail` functionality, otherwise emails will fail.
+4) setup destination addresses in `report/email_receivers.conf`:
     * ```mail_to=youremail@utas.edu.au```
 5) Instead of running the bare reporting script, you will need to trigger the ```trigger_report_and_email.sh``` script:
     * Include the line: ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./trigger_report_and_email.sh```
-    * The script requires the following folders to exist at the root level of the repo: ```figures,report_logs,checker_logs,checked_statuses,report_statuses,```
+    * This script requires the following folders to exist at the root level of the repo: ```figures,report_logs,checker_logs,checked_statuses,report_statuses```
  
 How to run the webserver html page
 ==========
-The webserver is quite simple and watches the folders used by the email reporting scripts to serve a simple html page. The page contains the latest embargo figure and some status from the reporting task. The webserver is a simple python flask service and completely optional. A further enhancement to this would be to allow certain users to trigger the reporting with a button. However, this requires some protection from abuse/user authentication.
-
+The webserver is quite simple and watches the folders and files written by the email reporting scripts to serve a simple html page. The page contains the latest embargo figure and status from the reporting task as a whole. The webserver is a simple python flask service and completely optional. A further enhancement to this would be to allow certain users to trigger the reporting with a button. However, this requires some protection from abuse/user authentication.
 
 6) Run the webserver manually:
     * ```python3 <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
@@ -104,4 +102,3 @@ start() {
 }
 ```
 8) and asking it to run every time the machine is booted: ```rc-update add reporting-server default```
-
