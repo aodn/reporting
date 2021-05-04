@@ -89,7 +89,7 @@ The webserver is quite simple and watches the folders used by the email reportin
 6) Run the webserver manually:
     * ```python3 <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
     * The service will watch the required folders above and present a simple html page at ```http://localhost:8000```
-7) You may want to configure the webserver as a linux service. In openrc this is equivalent to creating a ```/etc/init.d/reporting-server``` file with the content:
+7) You may want to configure the webserver as a linux service. In ```openrc``` this is equivalent to creating a ```/etc/init.d/reporting-server``` file with the content:
   ```bash
   #!/sbin/openrc-run
 depend() {       
