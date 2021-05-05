@@ -69,6 +69,9 @@ You may want to schedule the report script to be run every month:
 * 3) add the line ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./reporting_script.sh``` to your crontab.
 
 
+It is recommended that the reporting is performed over a time window of low load and away from DB maintenance schedules(e.g. backups). In practice, scheduling at 00:00am resulted in less fails/faster queries.
+
+
 How to run the email scheduling (optional)
 ========== 
 This requires you to use the ```reporting_improvements``` branch. Please note that this branch assumes the sheryl folder is always mounted so we don't need to provide UTAS permissions or mount anything.
