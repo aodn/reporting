@@ -10,7 +10,7 @@ To be able to run the scripts manually, you will need:
 2. ```psql```
 3. ```R``` and the ```RPostgreSQL,RPostgres,gmt,plyr``` libraries
    
-To be able to setup a cronjob that send schedule emails with a job summary, you will need:
+To be able to setup a cronjob that send scheduled emails with a job summary, you will need:
    
 4. a ```cron``` service
 5. ```sendmail```
@@ -40,7 +40,7 @@ This script also triggers an R script that generates a plot showing the number o
 
 These embargo plots are then uploaded to Sheryll as part of the same R script.
 
-At the end of this process 10 tables and 34 views should be present in the 'reporting' schema. The fact of having views instead of tables in the reporting schema is problematic when modifications are required on underlying schemas used by the reporting queries. 
+At the end of this process, 10 tables and 34 views should be present in the 'reporting' schema. The fact of having views instead of tables in the reporting schema is problematic when modifications are required on underlying schemas used by the reporting queries. 
 
 This ad-hoc workflow could be improved by:
  
@@ -53,7 +53,7 @@ The 'report/MS Word reporting templates' folder contains Word files detailing ho
 The ```reporting_improvements``` branch was created to:
 
   * avoid sheryl mount calls (folders are assumed as always mounted).
-  * try individual sql queries for 5 times before returning a fail.
+  * try individual sql queries 5 times before returning a fail.
   * allow sending scheduled emails with attachemnts/logs of the reporting task.
   * allow serving a webpage with the reporting status.
   
@@ -73,7 +73,7 @@ How to run the email scheduling (optional)
 ========== 
 This requires you to use the ```reporting_improvements``` branch. Please note that this branch assumes the sheryl folder is always mounted so we don't need to provide UTAS permissions or mount anything.
 
-3) configure and test the `/etc/ssmtp.conf` and the `sendmail` functionality, otherwise emails will fail.
+3) configure and test the `/etc/ssmtp.conf` and the `sendmail` functionality, otherwise, emails will fail.
 4) setup destination addresses in `report/email_receivers.conf`:
     * ```mail_to=youremail@utas.edu.au```
 5) Instead of running the bare reporting script, you will need to trigger the ```trigger_report_and_email.sh``` script:
