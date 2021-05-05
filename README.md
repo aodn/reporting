@@ -90,7 +90,8 @@ The configuration below assumes the service is installed in the home folder of a
     * ```python <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
     * The service will watch the required folders above and present a simple html page at ```http://localhost:8000```
 7) You may want to configure the webserver as a linux service. In ```openrc``` this is done by a service file, ```/etc/init.d/reporting-service```, with the following content:
-  ```bash
+
+```bash
 #!/sbin/openrc-run
 depend() {
 	after mount-ro
