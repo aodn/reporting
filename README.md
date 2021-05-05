@@ -84,21 +84,35 @@ How to run the webserver html page
 ==========
 The webserver is quite simple and watches the folders and files written by the email reporting scripts to serve a simple html page. The page contains the latest embargo figure and status from the reporting task as a whole. The webserver is a simple python flask service and completely optional. A further enhancement to this would be to allow certain users to trigger the reporting with a button. However, this requires some protection from abuse/user authentication.
 
+The configuration below assumes the service is installed in the home folder of a `reporting` user, and pyenv is properly installed, and setup to use python3.8.0 as a global and local python.
+
 6) Run the webserver manually:
-    * ```python3 <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
+    * ```python <YOUR_REPORTING_GIT_REPO>/flask_reporting.py```
     * The service will watch the required folders above and present a simple html page at ```http://localhost:8000```
-7) You may want to configure the webserver as a linux service. In ```openrc``` this is done by a service file, ```/etc/init.d/reporting-server```, with the following content:
+7) You may want to configure the webserver as a linux service. In ```openrc``` this is done by a service file, ```/etc/init.d/reporting-service```, with the following content:
   ```bash
-  #!/sbin/openrc-run
-depend() {       
-        after mount-ro
-        after localmount
+#!/sbin/openrc-run
+depend() {
+	after mount-ro
+	after localmount
 }
 
 start() {
-        ebegin "Starting the IMOS Reporting flask service"
-        <YOUR_PYTHON3_PATH> <YOUR_GIT_REPO_PATH>/flask_reporting.py > /tmp/flask_reporting.log &
-        eend $? "failed to start IMOS Reporting flask service"
+	ebegin "starting flask app"
+	PYTHONPATH=/home/reporting/.pyenv/versions/3.8.0 /home/reporting/.pyenv/shims/python /home/reporting/reporting/flask_reporting.py &
+   #^update path if required.
+	eend $? "failed to start flask app"
+}
+
+stop() {
+	ebegin "closing flask app"
+	pid=$(pgrep -af -u root flask_reporting.py | cut -d " " -f1)
+	if [ -z "$pid" ]; then
+	  eend 0 "no flask app running"
+	else
+          kill $pid
+	  eend $?
+	fi
 }
 ```
 8) and asking it to run every time the machine is booted: ```rc-update add reporting-server default```
