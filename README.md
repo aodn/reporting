@@ -60,9 +60,11 @@ The ```reporting_improvements``` branch was created to:
 How to run
 ==========
 
-1) edit ```report/config.conf```
-    * add db password for reporting username
-    * add utas credentials in order to mount sheryl
+1) go to ```report/```
+1) edit ```config.conf```
+    * add username ```reporting```
+    * add password from ```chef-private/data_bags/postgresql_roles/dbprod_main.json```
+    * add your utas credentials in order to mount sheryl
 2) run ```./report/reporting_script.sh```
 
 You may want to schedule the report script to be run every month:
