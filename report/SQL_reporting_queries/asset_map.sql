@@ -957,7 +957,7 @@ UNION ALL
 	'Point' AS gtype,
 	'#CC4712' AS colour
   FROM dwm_ts.dwm_ts_timeseries_map m
-  FULL JOIN dwm_currents.dwm_currents_map ma ON m.platform_code = ma.platform_code
+  FULL JOIN anmn_metadata.dwm_currents_map ma ON m.platform_code = ma.platform_code
 	GROUP BY m.platform_code, ma.platform_code,m.geom,ma.geom
 
 ---- Deep Water Moorings SOFS
