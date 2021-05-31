@@ -65,7 +65,7 @@ How to run
     * add username ```reporting```
     * add password from ```chef-private/data_bags/postgresql_roles/dbprod_main.json```
     * add your utas credentials in order to mount sheryl
-2) run ```./report/reporting_script.sh```
+2) run ```./reporting_script.sh```
 
 You may want to schedule the report script to be run every month:
 * 3) add the line ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./reporting_script.sh``` to your crontab.
