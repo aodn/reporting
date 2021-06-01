@@ -61,14 +61,15 @@ How to run
 ==========
 
 1) go to ```report/```
-1) edit ```config.conf```
+2) edit ```config.conf```
     * add username ```reporting```
     * add password from ```chef-private/data_bags/postgresql_roles/dbprod_main.json```
     * add your utas credentials in order to mount sheryl
-2) run ```./reporting_script.sh```
+3) run ```./reporting_script.sh```
+N.B. check that ```emiiSheryl``` is mounted otherwise the R script will fail on creating the figure. Commands to mount ```emiiSheryl``` are in ```reporting_script.sh``` but sometime does need to be unmounted then mounted manually.
 
-You may want to schedule the report script to be run every month:
-* 3) add the line ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./reporting_script.sh``` to your crontab.
+You may want to schedule the report script to be run every month (optional):
+* 4) add the line ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./reporting_script.sh``` to your crontab.
 
 
 It is recommended that the reporting is performed over a time window of low load and away from DB maintenance schedules(e.g. backups). In practice, scheduling at 00:00am resulted in less fails/faster queries.
