@@ -65,7 +65,7 @@ How to run
     * add username ```reporting```
     * add password from ```chef-private/data_bags/postgresql_roles/dbprod_main.json```
     * add your utas credentials in order to mount sheryl
-3) run ```./reporting_script.sh```
+3) run ```./reporting_script.sh```\
 N.B. check that ```emiiSheryl``` is mounted otherwise the R script will fail on creating the figure. Commands to mount ```emiiSheryl``` are in ```reporting_script.sh``` but sometime does need to be unmounted then mounted manually.
 
 You may want to schedule the report script to be run every month (optional):
