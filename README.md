@@ -9,6 +9,8 @@ To be able to run the scripts manually, you will need:
 1. ```bash```
 2. ```psql```
 3. ```R``` and the ```RPostgreSQL,RPostgres,gmt,plyr``` libraries
+N.B. -> you may find a problem with R Postgre packages and Ubuntu dependencies. To solve that you need to first downgrade ```libpq5``` in Ubuntu and then install the ```RPostgreSQL,RPostgres``` packages. Two command line to do that with Ubuntu 20.4:
+```sudo apt-get install libpq5=12.7-0ubuntu0.20.04.1``` then ```sudo apt-get install libpq-dev```
    
 To be able to setup a cronjob that send scheduled emails with a job summary, you will need:
    
