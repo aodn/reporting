@@ -12,7 +12,7 @@ CREATE or replace VIEW aatams_sattag_qc_all_deployments_view AS WITH qc AS
           max(pressure) AS max_pressure
    FROM aatams_sattag_qc_dm.aatams_sattag_qc_profile_data
    GROUP BY device_id)
-SELECT 'Near real-time CTD data' AS data_type,
+SELECT 'Near real-time QCd CTD data' AS data_type,
        COALESCE(m.sattag_program|| ' - ' || m.state_country) AS headers,
        m.sattag_program,
        m.release_site,
