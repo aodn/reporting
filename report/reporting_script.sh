@@ -43,7 +43,7 @@ psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/auv.sql;
 echo @@@@@@@@ Reporting views - Facility summary @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/facility_summary.sql;
 echo @@@@@@@@ Reporting views - FAIMMS @@@@@@@@
-#psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/faimms.sql;
+psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/faimms.sql;
 echo @@@@@@@@ Reporting views - SOOP CPR @@@@@@@@
 psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/soop_cpr.sql;
 echo @@@@@@@@ Reporting views - SOOP @@@@@@@@
