@@ -12,7 +12,7 @@ c AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_ba.measure
 e AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_co2.soop_co2_trajectory_data GROUP BY file_id),
 f AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_sst.soop_sst_nrt_trajectory_data GROUP BY trajectory_id),
 g AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_sst.soop_sst_dm_trajectory_data GROUP BY trajectory_id),
-h AS (SELECT trajectory_id, COUNT(measurement_id) AS nb_measurements FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_data GROUP BY trajectory_id),
+h AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_tmv.soop_tmv_nrt_trajectory_data GROUP BY file_id),
 i AS (SELECT file_id, COUNT(measurement) AS nb_measurements FROM soop_tmv.soop_tmv_trajectory_data GROUP BY file_id),
 j AS (SELECT trip_id, COUNT(measurement) AS nb_measurements FROM soop_trv.measurements_merged_data GROUP BY trip_id)
   SELECT 'ASF Flux product' AS subfacility,
@@ -157,8 +157,8 @@ UNION ALL
   round(max(ST_YMAX(geom))::numeric, 1) AS max_lat, 
   round(min(ST_XMIN(geom))::numeric, 1) AS min_lon, 
   round(max(ST_XMAX(geom))::numeric, 1) AS max_lon
-  FROM soop_tmv_nrt.soop_tmv_nrt_trajectory_map m
-  JOIN h ON h.trajectory_id = m.file_id
+  FROM soop_tmv.soop_tmv_nrt_trajectory_map m
+  JOIN h ON h.file_id = m.file_id
     GROUP BY subfacility, vessel_name, year
 
 UNION ALL 
