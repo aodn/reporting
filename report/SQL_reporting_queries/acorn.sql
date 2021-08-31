@@ -70,12 +70,15 @@ WITH c AS (
 	substring("ssr_Radar", 'WERA|SeaSonde') AS "ssr_Radar"
   FROM acorn_radial_nonqc.acorn_radial_nonqc_timeseries_url)
   SELECT 'Radials - QC' AS data_type, 
-	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast' 
+	CASE WHEN u.site_code = 'BONC' THEN 'Bonney Coast'
 	     WHEN u.site_code = 'CBG' THEN 'Capricorn Bunker Group'
 	     WHEN u.site_code = 'TURQ' THEN 'Turquoise Coast'
 	     WHEN u.site_code = 'SAG' THEN 'South Australian Gulf'
 	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
-	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
+	     WHEN u.site_code = 'CORL' THEN 'Coral Coast'
+	     WHEN u.site_code = 'NEWC' THEN 'Newcastle'
+	     WHEN u.site_code = 'NWS' OR u.site_code = 'NWA' THEN 'Northwest Shelf'
+	     WHEN u.site_code = 'COF' OR u.site_code = 'COF, Coffs Harbour (NSW), Red Rock (NSW)' OR u.site_code = 'COF, Coffs Harbour (NSW), North Nambucca (NSW)' THEN 'Coffs Harbour' END AS site,
 	u.platform_code,
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
@@ -97,7 +100,10 @@ UNION ALL
 	     WHEN u.site_code = 'TURQ' THEN 'Turquoise Coast'
 	     WHEN u.site_code = 'SAG' THEN 'South Australian Gulf'
 	     WHEN u.site_code = 'ROT' THEN 'Rottnest Shelf'
-	     WHEN u.site_code = 'COF' THEN 'Coffs Harbour' END AS site,
+	     WHEN u.site_code = 'CORL' THEN 'Coral Coast'
+	     WHEN u.site_code = 'NEWC' THEN 'Newcastle'
+	     WHEN u.site_code = 'NWS' OR u.site_code = '“NWS”' THEN 'Northwest Shelf'
+	     WHEN u.site_code = 'COF' OR u.site_code = 'COF, Coffs Harbour (NSW), Red Rock (NSW)' OR u.site_code = 'COF, Coffs Harbour (NSW), North Nambucca (NSW)' THEN 'Coffs Harbour' END AS site,
 	u.platform_code,
 	COUNT(u.timeseries_id) AS no_files,
 	date(min(time)) AS time_start,
