@@ -6,7 +6,7 @@ options(warn=2);
 source('config.conf')
 con <- dbConnect(RPostgres::Postgres(), dbname = "harvest", host = HOST, user = USER, port = '5432', password = PASS)
 
-dat <- dbGetQuery(con, "SELECT * FROM dw_aatams_acoustic.aatams_acoustic_species_all_deployments_view;")
+dat <- dbGetQuery(con, "SELECT * FROM animal_tracking_acoustic_reporting.animal_tracking_acoustic_species_all_deployments_view;")
 dbDisconnect(con);
 
 dat$first_detection <- strptime(as.character(dat$first_detection),'%Y-%m-%d', tz ='UTC')
@@ -16,6 +16,7 @@ data <- dat[-which(is.na(dat$embargo_date) == T),]
 
 ## Plot embargo data
 # data <- data[-which(data$embargo_date < Sys.time()),] ## only plot data after current date
+data <- data[-which(data$embargo_date > ('2080-12-01')),] ## only plot data before 2080 to avoid protected data with 99 years "embargo" from database 
 data <- data[order(data$embargo_date),]
 
 emb <- unique(data$embargo_date)
