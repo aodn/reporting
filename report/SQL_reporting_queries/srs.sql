@@ -14,108 +14,108 @@ gridded AS (
   'L3C' AS deployment_code,
   '1 day composite - NOAA-19 - day time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3c_1d_day_n19_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3c_1d_day_n19'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3C' AS deployment_code,
   '1 day composite - NOAA-19 - night time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3c_1d_ngt_n19_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3c_1d_ngt_n19'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '1 day composite - day time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_1d_day_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_1d_day'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '1 day composite - day and night' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_1d_dn_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_1d_dn'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '1 day composite - night time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_1d_ngt_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_1d_ngt'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '3 day composite - day time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_3d_day_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_3d_day'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '3 day composite - day and night' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_3d_dn_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_3d_dn'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3S' AS deployment_code,
   '3 day composite - night time' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3s_3d_ngt_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3s_3d_ngt'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'L3U' AS deployment_code,
   'NOAA-19' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_sst.srs_sst_l3u_n19_gridded_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_ghrsst_l3u_n19'
 --OC
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
@@ -123,156 +123,156 @@ UNION ALL
   'Aqua' AS deployment_code,
   '1 day composite - GSM' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_chl_gsm_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_chl_gsm'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - OC3' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_chl_oc3_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_chl_oc3'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Nanoplankton (NPP - OC3) - Brewin et al 2010' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_nanop_brewin2010at_pft_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_nanop_brewin2010at'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Nanoplankton (NPP - OC3) - Brewin et al 2012' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_nanop_brewin2012in_pft_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_nanop_brewin2012in'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Eppley-VGPM (NPP - GSM)' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_npp_vgpm_epp_gsm_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_npp_vgpm_eppley_gsm'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Eppley-VGPM (NPP - OC3)' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_npp_vgpm_epp_oc3_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_npp_vgpm_eppley_oc3'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Picoplankton (NPP - OC3) - Brewin et al 2010' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_picop_brewin2010at_pft_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_picop_brewin2010at'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite - Picoplankton (NPP - OC3) - Brewin et al 2012' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_picop_brewin2012in_pft_1d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_picop_brewin2012in'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   '8 day composite' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_so_johnson_chl_8d_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_contributed_aqua_johnson_8d'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'SeaWIFS' AS deployment_code,
   '8 day composite' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_so_johnson_chl_8d_seawifs_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_contributed_seawifs_johnson_8d'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'Aqua' AS deployment_code,
   'Monthly composite' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_so_johnson_chl_mo_aqua_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_contributed_aqua_johnson_1m'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'Chlorophyll a' AS parameter_site,
   'SeaWIFS' AS deployment_code,
   'Monthly composite' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_so_johnson_chl_mo_seawifs_url
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_contributed_seawifs_johnson_1m'
 UNION ALL
   SELECT 'SRS - Gridded Products' AS subfacility, 
   'SST' AS parameter_site,
   'Aqua' AS deployment_code,
   '1 day composite' AS sensor_name,
   COUNT(*) AS no_measurements,
-  min(date("time")) AS start_date, 
-  max(date("time")) AS end_date, 
-  round((date_part('days', (max("time") - min("time"))) + date_part('hours', (max("time") - min("time")))/24)::numeric, 1) AS coverage_duration, 
+  min(date("TIME")) AS start_date, 
+  max(date("TIME")) AS end_date, 
+  round((date_part('days', (max("TIME") - min("TIME"))) + date_part('hours', (max("TIME") - min("TIME")))/24)::numeric, 1) AS coverage_duration, 
   NULL::numeric AS lat, 
   NULL::numeric AS lon 
-  FROM srs_oc.srs_oc_sst_1d_aqua_url),
+  FROM generic_timestep.timestep_url WHERE collection_name = 'srs_oc_aqua_sst'),
 oc AS (SELECT file_id, COUNT(*) AS no_measurements FROM srs_oc_soop_rad.measurements GROUP BY file_id)
   SELECT 'SRS - Altimetry' AS subfacility, 
   m.site_name AS parameter_site, 
