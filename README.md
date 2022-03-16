@@ -1,5 +1,7 @@
+IMOS Database Reporting
+=
 
-This is the IMOS Reporting repo containing queries and scripts to estimate summary statistics.
+The reporting repository contains software tools and report templates used for reporting on selected metrics and summary statistics regarding datasets from IMOS facilities. This readme file details the procedures used for producing reports using the provided templates.
 
 Requirements
 =========
