@@ -60,7 +60,7 @@ psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/monthly_snapshot.sql;
 # psql -h $HOST -U $USER -d harvest < SQL_reporting_queries/asset_map.sql;
 # echo @@@@@@@@ Modify privileges @@@@@@@@
 # psql -h $HOST -U $USER -d harvest < ChangeOwnershipReportingSchema.sql;
-echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
-Rscript ATF_EmbargoPlots.R;
+#echo @@@@@@@@ R script - AATAMS Embargo plots @@@@@@@@
+#Rscript ATF_EmbargoPlots.R;
 
 sudo umount $SHERYL_PATH
