@@ -1,11 +1,14 @@
-IMOS Database Reporting
-=
+#IMOS Database Reporting
 
-The reporting repository contains software tools and report templates used for reporting on selected metrics and summary statistics regarding datasets from IMOS facilities. This readme file details the procedures used for producing reports using the provided templates.
+The reporting repository contains software tools and report templates used for 
+reporting on selected metrics and summary statistics regarding datasets from 
+IMOS facilities. This readme file details the procedures used for producing r
+eports using the provided templates.
 
-Requirements
-=========
+## Licensing
+This project is licensed under the terms of the GNU GPLv3 license.
 
+## Requirements
 To be able to run the scripts manually, you will need:
 
 1. ```bash```
@@ -28,9 +31,7 @@ To be able to serve a website with a job status page you will also need:
 
 For both email scheduling and webserver functionality, you will need to use the ```reporting_improvements``` branch.
 
-Reporting
-=========
-
+## Reporting
 The reporting task consists of two sub-tasks:
 
 1. Running summary SQL queries 
@@ -61,8 +62,7 @@ The ```reporting_improvements``` branch was created to:
   * allow sending scheduled emails with attachemnts/logs of the reporting task.
   * allow serving a webpage with the reporting status.
   
-How to run
-==========
+## How to run
 
 1) go to ```report/```
 2) edit ```config.conf```
@@ -78,9 +78,8 @@ You may want to schedule the report script to be run every month (optional):
 
 It is recommended that the reporting is performed over a time window of low load and away from DB maintenance schedules(e.g. backups). In practice, scheduling at 00:00am resulted in less fails/faster queries.
 
+## How to run the email scheduling (optional)
 
-How to run the email scheduling (optional)
-========== 
 This requires you to use the ```reporting_improvements``` branch. Please note that this branch assumes the sheryl folder is always mounted so we don't need to provide UTAS permissions or mount anything.
 
 3) configure and test the `/etc/ssmtp.conf` and the `sendmail` functionality, otherwise, emails will fail.
@@ -90,8 +89,8 @@ This requires you to use the ```reporting_improvements``` branch. Please note th
     * Include the line: ```0 0 1 * * cd <YOUR_REPORTING_GIT_REPO>/report && ./trigger_report_and_email.sh```
     * This script requires the following folders to exist at the root level of the repo: ```figures,report_logs,checker_logs,checked_statuses,report_statuses```
  
-How to run the webserver html page
-==========
+## How to run the webserver html page
+
 The webserver is quite simple and watches the folders and files written by the email reporting scripts to serve a simple html page. The page contains the latest embargo figure and status from the reporting task as a whole. The webserver is a simple python flask service and completely optional. A further enhancement to this would be to allow certain users to trigger the reporting with a button. However, this requires some protection from abuse/user authentication.
 
 The configuration below assumes the service is installed in the home folder of a `reporting` user, and pyenv is properly installed, and setup to use python3.8.0 as a global and local python.
