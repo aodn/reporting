@@ -332,18 +332,18 @@ UNION ALL
   FROM srs_oc_ljco_aeronet.srs_oc_ljco_aeronet_map m
   GROUP BY file_id,latitude,longitude
 UNION ALL
-select 'SRS - Ocean Colour Calibration' AS subfacility,
-'Lucinda Jetty Coastal Observatory' AS parameter_site,
-'WWS'::text AS deployment_code,
-instrument AS sensor_name,
-count(*) as nb_measurements,
-min(time_coverage_start) AS start_date,
-max(time_coverage_end) AS end_date,
-round((date_part('days', (max(time_coverage_end) - min(time_coverage_start))) + date_part('hours', (max(time_coverage_end) - min(time_coverage_start)))/24)::numeric, 1) AS coverage_duration,
-round("LATITUDE"::numeric, 1) AS lat,
-round("LONGITUDE"::numeric, 1) AS lon
-FROM srs_oc_ljco_wws.srs_oc_ljco_wws_daily_all_products_fv02_timeseries_map
-GROUP BY instrument, "LATITUDE", "LONGITUDE"
+  SELECT 'SRS - Ocean Colour Calibration' AS subfacility,
+  'Lucinda Jetty Coastal Observatory' AS parameter_site,
+  'WWS'::text AS deployment_code,
+  instrument AS sensor_name,
+  count(*) as nb_measurements,
+  min(time_coverage_start) AS start_date,
+  max(time_coverage_end) AS end_date,
+  round((date_part('days', (max(time_coverage_end) - min(time_coverage_start))) + date_part('hours', (max(time_coverage_end) - min(time_coverage_start)))/24)::numeric, 1) AS coverage_duration,
+  round("LATITUDE"::numeric, 1) AS lat,
+  round("LONGITUDE"::numeric, 1) AS lon
+  FROM srs_oc_ljco_wws.srs_oc_ljco_wws_all_products_timeseries_map
+  GROUP BY instrument, "LATITUDE", "LONGITUDE"
   ORDER BY subfacility, parameter_site, deployment_code, sensor_name, start_date, end_date;
 
 grant all on table srs_all_deployments_view to public;
