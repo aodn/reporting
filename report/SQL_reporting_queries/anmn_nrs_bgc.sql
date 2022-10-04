@@ -29,10 +29,11 @@ WITH a AS (
         SUM(CASE WHEN "Alkalinity_umolkg" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
         min("Longitude") AS lon,
         min("Latitude") AS lat,
-        min("SampleDepth_m") AS min_depth,
-        max("SampleDepth_m") AS max_depth
+        min("SampleDepth_m")::varchar AS min_depth,
+        max("SampleDepth_m")::varchar AS max_depth
   FROM imos_bgc_db.bgc_chemistry_data
         GROUP BY "StationName", "TripCode"
+
 UNION ALL
   SELECT 'Phytoplankton pigment' AS data_type,
         "StationName" AS station_name,
@@ -127,6 +128,7 @@ UNION ALL
         min("SampleDepth_m") AS min_depth,
         max("SampleDepth_m") AS max_depth
   FROM imos_bgc_db.bgc_pigments_data
+        WHERE "SampleDepth_m" != 'WC'
         GROUP BY "StationName", "TripCode"
 UNION ALL
   SELECT 'Picoplankton' AS data_type,
@@ -146,6 +148,7 @@ UNION ALL
         min("SampleDepth_m") AS min_depth,
         max("SampleDepth_m") AS max_depth
   FROM imos_bgc_db.bgc_picoplankton_data
+        WHERE "SampleDepth_m" != 'WC'
         GROUP BY "StationName", "TripCode"
 UNION ALL
   SELECT 'Plankton biomass' AS data_type,
@@ -219,10 +222,11 @@ UNION ALL
         NULL AS max_depth
   FROM imos_bgc_db.bgc_tss_data
         GROUP BY "StationName", "TripCode"),
+
 b AS ( SELECT data_type,
 	station_name,
 	trip_code,
-	to_date(substring(trip_code,'[0-9]+'),'YYYYMMDD') AS sample_date,
+	"SampleTime_Local"::date AS sample_date,
 	
 	CASE WHEN data_type = 'Chemistry' THEN SUM(total_no_parameters) END AS total_no_parameters_chemistry,
 	CASE WHEN data_type = 'Phytoplankton pigment' THEN SUM(total_no_parameters) END AS total_no_parameters_phypig,
@@ -260,7 +264,8 @@ b AS ( SELECT data_type,
 	min(min_depth) AS min_depth,
 	max(max_depth) AS max_depth
   FROM a
-	GROUP BY data_type, station_name, trip_code
+        INNER JOIN imos_bgc_db.bgc_trip_metadata USING (trip_code)
+	GROUP BY data_type, station_name, trip_code, "SampleTime_Local"
 	ORDER BY station_name,  sample_date)
   SELECT station_name,
 	sample_date,
