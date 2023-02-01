@@ -7,220 +7,226 @@ DROP VIEW IF EXISTS anmn_nrs_bgc_all_deployments_view CASCADE;
 -- All deployments
 CREATE VIEW anmn_nrs_bgc_all_deployments_view AS
 WITH a AS (
-  SELECT 'Chemistry' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	7 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "SALINITY" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "SILICATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "NITRATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PHOSPHATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "AMMONIUM_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "TCO2_UMOL_PER_KG" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "TALKALINITY_UMOL_PER_KG" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 7 AS total_no_measurements,
-	SUM(CASE WHEN "SALINITY" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "SILICATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "NITRATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PHOSPHATE_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "AMMONIUM_UMOL_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "TCO2_UMOL_PER_KG" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "TALKALINITY_UMOL_PER_KG" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	min("SAMPLE_DEPTH_M") AS min_depth,
-	max("SAMPLE_DEPTH_M") AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_chemistry_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Chemistry' AS data_type,
+        "StationName" AS station_name,
+        "TripCode" AS trip_code,
+        COUNT("SampleID") AS no_samples,
+        7 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "Salinity" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Silicate_umolL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Nitrate_umolL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Phosphate_umolL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Ammonium_umolL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "DIC_umolkg" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Alkalinity_umolkg" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("SampleID") * 7 AS total_no_measurements,
+        SUM(CASE WHEN "Salinity" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Silicate_umolL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Nitrate_umolL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Phosphate_umolL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Ammonium_umolL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "DIC_umolkg" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Alkalinity_umolkg" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        min("SampleDepth_m")::varchar AS min_depth,
+        max("SampleDepth_m")::varchar AS max_depth
+  FROM imos_bgc_db.bgc_chemistry_data
+        GROUP BY "StationName", "TripCode"
+
 UNION ALL
-  SELECT 'Phytoplankton pigment' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	41 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "CPHL_C3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "MG_DVP" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHL_C2" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHL_C1" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHL_C1C2" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHLIDE_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PHIDE_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PERID" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PYROPHIDE_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "BUT_FUCO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "FUCO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "NEO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "KETO_HEX_FUCO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PRAS" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "VIOLA" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "HEX_FUCO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ASTA" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DIADCHR" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DIADINO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DINO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ANTH" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ALLO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DIATO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ZEA" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "LUT" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CANTHA" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "GYRO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DV_CPHL_B" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHL_B" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DV_CPHL_B_AND_CPHL_B" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DV_CPHL_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CPHL_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "DV_CPHL_A_AND_CPHL_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ECHIN" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PHYTIN_B" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PHYTIN_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "LYCO" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "BETA_EPI_CAR" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "BETA_BETA_CAR" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ALPHA_BETA_CAR" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PYROPHYTIN_A" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 41 AS total_no_measurements,
-	SUM(CASE WHEN "CPHL_C3" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "MG_DVP" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHL_C2" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHL_C1" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHL_C1C2" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHLIDE_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PHIDE_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PERID" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PYROPHIDE_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "BUT_FUCO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "FUCO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "NEO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "KETO_HEX_FUCO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PRAS" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "VIOLA" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "HEX_FUCO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ASTA" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DIADCHR" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DIADINO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DINO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ANTH" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ALLO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DIATO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ZEA" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "LUT" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CANTHA" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "GYRO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DV_CPHL_B" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHL_B" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DV_CPHL_B_AND_CPHL_B" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DV_CPHL_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CPHL_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "DV_CPHL_A_AND_CPHL_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ECHIN" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PHYTIN_B" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PHYTIN_A" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "LYCO" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "BETA_EPI_CAR" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "BETA_BETA_CAR" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ALPHA_BETA_CAR" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PYROPHYTIN_A" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	min("SAMPLE_DEPTH_M") AS min_depth,
-	max("SAMPLE_DEPTH_M") AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_phypig_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Phytoplankton pigment' AS data_type,
+        "StationName" AS station_name,
+        "TripCode" AS trip_code,
+        COUNT("SampleID") AS no_samples,
+        41 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "CphlC3_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "MgDvp_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlC2_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlC1_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlC1C2_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlideA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "PhideA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Perid_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "PyrophideA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Butfuco_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Fuco_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Neo_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Ketohexfuco_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Pras_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Viola_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Hexfuco_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Asta_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Diadchr_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Diadino_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Dino_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Anth_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Allo_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Diato_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Zea_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Lut_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Cantha_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Gyro_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "DvCphlB_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlB_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "DvCphlB+CphlB_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "DvCphlA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "CphlA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "DvCphlA+CphlA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Echin_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "PhytinB_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "PhytinA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Lyco_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "BetaEpiCar_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "BetaBetaCar_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "AlphaBetaCar_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "PyrophytinA_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("SampleID") * 41 AS total_no_measurements,
+        SUM(CASE WHEN "CphlC3_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "MgDvp_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlC2_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlC1_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlC1C2_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlideA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "PhideA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Perid_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "PyrophideA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Butfuco_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Fuco_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Neo_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Ketohexfuco_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Pras_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Viola_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Hexfuco_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Asta_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Diadchr_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Diadino_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Dino_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Anth_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Allo_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Diato_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Zea_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Lut_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Cantha_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Gyro_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "DvCphlB_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlB_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "DvCphlB+CphlB_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "DvCphlA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "CphlA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "DvCphlA+CphlA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Echin_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "PhytinB_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "PhytinA_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Lyco_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "BetaEpiCar_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "BetaBetaCar_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "AlphaBetaCar_mgm3" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "PyrophytinA_mgm3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        min("SampleDepth_m") AS min_depth,
+        max("SampleDepth_m") AS max_depth
+  FROM imos_bgc_db.bgc_pigments_data
+        WHERE "SampleDepth_m" != 'WC'
+        GROUP BY "StationName", "TripCode"
 UNION ALL
-  SELECT 'Picoplankton' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	3 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "PROCHLOROCOCCUS_CELLSPERML" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "SYNECOCHOCCUS_CELLSPERML" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "PICOEUKARYOTES_CELLSPERML" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 3 AS total_no_measurements,
-	SUM(CASE WHEN "PROCHLOROCOCCUS_CELLSPERML" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "SYNECOCHOCCUS_CELLSPERML" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "PICOEUKARYOTES_CELLSPERML" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	NULL AS min_depth,
-	NULL AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_picoplankton_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Picoplankton' AS data_type,
+        "StationName" AS station_name,
+        "TripCode" AS trip_code,
+        COUNT("SampleID") AS no_samples,
+        3 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "Prochlorococcus_cellsmL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Synechococcus_cellsmL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "Picoeukaryotes_cellsmL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("SampleID") * 3 AS total_no_measurements,
+        SUM(CASE WHEN "Prochlorococcus_cellsmL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Synechococcus_cellsmL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "Picoeukaryotes_cellsmL" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        min("SampleDepth_m") AS min_depth,
+        max("SampleDepth_m") AS max_depth
+  FROM imos_bgc_db.bgc_picoplankton_data
+        WHERE "SampleDepth_m" != 'WC'
+        GROUP BY "StationName", "TripCode"
 UNION ALL
-  SELECT 'Plankton biomass' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	1 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "MG_PER_M3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") AS total_no_measurements,
-	SUM(CASE WHEN "MG_PER_M3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	NULL AS min_depth,
-	NULL AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_biomass_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Plankton biomass' AS data_type,
+        "StationName" AS station_name,
+        "TripCode" AS trip_code,
+        COUNT("TripCode") AS no_samples,
+        1 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "Biomass_mgm3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("TripCode") AS total_no_measurements,
+        SUM(CASE WHEN "Biomass_mgm3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        NULL AS min_depth,
+        NULL AS max_depth
+  FROM imos_bgc_db.bgc_trip_metadata
+        GROUP BY "StationName", "TripCode"
 UNION ALL
-  SELECT 'Phytoplankton' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	3 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "CELL_PER_LITRE" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "BIOVOLUME_UM3_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 3 AS total_no_measurements,
-	SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "CELL_PER_LITRE" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "BIOVOLUME_UM3_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	NULL AS min_depth,
-	NULL AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_phytoplankton_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Phytoplankton' AS data_type,
+        "StationName" AS station_name,
+        "trip_code" AS trip_code,
+        COUNT("trip_code") AS no_samples,
+        3 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "taxon_name" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "cell_l" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "biovolume_um3l" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("trip_code") * 3 AS total_no_measurements,
+        SUM(CASE WHEN "taxon_name" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "cell_l" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "biovolume_um3l" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        NULL AS min_depth,
+        NULL AS max_depth
+  FROM imos_bgc_db.bgc_phyto_raw r
+        INNER JOIN imos_bgc_db.bgc_trip_metadata b USING (trip_code)
+        GROUP BY "StationName", "trip_code"
 UNION ALL
-  SELECT 'Zooplankton' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	2 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "TAXON_PER_M3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 2 AS total_no_measurements,
-	SUM(CASE WHEN "TAXON_NAME" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "TAXON_PER_M3" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	NULL AS min_depth,
-	NULL AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_plankton_zooplankton_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"
+  SELECT 'Zooplankton' AS data_type,
+        "StationName" AS station_name,
+        "trip_code" AS trip_code,
+        COUNT("trip_code") AS no_samples,
+        2 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "taxon_name" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "zoop_abundance_m3" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("trip_code") * 2 AS total_no_measurements,
+        SUM(CASE WHEN "taxon_name" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "zoopsampledepth_m" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        NULL AS min_depth,
+        NULL AS max_depth
+  FROM imos_bgc_db.bgc_zoop_raw
+        INNER JOIN imos_bgc_db.bgc_trip_metadata b USING (trip_code)
+        GROUP BY "StationName", "trip_code"
 UNION ALL
-  SELECT 'Suspended matter' AS data_type, 
-	"STATION_NAME" AS station_name,
-	"NRS_TRIP_CODE" AS trip_code,
-	COUNT("NRS_SAMPLE_CODE") AS no_samples,
-	3 AS total_no_parameters,
-	CASE WHEN SUM(CASE WHEN "TSS_MG_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "INORGANIC_FRACTION_MG_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
-	CASE WHEN SUM(CASE WHEN "ORGANIC_FRACTION_MG_PER_L" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
-	COUNT("NRS_SAMPLE_CODE") * 3 AS total_no_measurements,
-	SUM(CASE WHEN "TSS_MG_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "INORGANIC_FRACTION_MG_PER_L" IS NULL THEN 0 ELSE 1 END) +
-	SUM(CASE WHEN "ORGANIC_FRACTION_MG_PER_L" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
-	min("LONGITUDE") AS lon,
-	min("LATITUDE") AS lat,
-	NULL AS min_depth,
-	NULL AS max_depth
-  FROM anmn_nrs_bgc.anmn_nrs_bgc_tss_secchi_data
-	GROUP BY "STATION_NAME", "NRS_TRIP_CODE"),
+  SELECT 'Suspended matter' AS data_type,
+        "StationName" AS station_name,
+        "TripCode" AS trip_code,
+        COUNT("SampleID") AS no_samples,
+        3 AS total_no_parameters,
+        CASE WHEN SUM(CASE WHEN "TSS_mgL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "TSSinorganic_mgL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END +
+        CASE WHEN SUM(CASE WHEN "TSSorganic_mgL" IS NULL THEN 0 ELSE 1 END) = 0 THEN 0 ELSE 1 END AS no_parameters_measured,
+        COUNT("SampleID") * 3 AS total_no_measurements,
+        SUM(CASE WHEN "TSS_mgL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "TSSinorganic_mgL" IS NULL THEN 0 ELSE 1 END) +
+        SUM(CASE WHEN "TSSorganic_mgL" IS NULL THEN 0 ELSE 1 END) AS no_measurements_with_data,
+        min("Longitude") AS lon,
+        min("Latitude") AS lat,
+        NULL AS min_depth,
+        NULL AS max_depth
+  FROM imos_bgc_db.bgc_tss_data
+        GROUP BY "StationName", "TripCode"),
+
 b AS ( SELECT data_type,
 	station_name,
 	trip_code,
-	to_date(substring(trip_code,'[0-9]+'),'YYYYMMDD') AS sample_date,
+	"SampleTime_Local"::date AS sample_date,
 	
 	CASE WHEN data_type = 'Chemistry' THEN SUM(total_no_parameters) END AS total_no_parameters_chemistry,
 	CASE WHEN data_type = 'Phytoplankton pigment' THEN SUM(total_no_parameters) END AS total_no_parameters_phypig,
@@ -258,7 +264,8 @@ b AS ( SELECT data_type,
 	min(min_depth) AS min_depth,
 	max(max_depth) AS max_depth
   FROM a
-	GROUP BY data_type, station_name, trip_code
+        INNER JOIN imos_bgc_db.bgc_trip_metadata USING (trip_code)
+	GROUP BY data_type, station_name, trip_code, "SampleTime_Local"
 	ORDER BY station_name,  sample_date)
   SELECT station_name,
 	sample_date,
