@@ -1,4 +1,4 @@
-#IMOS Database Reporting
+# IMOS Database Reporting
 
 The reporting repository contains software tools and report templates used for 
 reporting on selected metrics and summary statistics regarding datasets from 
